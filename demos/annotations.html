@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Annotations · Zgraph</title>
+  <title>Annotations · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -19,13 +19,13 @@
   <div id="chart" class="chart"></div>
   <p class="note" id="log"></p>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { makeSeries, utcDay, dayMs } from './helpers.js';
 
     const data = makeSeries({ points: 40, series: 2, seed: 3 });
     const start = utcDay(2024, 0, 1);
 
-    const g = new Zgraph(document.getElementById('chart'), data, {
+    const g = new Zpgraph(document.getElementById('chart'), data, {
       labels: ['Date', 'Parabola', 'Sine'],
       legend: 'always',
       animatedZooms: true,

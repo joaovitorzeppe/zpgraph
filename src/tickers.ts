@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -11,7 +11,7 @@
 /*
  * A ticker is a function with the following interface:
  *
- * function(a, b, pixels, options_view, zgraph, forced_values);
+ * function(a, b, pixels, options_view, zpgraph, forced_values);
  * -> [ { v: tick1_v, label: tick1_label[, label_v: label_v1] },
  *      { v: tick2_v, label: tick2_label[, label_v: label_v2] },
  *      ...
@@ -35,7 +35,7 @@
  * pixels=400 and opts('pixelsPerLabel')=40 then the ticker should return
  * between zero and ten (400/40) ticks.
  *
- * zgraph is the Zgraph object for which an axis is being constructed.
+ * zpgraph is the Zpgraph object for which an axis is being constructed.
  *
  * forced_values is used for secondary y-axes. The tick positions are typically
  * set by the primary y-axis, so the secondary y-axis has no choice in where to
@@ -60,10 +60,10 @@
  */
 
 /*jshint sub:true */
-/*global Zgraph:false */
+/*global Zpgraph:false */
 
-import * as utils from './utils';
-import type { AxisLabelFormatter, Ticker } from './types';
+import * as utils from "./utils";
+import type { AxisLabelFormatter, Ticker } from "./types";
 
 type AxisOpts = (name: string) => unknown;
 type TickResult = ReturnType<Ticker>;
@@ -87,14 +87,14 @@ export const numericLinearTicks: Ticker = function (
   b,
   pixels,
   opts,
-  zgraph,
+  zpgraph,
   vals,
 ) {
   let nonLogscaleOpts = function (opt: string) {
-    if (opt === 'logscale') return false;
+    if (opt === "logscale") return false;
     return opts(opt);
   };
-  return numericTicks(a, b, pixels, nonLogscaleOpts, zgraph, vals);
+  return numericTicks(a, b, pixels, nonLogscaleOpts, zpgraph, vals);
 };
 
 export const numericTicks: Ticker = function (
@@ -102,10 +102,10 @@ export const numericTicks: Ticker = function (
   b,
   pixels,
   opts,
-  zgraph,
+  zpgraph,
   vals,
 ) {
-  let pixels_per_tick = opts('pixelsPerLabel') as number;
+  let pixels_per_tick = opts("pixelsPerLabel") as number;
   const ticks: NumericTick[] = [];
   let i, j, tickV, nTicks;
   if (vals?.length) {
@@ -113,7 +113,7 @@ export const numericTicks: Ticker = function (
       ticks.push({ v: vals[i]! });
     }
   } else {
-    if (opts('logscale')) {
+    if (opts("logscale")) {
       nTicks = Math.floor(pixels / pixels_per_tick);
       let minIdx = utils.binarySearch(a, PREFERRED_LOG_TICK_VALUES, 1);
       let maxIdx = utils.binarySearch(b, PREFERRED_LOG_TICK_VALUES, -1);
@@ -147,7 +147,7 @@ export const numericTicks: Ticker = function (
                 pixel_coord: pixel_coord,
               };
             } else {
-              tick.label = '';
+              tick.label = "";
             }
           }
           ticks.push(tick);
@@ -163,7 +163,7 @@ export const numericTicks: Ticker = function (
       // Try labels every 1, 2, 5, 10, 20, 50, 100, etc.
       // Calculate the resulting tick spacing (i.e. this.height_ / nTicks).
       // The first spacing greater than pixelsPerYLabel is what we use.
-      let kmg2 = opts('labelsKMG2');
+      let kmg2 = opts("labelsKMG2");
       let mults, base;
       if (kmg2) {
         mults = [1, 2, 4, 8, 16, 32, 64, 128, 256];
@@ -215,12 +215,12 @@ export const numericTicks: Ticker = function (
     }
   }
 
-  let formatter = opts('axisLabelFormatter') as AxisLabelFormatter;
+  let formatter = opts("axisLabelFormatter") as AxisLabelFormatter;
 
   // Add labels to the ticks.
   for (i = 0; i < ticks.length; i++) {
     if (ticks[i]!.label !== undefined) continue; // Use current label.
-    ticks[i]!.label = formatter.call(zgraph, ticks[i]!.v, 0, opts, zgraph);
+    ticks[i]!.label = formatter.call(zpgraph, ticks[i]!.v, 0, opts, zpgraph);
   }
 
   return ticks as TickResult;
@@ -231,20 +231,27 @@ export const integerTicks: Ticker = function (
   b,
   pixels,
   opts,
-  zgraph,
+  zpgraph,
   vals,
 ) {
-  let allTicks = numericTicks(a, b, pixels, opts, zgraph, vals);
+  let allTicks = numericTicks(a, b, pixels, opts, zpgraph, vals);
   return allTicks.filter(function (tick) {
     return tick.v % 1 === 0;
   });
 };
 
-export const dateTicker: Ticker = function (a, b, pixels, opts, zgraph, _vals) {
+export const dateTicker: Ticker = function (
+  a,
+  b,
+  pixels,
+  opts,
+  zpgraph,
+  _vals,
+) {
   let chosen = pickDateTickGranularity(a, b, pixels, opts);
 
   if (chosen >= 0) {
-    return getDateAxis(a, b, chosen, opts, zgraph);
+    return getDateAxis(a, b, chosen, opts, zpgraph);
   } else {
     // this can happen if self.width_ is zero.
     return [];
@@ -492,7 +499,7 @@ export const pickDateTickGranularity = function (
   pixels: number,
   opts: AxisOpts,
 ): number {
-  let pixels_per_tick = opts('pixelsPerLabel') as number;
+  let pixels_per_tick = opts("pixelsPerLabel") as number;
   for (let i = 0; i < Granularity.NUM_GRANULARITIES; i++) {
     let num_ticks = numDateTicks(a, b, i);
     if (pixels / num_ticks >= pixels_per_tick) {
@@ -533,8 +540,8 @@ export const getDateAxis = function (
   opts: AxisOpts,
   dg: unknown,
 ): TickResult {
-  let formatter = opts('axisLabelFormatter') as AxisLabelFormatter;
-  let utc = opts('labelsUTC');
+  let formatter = opts("axisLabelFormatter") as AxisLabelFormatter;
+  let utc = opts("labelsUTC");
   let accessors = utc ? utils.DateAccessorsUTC : utils.DateAccessorsLocal;
 
   let placement = TICK_PLACEMENT[granularity]!;

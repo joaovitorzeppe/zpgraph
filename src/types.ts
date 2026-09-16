@@ -7,15 +7,19 @@
  */
 
 /**
- * Pure type definitions for Zgraph consumers.
+ * Pure type definitions for Zpgraph consumers.
  */
 
-import type Zgraph from './zgraph';
+import type Zpgraph from "./zpgraph";
 
 export type DataArray = Array<Array<number | number[] | Date | null>>;
 
 export type Data =
-  string | DataArray | (() => DataArray | string) | null | undefined;
+  | string
+  | DataArray
+  | (() => DataArray | string)
+  | null
+  | undefined;
 
 export interface Point {
   idx: number;
@@ -59,7 +63,7 @@ export interface Annotation {
 export type AnnotationHandler = (
   annotation: Annotation,
   point: Point,
-  zgraph: unknown,
+  zpgraph: unknown,
   event: MouseEvent,
 ) => void;
 
@@ -68,31 +72,31 @@ export type Ticker = (
   max: number,
   pixels: number,
   opts: (name: string) => unknown,
-  zgraph: unknown,
+  zpgraph: unknown,
   vals?: number[],
 ) => Array<{ v: number; label: string; label_v?: number }>;
 
-export type AxisName = 'x' | 'y' | 'y2';
+export type AxisName = "x" | "y" | "y2";
 
 export type AxisLabelFormatter = (
   value: number | Date,
   granularity: number,
   opts: (name: string) => unknown,
-  zgraph: unknown,
+  zpgraph: unknown,
 ) => string;
 
 export type ValueFormatter = (
   value: number,
   opts: (name: string) => unknown,
   seriesName: string,
-  zgraph: unknown,
+  zpgraph: unknown,
   row: number,
   col: number,
 ) => string;
 
 /**
  * Options that can be set per axis, inside `axes: { x: …, y: …, y2: … }`.
- * Every one of them is also accepted at the top level of `ZgraphOptions`,
+ * Every one of them is also accepted at the top level of `ZpgraphOptions`,
  * where it applies to all axes.
  */
 export interface AxisOptions {
@@ -133,7 +137,7 @@ export type DrawPointCallback = (
 ) => void;
 
 export interface PerSeriesOptions {
-  axis?: 'y1' | 'y2' | '' | null;
+  axis?: "y1" | "y2" | "" | null;
   color?: string | null;
   drawHighlightPointCallback?: DrawPointCallback | null;
   drawPointCallback?: DrawPointCallback | null;
@@ -161,7 +165,7 @@ export interface PlotterEvent {
   drawingContext: CanvasRenderingContext2D;
   color: string;
   strokeWidth: number;
-  zgraph: unknown;
+  zpgraph: unknown;
   axis: unknown;
   plotArea: { x: number; y: number; w: number; h: number };
   seriesIndex: number;
@@ -234,9 +238,9 @@ export interface InteractionContext {
 
 export interface Plugin {
   toString?(): string;
-  // Method form keeps param checking bivariant (plugins take ZgraphInstance).
+  // Method form keeps param checking bivariant (plugins take ZpgraphInstance).
   // Return is a loose object: handlers are typed per plugin, not via index sig.
-  activate(zgraph: unknown): object | void;
+  activate(zpgraph: unknown): object | void;
   destroy?(): void;
 }
 
@@ -246,7 +250,7 @@ export interface Plugin {
  * runtime already rejects unknown option names in development builds.
  * Anything missing here is a gap to fill, not a reason to loosen the type.
  */
-export interface ZgraphOptions extends PerSeriesOptions, AxisOptions {
+export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
   labels?: string[];
   colors?: string[];
   colorSaturation?: number;
@@ -298,7 +302,7 @@ export interface ZgraphOptions extends PerSeriesOptions, AxisOptions {
   ylabel?: string | null;
   y2label?: string | null;
   labelsDiv?: HTMLElement | string | null;
-  legend?: 'never' | 'onmouseover' | 'always' | 'follow' | null;
+  legend?: "never" | "onmouseover" | "always" | "follow" | null;
   legendFollowOffsetX?: number;
   legendFollowOffsetY?: number;
   showRoller?: boolean;
@@ -307,7 +311,7 @@ export interface ZgraphOptions extends PerSeriesOptions, AxisOptions {
   valueRange?: [number | null, number | null] | null;
   includeZero?: boolean;
   stackedGraph?: boolean;
-  stackedGraphNaNFill?: 'all' | 'inside' | 'none';
+  stackedGraphNaNFill?: "all" | "inside" | "none";
   errorBars?: boolean;
   fractions?: boolean;
   customBars?: boolean;
@@ -319,7 +323,7 @@ export interface ZgraphOptions extends PerSeriesOptions, AxisOptions {
   drawPoints?: boolean;
   drawGapEdgePoints?: boolean;
   hideOverlayOnMouseOut?: boolean;
-  resizable?: 'no' | 'horizontal' | 'vertical' | 'both';
+  resizable?: "no" | "horizontal" | "vertical" | "both";
   animatedZooms?: boolean;
   animateBackgroundFade?: boolean;
   interactionModel?: InteractionModel | null;
@@ -334,10 +338,10 @@ export interface ZgraphOptions extends PerSeriesOptions, AxisOptions {
   underlayCallback?: (
     ctx: CanvasRenderingContext2D,
     area: { x: number; y: number; w: number; h: number },
-    g: Zgraph,
+    g: Zpgraph,
   ) => void;
-  drawCallback?: (g: Zgraph, isInitial: boolean) => void;
-  dataLoadErrorCallback?: (error: unknown, url: string, g: Zgraph) => void;
+  drawCallback?: (g: Zpgraph, isInitial: boolean) => void;
+  dataLoadErrorCallback?: (error: unknown, url: string, g: Zpgraph) => void;
   highlightCallback?: (
     event: MouseEvent,
     x: number,
@@ -357,7 +361,7 @@ export interface ZgraphOptions extends PerSeriesOptions, AxisOptions {
 
 /** Argument handed to `legendFormatter`. */
 export interface LegendData {
-  zgraph: unknown;
+  zpgraph: unknown;
   x?: number;
   xHTML?: string;
   i: number | null;
@@ -376,4 +380,4 @@ export interface LegendData {
   }>;
 }
 
-export type ZgraphElement = HTMLElement | string;
+export type ZpgraphElement = HTMLElement | string;

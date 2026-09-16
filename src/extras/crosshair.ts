@@ -6,16 +6,16 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZgraphImport from 'zpgraph';
-import type { SelectPluginEvent } from '../internal-types';
-import type ZgraphClass from '../zgraph';
+import ZpgraphImport from "zpgraph";
+import type { SelectPluginEvent } from "../internal-types";
+import type ZpgraphClass from "../zpgraph";
 
-type ZgraphExtrasHost = typeof ZgraphImport & {
+type ZpgraphExtrasHost = typeof ZpgraphImport & {
   Plugins: Record<string, unknown> & { Crosshair?: typeof Crosshair };
 };
 
-const Zgraph = ZgraphImport as ZgraphExtrasHost;
-Zgraph.Plugins = Zgraph.Plugins || {};
+const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
+Zpgraph.Plugins = Zpgraph.Plugins || {};
 
 /**
  * Draws a crosshair through the selected point.
@@ -26,10 +26,10 @@ class Crosshair {
   strokeStyle_: string;
 
   constructor(opt_options?: { direction?: string; strokeStyle?: string }) {
-    this.canvas_ = document.createElement('canvas');
+    this.canvas_ = document.createElement("canvas");
     opt_options = opt_options || {};
     this.direction_ = opt_options.direction || null;
-    this.strokeStyle_ = opt_options.strokeStyle || 'rgba(0, 0, 0, 0.3)';
+    this.strokeStyle_ = opt_options.strokeStyle || "rgba(0, 0, 0, 0.3)";
   }
 
   updateCanvasSize(width: number, height: number) {
@@ -37,19 +37,19 @@ class Crosshair {
     if (width === canvas.width && height === canvas.height) return;
     canvas.width = width;
     canvas.height = height;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
   }
 
   toString() {
-    return 'Crosshair Plugin';
+    return "Crosshair Plugin";
   }
 
   /**
    * @param g Graph instance.
    * @return Mapping of event names to callbacks.
    */
-  activate(g: ZgraphClass) {
+  activate(g: ZpgraphClass) {
     this.updateCanvasSize(g.width_, g.height_);
     g.graphDiv.appendChild(this.canvas_!);
 
@@ -64,18 +64,18 @@ class Crosshair {
       return;
     }
 
-    let width = e.zgraph.width_;
-    let height = e.zgraph.height_;
+    let width = e.zpgraph.width_;
+    let height = e.zpgraph.height_;
     this.updateCanvasSize(width, height);
 
-    let ctx = this.canvas_!.getContext('2d')!;
+    let ctx = this.canvas_!.getContext("2d")!;
     ctx.clearRect(0, 0, width, height);
     ctx.strokeStyle = this.strokeStyle_;
     ctx.beginPath();
 
-    if (this.direction_ === 'both' || this.direction_ === 'vertical') {
-      if (e.zgraph.selPoints_.length !== 0) {
-        let p = e.zgraph.selPoints_[0]!;
+    if (this.direction_ === "both" || this.direction_ === "vertical") {
+      if (e.zpgraph.selPoints_.length !== 0) {
+        let p = e.zpgraph.selPoints_[0]!;
         if (p.x != null && p.x >= 0 && p.x <= 1) {
           let canvasx = Math.floor(p.canvasx!) + 0.5; // crisper rendering
           if (canvasx > width) canvasx = width - 0.5;
@@ -86,9 +86,9 @@ class Crosshair {
       }
     }
 
-    if (this.direction_ === 'both' || this.direction_ === 'horizontal') {
-      for (let i = 0; i < e.zgraph.selPoints_.length; i++) {
-        let p = e.zgraph.selPoints_[i]!;
+    if (this.direction_ === "both" || this.direction_ === "horizontal") {
+      for (let i = 0; i < e.zpgraph.selPoints_.length; i++) {
+        let p = e.zpgraph.selPoints_[i]!;
         if (p.y != null && p.y >= 0 && p.y <= 1) {
           let canvasy = Math.floor(p.canvasy!) + 0.5; // crisper rendering
           if (canvasy > height) canvasy = height - 0.5;
@@ -105,7 +105,7 @@ class Crosshair {
 
   deselect(_e: SelectPluginEvent) {
     const canvas = this.canvas_!;
-    canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.getContext("2d")!.clearRect(0, 0, canvas.width, canvas.height);
   }
 
   destroy() {
@@ -113,6 +113,6 @@ class Crosshair {
   }
 }
 
-Zgraph.Plugins.Crosshair = Crosshair;
+Zpgraph.Plugins.Crosshair = Crosshair;
 
 export default Crosshair;

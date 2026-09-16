@@ -12,19 +12,19 @@
  * zoom and resize and only turns the visible slice into points and pixels.
  */
 
-import ZgraphCanvasRenderer from './canvas';
-import { xAxisExtremes } from './coords';
-import { decimatePointsByX } from './decimate';
-import { log } from './logger';
-import { createRollInterface, updateAriaLabel } from './dom';
-import * as utils from './utils';
-import type { Point, Ticker } from './types';
+import ZpgraphCanvasRenderer from "./canvas";
+import { xAxisExtremes } from "./coords";
+import { decimatePointsByX } from "./decimate";
+import { log } from "./logger";
+import { createRollInterface, updateAriaLabel } from "./dom";
+import * as utils from "./utils";
+import type { Point, Ticker } from "./types";
 import type {
   AxisProperties,
   UnifiedSeries,
-  ZgraphInstance,
-} from './internal-types';
-import type Zgraph from './zgraph';
+  ZpgraphInstance,
+} from "./internal-types";
+import type Zpgraph from "./zpgraph";
 
 type SeriesExtremes = [number | null, number | null];
 type GatheredExtremes = Record<string, SeriesExtremes>;
@@ -37,7 +37,7 @@ type GatheredExtremes = Record<string, SeriesExtremes>;
  * rather than every time the chart is drawn. This includes things like the
  * number of axes, rolling averages, etc.
  */
-export const predraw = (g: Zgraph) => {
+export const predraw = (g: Zpgraph) => {
   let start = new Date();
 
   // Create the correct dataHandler
@@ -56,8 +56,8 @@ export const predraw = (g: Zgraph) => {
   g.hidden_ctx_.save();
 
   // Create a new plotter.
-  g.plotter_ = new ZgraphCanvasRenderer(
-    g as unknown as ZgraphInstance,
+  g.plotter_ = new ZpgraphCanvasRenderer(
+    g as unknown as ZpgraphInstance,
     g.hidden_,
     g.hidden_ctx_,
     g.layout_,
@@ -67,7 +67,7 @@ export const predraw = (g: Zgraph) => {
   // this will be until the options are available, so it's positioned here.
   createRollInterface(g);
 
-  g.cascadeEvents_('predraw');
+  g.cascadeEvents_("predraw");
 
   // Convert the raw data (a 2D array) into the internal format and compute
   // rolling averages.
@@ -154,7 +154,7 @@ export const stackPoints = (
     let actualYval = point.yval;
     const fill = String(fillMethod);
     if (isNaN(Number(actualYval)) || actualYval === null) {
-      if (fill === 'none') {
+      if (fill === "none") {
         actualYval = 0;
       } else {
         // Interpolate/extend for stacking purposes if possible.
@@ -165,9 +165,9 @@ export const stackPoints = (
             prevPoint.yval! +
             (nextPoint.yval! - prevPoint.yval!) *
               ((xval - prevPoint.xval!) / (nextPoint.xval! - prevPoint.xval!));
-        } else if (prevPoint !== null && fill === 'all') {
+        } else if (prevPoint !== null && fill === "all") {
           actualYval = prevPoint.yval ?? 0;
-        } else if (nextPoint !== null && fill === 'all') {
+        } else if (nextPoint !== null && fill === "all") {
           actualYval = nextPoint.yval ?? 0;
         } else {
           actualYval = 0;
@@ -203,7 +203,7 @@ export const stackPoints = (
  *
  * dateWindow is passed in as an explicit parameter so that we can compute
  * extreme values "speculatively", i.e. without actually setting state on the
- * zgraph.
+ * zpgraph.
  *
  * @param rolledSeries, where
  *     rolledSeries[seriesIndex][row] = raw point, where
@@ -214,7 +214,7 @@ export const stackPoints = (
  * @private
  */
 export const gatherDatasets = (
-  g: Zgraph,
+  g: Zpgraph,
   rolledSeries: Array<UnifiedSeries | null>,
   dateWindow: [number, number] | null,
 ) => {
@@ -283,11 +283,11 @@ export const gatherDatasets = (
       boundaryIds[seriesIdx - 1] = [0, series.length - 1];
     }
 
-    let seriesName = (g.attr_('labels') as string[])[seriesIdx]!;
+    let seriesName = (g.attr_("labels") as string[])[seriesIdx]!;
     let seriesExtremes = g.dataHandler_.getExtremeYValues(
       series,
       dateWindow,
-      g.getBooleanOption('stepPlot', seriesName),
+      g.getBooleanOption("stepPlot", seriesName),
     );
 
     let seriesPoints = g.dataHandler_.seriesToPoints(
@@ -296,7 +296,7 @@ export const gatherDatasets = (
       boundaryIds[seriesIdx - 1]![0],
     );
 
-    if (g.getBooleanOption('stackedGraph')) {
+    if (g.getBooleanOption("stackedGraph")) {
       axisIdx = g.attributes_.axisForSeries(seriesName);
       if (cumulativeYval[axisIdx] === undefined) {
         cumulativeYval[axisIdx] = {};
@@ -305,7 +305,7 @@ export const gatherDatasets = (
         seriesPoints,
         cumulativeYval[axisIdx]!,
         seriesExtremes,
-        g.getBooleanOption('stackedGraphNaNFill'),
+        g.getBooleanOption("stackedGraphNaNFill"),
       );
     }
 
@@ -323,7 +323,7 @@ export const gatherDatasets = (
  *
  * @private
  */
-export const drawGraph = (g: Zgraph) => {
+export const drawGraph = (g: Zpgraph) => {
   let start = new Date();
 
   // This is used to set the second parameter to drawCallback, below.
@@ -332,7 +332,7 @@ export const drawGraph = (g: Zgraph) => {
 
   g.layout_.removeAllDatasets();
   g.setColors_();
-  g.attrs_.pointSize = 0.5 * g.getNumericOption('highlightCircleSize');
+  g.attrs_.pointSize = 0.5 * g.getNumericOption("highlightCircleSize");
 
   let packed = gatherDatasets(g, g.rolledSeries_, g.dateWindow_);
   let points = packed.points;
@@ -350,7 +350,7 @@ export const drawGraph = (g: Zgraph) => {
   }
 
   g.setIndexByName_ = {};
-  let labels = g.attr_('labels') as string[];
+  let labels = g.attr_("labels") as string[];
   let dataIdx = 0;
   for (let i = 1; i < points.length; i++) {
     if (!g.visibility()[i - 1]) continue;
@@ -370,13 +370,13 @@ export const drawGraph = (g: Zgraph) => {
   g.layout_.evaluate();
   renderGraph(g, is_initial_draw);
 
-  if (g.getStringOption('timingName')) {
+  if (g.getStringOption("timingName")) {
     let end = new Date();
     log.log(
-      g.getStringOption('timingName') +
-        ' - drawGraph: ' +
+      g.getStringOption("timingName") +
+        " - drawGraph: " +
         (end.getTime() - start.getTime()) +
-        'ms',
+        "ms",
     );
   }
 };
@@ -387,13 +387,13 @@ export const drawGraph = (g: Zgraph) => {
  *
  * @private
  */
-export const renderGraph = (g: Zgraph, is_initial_draw: boolean) => {
-  g.cascadeEvents_('clearChart');
+export const renderGraph = (g: Zpgraph, is_initial_draw: boolean) => {
+  g.cascadeEvents_("clearChart");
   g.plotter_.clear();
 
-  const underlayCallback = g.getFunctionOption('underlayCallback');
+  const underlayCallback = g.getFunctionOption("underlayCallback");
   if (underlayCallback) {
-    // NOTE: we pass the zgraph object to this callback twice to avoid breaking
+    // NOTE: we pass the zpgraph object to this callback twice to avoid breaking
     // users who expect a deprecated form of this callback.
     underlayCallback.call(g, g.hidden_ctx_, g.layout_.getPlotArea(), g, g);
   }
@@ -402,9 +402,9 @@ export const renderGraph = (g: Zgraph, is_initial_draw: boolean) => {
     canvas: g.hidden_,
     drawingContext: g.hidden_ctx_,
   };
-  g.cascadeEvents_('willDrawChart', e);
+  g.cascadeEvents_("willDrawChart", e);
   g.plotter_.render();
-  g.cascadeEvents_('didDrawChart', e);
+  g.cascadeEvents_("didDrawChart", e);
   // The description has to follow the picture: a zoom changes what is shown.
   updateAriaLabel(g);
   g.lastRow_ = -1; // because plugins/legend.js clears the legend
@@ -412,7 +412,7 @@ export const renderGraph = (g: Zgraph, is_initial_draw: boolean) => {
   // The interaction canvas should already be empty in that situation.
   g.canvas_ctx_.clearRect(0, 0, g.width_, g.height_);
 
-  const drawCallback = g.getFunctionOption('drawCallback');
+  const drawCallback = g.getFunctionOption("drawCallback");
   if (drawCallback !== null) {
     drawCallback.call(g, g, is_initial_draw);
   }
@@ -434,7 +434,7 @@ export const renderGraph = (g: Zgraph, is_initial_draw: boolean) => {
  * axes_ = [ { options } ]
  *   indices are into the axes_ array.
  */
-export const computeYAxes = (g: Zgraph) => {
+export const computeYAxes = (g: Zpgraph) => {
   let axis, opts, v;
 
   // g.axes_ doesn't match g.attributes_.axes_.options. It's used for
@@ -454,8 +454,8 @@ export const computeYAxes = (g: Zgraph) => {
 
   for (axis = 0; axis < g.axes_.length; axis++) {
     if (axis === 0) {
-      opts = g.optionsViewForAxis_('y' + (axis ? '2' : ''));
-      v = opts('valueRange');
+      opts = g.optionsViewForAxis_("y" + (axis ? "2" : ""));
+      v = opts("valueRange");
       if (v) g.axes_[axis]!.valueRange = v as [number | null, number | null];
     } else {
       // To keep old behavior
@@ -473,7 +473,7 @@ export const computeYAxes = (g: Zgraph) => {
  * @param extremes A mapping from seriesName -> [low, high]
  * This fills in the valueRange and ticks fields in each entry of g.axes_.
  */
-export const computeYAxisRanges = (g: Zgraph, extremes: GatheredExtremes) => {
+export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
   let isNullUndefinedOrNaN = function (num: unknown) {
     return isNaN(parseFloat(String(num)));
   };
@@ -485,9 +485,9 @@ export const computeYAxisRanges = (g: Zgraph, extremes: GatheredExtremes) => {
   // Compute extreme values, a span and tick marks for each axis.
   for (let i = 0; i < numAxes; i++) {
     const axis = g.axes_[i]!;
-    let logscale = g.attributes_.getForAxis('logscale', i);
-    let includeZero = g.attributes_.getForAxis('includeZero', i);
-    let independentTicks = g.attributes_.getForAxis('independentTicks', i);
+    let logscale = g.attributes_.getForAxis("logscale", i);
+    let includeZero = g.attributes_.getForAxis("includeZero", i);
+    let independentTicks = g.attributes_.getForAxis("independentTicks", i);
     series = g.attributes_.seriesForAxis(i);
 
     // Add some padding. This supports two Y padding operation modes:
@@ -505,7 +505,7 @@ export const computeYAxisRanges = (g: Zgraph, extremes: GatheredExtremes) => {
     //
     ypadCompat = true;
     ypad = 0.1; // add 10%
-    const yRangePad = g.getNumericOption('yRangePad');
+    const yRangePad = g.getNumericOption("yRangePad");
     if (yRangePad !== null) {
       ypadCompat = false;
       // Convert pixel padding to ratio
@@ -621,8 +621,8 @@ export const computeYAxisRanges = (g: Zgraph, extremes: GatheredExtremes) => {
 
     if (independentTicks) {
       axis.independentTicks = !!independentTicks;
-      let opts = g.optionsViewForAxis_('y' + (i ? '2' : ''));
-      const ticker = opts('ticker') as Ticker;
+      let opts = g.optionsViewForAxis_("y" + (i ? "2" : ""));
+      const ticker = opts("ticker") as Ticker;
       axis.ticks = ticker(
         axis.computedValueRange![0],
         axis.computedValueRange![1],
@@ -644,8 +644,8 @@ export const computeYAxisRanges = (g: Zgraph, extremes: GatheredExtremes) => {
     const axis = g.axes_[i]!;
 
     if (!axis.independentTicks) {
-      let opts = g.optionsViewForAxis_('y' + (i ? '2' : ''));
-      const ticker = opts('ticker') as Ticker;
+      let opts = g.optionsViewForAxis_("y" + (i ? "2" : ""));
+      const ticker = opts("ticker") as Ticker;
       const p_ticks = p_axis.ticks!;
       const p_range = p_axis.computedValueRange!;
       let p_scale = p_range[1] - p_range[0];

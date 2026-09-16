@@ -11,9 +11,9 @@
  * commits, and the animation between the old and the new window.
  */
 
-import * as utils from './utils';
-import type { AxisProperties } from './internal-types';
-import type Zgraph from './zgraph';
+import * as utils from "./utils";
+import type { AxisProperties } from "./internal-types";
+import type Zpgraph from "./zpgraph";
 
 /** Frames of the zoom animation, and how long the whole thing lasts. */
 const ANIMATION_STEPS = 12;
@@ -42,7 +42,7 @@ const ANIMATION_DURATION = 200;
  * @private
  */
 export const drawZoomRect = (
-  g: Zgraph,
+  g: Zpgraph,
   direction: number,
   startX: number,
   endX: number,
@@ -74,7 +74,7 @@ export const drawZoomRect = (
   // Draw a light-grey rectangle to show the new viewing area
   if (direction === utils.HORIZONTAL) {
     if (endX && startX) {
-      ctx.fillStyle = 'rgba(128,128,128,0.33)';
+      ctx.fillStyle = "rgba(128,128,128,0.33)";
       ctx.fillRect(
         Math.min(startX, endX),
         g.layout_.getPlotArea().y,
@@ -84,7 +84,7 @@ export const drawZoomRect = (
     }
   } else if (direction === utils.VERTICAL) {
     if (endY && startY) {
-      ctx.fillStyle = 'rgba(128,128,128,0.33)';
+      ctx.fillStyle = "rgba(128,128,128,0.33)";
       ctx.fillRect(
         g.layout_.getPlotArea().x,
         Math.min(startY, endY),
@@ -99,7 +99,7 @@ export const drawZoomRect = (
  * Clear the zoom rectangle (and perform no zoom).
  * @private
  */
-export const clearZoomRect = (g: Zgraph) => {
+export const clearZoomRect = (g: Zpgraph) => {
   g.currentZoomRectArgs_ = null;
   g.canvas_ctx_.clearRect(0, 0, g.width_, g.height_);
 };
@@ -114,7 +114,7 @@ export const clearZoomRect = (g: Zgraph) => {
  * @param highX The rightmost pixel value that should be visible.
  * @private
  */
-export const doZoomX = (g: Zgraph, lowX: number, highX: number) => {
+export const doZoomX = (g: Zpgraph, lowX: number, highX: number) => {
   g.currentZoomRectArgs_ = null;
   // Find the earliest and latest dates contained in this canvasx range.
   // Convert the call to date ranges of the raw data.
@@ -133,13 +133,13 @@ export const doZoomX = (g: Zgraph, lowX: number, highX: number) => {
  * @private
  */
 export const doZoomXDates = (
-  g: Zgraph,
+  g: Zpgraph,
   minDate: number | null,
   maxDate: number | null,
 ) => {
   const old_window = g.xAxisRange();
   const new_window: [number, number] = [minDate!, maxDate!];
-  const zoomCallback = g.getFunctionOption('zoomCallback');
+  const zoomCallback = g.getFunctionOption("zoomCallback");
   const that = g;
   doAnimatedZoom(
     g,
@@ -163,7 +163,7 @@ export const doZoomXDates = (
  * @param highY The lowest pixel value that should be visible.
  * @private
  */
-export const doZoomY = (g: Zgraph, lowY: number, highY: number) => {
+export const doZoomY = (g: Zpgraph, lowY: number, highY: number) => {
   g.currentZoomRectArgs_ = null;
   // Find the highest and lowest values in pixel range for each axis.
   // Note that lowY (in pixels) corresponds to the max Value (in data coords).
@@ -177,7 +177,7 @@ export const doZoomY = (g: Zgraph, lowY: number, highY: number) => {
     newValueRanges.push([low, hi]);
   }
 
-  const zoomCallback = g.getFunctionOption('zoomCallback');
+  const zoomCallback = g.getFunctionOption("zoomCallback");
   const that = g;
   doAnimatedZoom(
     g,
@@ -208,9 +208,9 @@ const zoomAnimationFunction = (frame: number, numFrames: number) => {
  * Reset the zoom to the original view coordinates. This is the same as
  * double-clicking on the graph.
  */
-export const resetZoom = (g: Zgraph) => {
-  const dirtyX = g.isZoomed('x');
-  const dirtyY = g.isZoomed('y');
+export const resetZoom = (g: Zpgraph) => {
+  const dirtyX = g.isZoomed("x");
+  const dirtyY = g.isZoomed("y");
   const dirty = dirtyX || dirtyY;
 
   // Clear any selection, since it's likely to be drawn in the wrong place.
@@ -221,8 +221,8 @@ export const resetZoom = (g: Zgraph) => {
   // Calculate extremes to avoid lack of padding on reset.
   const [minDate, maxDate] = g.xAxisExtremes();
 
-  const animatedZooms = g.getBooleanOption('animatedZooms');
-  const zoomCallback = g.getFunctionOption('zoomCallback');
+  const animatedZooms = g.getBooleanOption("animatedZooms");
+  const zoomCallback = g.getFunctionOption("zoomCallback");
 
   if (!animatedZooms) {
     g.dateWindow_ = null;
@@ -276,14 +276,14 @@ export const resetZoom = (g: Zgraph) => {
  * @private
  */
 export const doAnimatedZoom = (
-  g: Zgraph,
+  g: Zpgraph,
   oldXRange: [number, number] | null,
   newXRange: [number, number] | null,
   oldYRanges: Array<[number, number] | null> | null,
   newYRanges: Array<[number, number] | null> | null,
   callback: () => void,
 ) => {
-  const steps = g.getBooleanOption('animatedZooms') ? ANIMATION_STEPS : 1;
+  const steps = g.getBooleanOption("animatedZooms") ? ANIMATION_STEPS : 1;
 
   const windows: Array<[number, number]> = [];
   const valueRanges: Array<Array<[number, number] | null>> = [];

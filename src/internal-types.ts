@@ -7,7 +7,7 @@
  */
 
 /**
- * Internal types shared by zgraph core modules (layout, canvas, plugins,
+ * Internal types shared by zpgraph core modules (layout, canvas, plugins,
  * interaction). Not part of the public consumer API.
  */
 
@@ -17,8 +17,8 @@ import type {
   InteractionContext,
   Plugin,
   Point,
-  ZgraphOptions,
-} from './types';
+  ZpgraphOptions,
+} from "./types";
 
 /** Option lookup used by tickers, formatters, and per-series helpers. */
 export type OptionsGetter = (name: string, series?: string) => unknown;
@@ -31,7 +31,7 @@ export interface PlotArea {
   h: number;
 }
 
-/** X-axis normalization state built in `ZgraphLayout.evaluate()`. */
+/** X-axis normalization state built in `ZpgraphLayout.evaluate()`. */
 export interface XAxisLayoutState {
   minval: number;
   maxval: number;
@@ -68,12 +68,12 @@ export interface LayoutEventPayload {
 export type AxisTick = { v: number; label: string; label_v?: number };
 
 /**
- * Runtime y-axis object stored on `zgraph.axes_[i]`.
+ * Runtime y-axis object stored on `zpgraph.axes_[i]`.
  * Built in computeYAxes_ / computeYAxisRanges_ / layout._evaluateLimits.
  */
 export interface AxisProperties {
   /** Back-reference to the chart (set as `{ g: this }` in computeYAxes_). */
-  g?: ZgraphInstance;
+  g?: ZpgraphInstance;
   minyval?: number;
   maxyval?: number;
   yrange?: number;
@@ -105,7 +105,8 @@ export type RawData = RawDataRow[];
  */
 export type SeriesExtras = unknown;
 export type UnifiedSample =
-  [number, number | null] | [number, number | null, SeriesExtras];
+  | [number, number | null]
+  | [number, number | null, SeriesExtras];
 export type UnifiedSeries = UnifiedSample[];
 
 /** Minimal OptionsManager surface used by layout / interaction / datahandlers. */
@@ -181,7 +182,7 @@ export interface DataHandlerLike {
  * Chart instance surface for plugins, layout, canvas, and interaction.
  * Matches constructor-function style fields (trailing `_`) plus public methods.
  */
-export interface ZgraphInstance {
+export interface ZpgraphInstance {
   // --- fields accessed across modules ---
   width_: number;
   height_: number;
@@ -191,8 +192,8 @@ export interface ZgraphInstance {
   rollPeriod_: number;
   dateWindow_: [number, number] | null;
   annotations_: Annotation[];
-  attrs_: ZgraphOptions;
-  user_attrs_: ZgraphOptions;
+  attrs_: ZpgraphOptions;
+  user_attrs_: ZpgraphOptions;
   attributes_: OptionsManagerLike;
   layout_: LayoutLike;
   plotter_: PlotterLike;
@@ -289,7 +290,7 @@ export interface ZgraphInstance {
   ): { row: number; seriesName: string; point: Point };
 
   // --- zoom / draw (interaction + plugins) ---
-  isZoomed(axis?: 'x' | 'y' | null): boolean;
+  isZoomed(axis?: "x" | "y" | null): boolean;
   resetZoom(): void;
   doZoomX_(lowX: number, highX: number): void;
   doZoomXDates_(minDate: number, maxDate: number): void;
@@ -308,14 +309,14 @@ export interface ZgraphInstance {
   drawGraph_(force?: boolean): void;
 
   // --- public lifecycle ---
-  updateOptions(attrs: Partial<ZgraphOptions>, block_redraw?: boolean): void;
+  updateOptions(attrs: Partial<ZpgraphOptions>, block_redraw?: boolean): void;
   resize(width?: number, height?: number): void;
   adjustRoll(length: number): void;
   setVisibility(num: number | number[] | object, value?: boolean): void;
   size(): [number, number];
   setAnnotations(ann: Annotation[], suppressDraw?: boolean): void;
   annotations(): Annotation[];
-  ready(callback: (g: ZgraphInstance) => void): void;
+  ready(callback: (g: ZpgraphInstance) => void): void;
   destroy(): void;
   rollPeriod(): number;
   toString(): string;
@@ -327,13 +328,13 @@ export interface ZgraphInstance {
 /** Convenience alias for interaction callbacks that receive the chart. */
 export type ChartInteractionHandler = (
   event: Event,
-  g: ZgraphInstance,
+  g: ZpgraphInstance,
   context: InteractionContext,
 ) => void;
 
 /** Base payload merged into every plugin cascade event. */
 export interface PluginEventBase {
-  zgraph: ZgraphInstance;
+  zpgraph: ZpgraphInstance;
   cancelable: boolean;
   defaultPrevented: boolean;
   preventDefault(): void;
@@ -364,7 +365,7 @@ export interface SelectPluginEvent extends PluginEventBase {
   selectedPoints?: Point[];
 }
 
-/** Runtime plugin registration stored on `zgraph.plugins_`. */
+/** Runtime plugin registration stored on `zpgraph.plugins_`. */
 export interface PluginRegistration {
   plugin: Plugin;
   events: Record<string, (...args: unknown[]) => unknown>;

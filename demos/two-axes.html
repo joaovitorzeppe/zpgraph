@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Two y-axes · Zgraph</title>
+  <title>Two y-axes · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -27,10 +27,10 @@
   </div>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { makeDualAxisData } from './helpers.js';
 
-    const g = new Zgraph(document.getElementById('chart'), makeDualAxisData(), {
+    const g = new Zpgraph(document.getElementById('chart'), makeDualAxisData(), {
       labels: ['Date', 'Y1', 'Y2', 'Y3', 'Y4'],
       legend: 'always',
       ylabel: 'Primary',

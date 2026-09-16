@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -8,11 +8,11 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-/*global Zgraph:false */
+/*global Zpgraph:false */
 
-import * as utils from './utils';
-import type { InteractionContext, Point } from './types';
-import type { ZgraphInstance } from './internal-types';
+import * as utils from "./utils";
+import type { InteractionContext, Point } from "./types";
+import type { ZpgraphInstance } from "./internal-types";
 
 /**
  * You can drag this many pixels past the edge of the chart and still have it
@@ -72,7 +72,7 @@ interface DragContext extends InteractionContext {
  * A collection of functions to facilitate build custom interaction models.
  * @class
  */
-interface ZgraphInteractionModule {
+interface ZpgraphInteractionModule {
   maybeTreatMouseOpAsClick: (
     event: MouseEvent,
     g: unknown,
@@ -121,7 +121,7 @@ interface ZgraphInteractionModule {
   dragIsPanInteractionModel: Record<string, unknown>;
 }
 
-const ZgraphInteraction = {} as ZgraphInteractionModule;
+const ZpgraphInteraction = {} as ZpgraphInteractionModule;
 
 /**
  * Checks whether the beginning & ending of an event were close enough that it
@@ -132,7 +132,7 @@ const ZgraphInteraction = {} as ZgraphInteractionModule;
  * @param g
  * @param context
  */
-ZgraphInteraction.maybeTreatMouseOpAsClick = function (
+ZpgraphInteraction.maybeTreatMouseOpAsClick = function (
   event: MouseEvent,
   g: unknown,
   context: InteractionContext,
@@ -146,10 +146,10 @@ ZgraphInteraction.maybeTreatMouseOpAsClick = function (
   if (
     regionWidth < 2 &&
     regionHeight < 2 &&
-    (g as ZgraphInstance).lastx_ !== undefined &&
-    (g as ZgraphInstance).lastx_ !== null
+    (g as ZpgraphInstance).lastx_ !== undefined &&
+    (g as ZpgraphInstance).lastx_ !== null
   ) {
-    ZgraphInteraction.treatMouseOpAsClick(g, event, context);
+    ZpgraphInteraction.treatMouseOpAsClick(g, event, context);
   }
 
   drag.regionWidth = regionWidth;
@@ -165,23 +165,23 @@ ZgraphInteraction.maybeTreatMouseOpAsClick = function (
  * panning behavior.
  *
  * @param event the event object which led to the startPan call.
- * @param g The zgraph on which to act.
+ * @param g The zpgraph on which to act.
  * @param context The dragging context object (with
  *     dragStartX/dragStartY/etc. properties). This function modifies the
  *     context.
  */
-ZgraphInteraction.startPan = function (
+ZpgraphInteraction.startPan = function (
   event: MouseEvent,
   g: unknown,
   context: InteractionContext,
 ) {
-  const chart = g as ZgraphInstance;
+  const chart = g as ZpgraphInstance;
   const drag = context as DragContext;
   let i, axis;
   drag.isPanning = true;
   let xRange = chart.xAxisRange();
 
-  if (chart.getOptionForAxis('logscale', 'x')) {
+  if (chart.getOptionForAxis("logscale", "x")) {
     drag.initialLeftmostDate = utils.log10(xRange[0]);
     drag.dateRange = utils.log10(xRange[1]) - utils.log10(xRange[0]);
   } else {
@@ -190,9 +190,9 @@ ZgraphInteraction.startPan = function (
   }
   drag.xUnitsPerPixel = drag.dateRange / (chart.plotter_.area.w - 1);
 
-  if (chart.getNumericOption('panEdgeFraction')) {
+  if (chart.getNumericOption("panEdgeFraction")) {
     let maxXPixelsToDraw =
-      chart.width_ * chart.getNumericOption('panEdgeFraction');
+      chart.width_ * chart.getNumericOption("panEdgeFraction");
     let xExtremes = chart.xAxisExtremes(); // I REALLY WANT TO CALL THIS xTremes!
 
     let boundedLeftX = chart.toDomXCoord(xExtremes[0])! - maxXPixelsToDraw;
@@ -204,7 +204,7 @@ ZgraphInteraction.startPan = function (
 
     let boundedValues: Array<[number | null, number | null]> = [];
     let maxYPixelsToDraw =
-      chart.height_ * chart.getNumericOption('panEdgeFraction');
+      chart.height_ * chart.getNumericOption("panEdgeFraction");
 
     for (i = 0; i < chart.axes_.length; i++) {
       axis = chart.axes_[i]!;
@@ -243,7 +243,7 @@ ZgraphInteraction.startPan = function (
     let yRange = chart.yAxisRange(i);
     if (!yRange) continue;
     // In log scale, initialTopValue, dragValueRange and unitsPerPixel are log scale.
-    let logscale = chart.attributes_.getForAxis('logscale', i);
+    let logscale = chart.attributes_.getForAxis("logscale", i);
     if (logscale) {
       axis_data.initialTopValue = utils.log10(yRange[1]);
       axis_data.dragValueRange =
@@ -270,17 +270,17 @@ ZgraphInteraction.startPan = function (
  * panning behavior.
  *
  * @param event the event object which led to the movePan call.
- * @param g The zgraph on which to act.
+ * @param g The zpgraph on which to act.
  * @param context The dragging context object (with
  *     dragStartX/dragStartY/etc. properties). This function modifies the
  *     context.
  */
-ZgraphInteraction.movePan = function (
+ZpgraphInteraction.movePan = function (
   event: MouseEvent,
   g: unknown,
   context: InteractionContext,
 ) {
-  const chart = g as ZgraphInstance;
+  const chart = g as ZpgraphInstance;
   const drag = context as DragContext;
   drag.dragEndX = utils.dragGetX_(event, context);
   drag.dragEndY = utils.dragGetY_(event, context);
@@ -302,7 +302,7 @@ ZgraphInteraction.movePan = function (
     }
   }
 
-  if (chart.getOptionForAxis('logscale', 'x')) {
+  if (chart.getOptionForAxis("logscale", "x")) {
     chart.dateWindow_ = [
       Math.pow(utils.LOG_SCALE, minDate),
       Math.pow(utils.LOG_SCALE, maxDate),
@@ -338,7 +338,7 @@ ZgraphInteraction.movePan = function (
           minValue = maxValue - axis_data.dragValueRange;
         }
       }
-      if (chart.attributes_.getForAxis('logscale', i)) {
+      if (chart.attributes_.getForAxis("logscale", i)) {
         axis.valueRange = [
           Math.pow(utils.LOG_SCALE, minValue),
           Math.pow(utils.LOG_SCALE, maxValue),
@@ -361,12 +361,12 @@ ZgraphInteraction.movePan = function (
  * panning behavior.
  *
  * @param event the event object which led to the endPan call.
- * @param g The zgraph on which to act.
+ * @param g The zpgraph on which to act.
  * @param context The dragging context object (with
  *     dragStartX/dragStartY/etc. properties). This function modifies the
  *     context.
  */
-ZgraphInteraction.endPan = ZgraphInteraction.maybeTreatMouseOpAsClick;
+ZpgraphInteraction.endPan = ZpgraphInteraction.maybeTreatMouseOpAsClick;
 
 /**
  * Called in response to an interaction model operation that
@@ -377,12 +377,12 @@ ZgraphInteraction.endPan = ZgraphInteraction.maybeTreatMouseOpAsClick;
  * zooming behavior.
  *
  * @param event the event object which led to the startZoom call.
- * @param g The zgraph on which to act.
+ * @param g The zpgraph on which to act.
  * @param context The dragging context object (with
  *     dragStartX/dragStartY/etc. properties). This function modifies the
  *     context.
  */
-ZgraphInteraction.startZoom = function (
+ZpgraphInteraction.startZoom = function (
   _event: MouseEvent,
   _g: unknown,
   context: InteractionContext,
@@ -401,17 +401,17 @@ ZgraphInteraction.startZoom = function (
  * zooming behavior.
  *
  * @param event the event object which led to the moveZoom call.
- * @param g The zgraph on which to act.
+ * @param g The zpgraph on which to act.
  * @param context The dragging context object (with
  *     dragStartX/dragStartY/etc. properties). This function modifies the
  *     context.
  */
-ZgraphInteraction.moveZoom = function (
+ZpgraphInteraction.moveZoom = function (
   event: MouseEvent,
   g: unknown,
   context: InteractionContext,
 ) {
-  const chart = g as ZgraphInstance;
+  const chart = g as ZpgraphInstance;
   const drag = context as DragContext;
   drag.zoomMoved = true;
   drag.dragEndX = utils.dragGetX_(event, context);
@@ -444,15 +444,15 @@ ZgraphInteraction.moveZoom = function (
  * @param event
  * @param context
  */
-ZgraphInteraction.treatMouseOpAsClick = function (
+ZpgraphInteraction.treatMouseOpAsClick = function (
   g: unknown,
   event: MouseEvent,
   context: InteractionContext,
 ) {
-  const chart = g as ZgraphInstance;
+  const chart = g as ZpgraphInstance;
   const drag = context as DragContext;
-  let clickCallback = chart.getFunctionOption('clickCallback');
-  let pointClickCallback = chart.getFunctionOption('pointClickCallback');
+  let clickCallback = chart.getFunctionOption("clickCallback");
+  let pointClickCallback = chart.getFunctionOption("pointClickCallback");
 
   let selectedPoint: Point | null = null;
 
@@ -473,7 +473,7 @@ ZgraphInteraction.treatMouseOpAsClick = function (
   }
 
   // Allow any click within two pixels of the dot.
-  let radius = chart.getNumericOption('highlightCircleSize') + 2;
+  let radius = chart.getNumericOption("highlightCircleSize") + 2;
   if (closestDistance <= radius * radius) {
     selectedPoint = chart.selPoints_[closestIdx] ?? null;
   }
@@ -485,7 +485,7 @@ ZgraphInteraction.treatMouseOpAsClick = function (
       canvasx: drag.dragEndX!,
       canvasy: drag.dragEndY!,
     };
-    let defaultPrevented = chart.cascadeEvents_('pointClick', e);
+    let defaultPrevented = chart.cascadeEvents_("pointClick", e);
     if (defaultPrevented) {
       // Note: this also prevents click / clickCallback from firing.
       return;
@@ -502,7 +502,7 @@ ZgraphInteraction.treatMouseOpAsClick = function (
     canvasx: drag.dragEndX!,
     canvasy: drag.dragEndY!,
   };
-  if (!chart.cascadeEvents_('click', e)) {
+  if (!chart.cascadeEvents_("click", e)) {
     if (clickCallback) {
       clickCallback.call(chart, event, chart.lastx_, chart.selPoints_);
     }
@@ -519,25 +519,25 @@ ZgraphInteraction.treatMouseOpAsClick = function (
  * zooming behavior.
  *
  * @param event the event object which led to the endZoom call.
- * @param g The zgraph on which to end the zoom.
+ * @param g The zpgraph on which to end the zoom.
  * @param context The dragging context object (with
  *     dragStartX/dragStartY/etc. properties). This function modifies the
  *     context.
  */
-ZgraphInteraction.endZoom = function (
+ZpgraphInteraction.endZoom = function (
   event: MouseEvent,
   g: unknown,
   context: InteractionContext,
 ) {
-  const chart = g as ZgraphInstance;
+  const chart = g as ZpgraphInstance;
   const drag = context as DragContext;
   chart.clearZoomRect_();
   drag.isZooming = false;
-  ZgraphInteraction.maybeTreatMouseOpAsClick(event, g, context);
+  ZpgraphInteraction.maybeTreatMouseOpAsClick(event, g, context);
 
   // The zoom rectangle is visibly clipped to the plot area, so its behavior
   // should be as well.
-  // See https://code.google.com/archive/p/zgraph/issues/280
+  // See https://code.google.com/archive/p/zpgraph/issues/280
   let plotArea = chart.getArea();
   if (drag.regionWidth >= 10 && drag.dragDirection === utils.HORIZONTAL) {
     let left = Math.min(drag.dragStartX!, drag.dragEndX!),
@@ -565,13 +565,13 @@ ZgraphInteraction.endZoom = function (
 /**
  * @private
  */
-ZgraphInteraction.startTouch = function (
+ZpgraphInteraction.startTouch = function (
   event: TouchEvent,
   g: unknown,
   context: InteractionContext,
 ) {
   const drag = context as DragContext;
-  const chart = g as ZgraphInstance;
+  const chart = g as ZpgraphInstance;
   event.preventDefault(); // touch browsers are all nice.
   if (event.touches.length > 1) {
     // If the user ever puts two fingers down, it's not a double tap.
@@ -638,12 +638,12 @@ ZgraphInteraction.startTouch = function (
 /**
  * @private
  */
-ZgraphInteraction.moveTouch = function (
+ZpgraphInteraction.moveTouch = function (
   event: TouchEvent,
   g: unknown,
   context: InteractionContext,
 ) {
-  const chart = g as ZgraphInstance;
+  const chart = g as ZpgraphInstance;
   const drag = context as DragContext;
   // If the tap moves, then it's definitely not part of a double-tap.
   drag.startTimeForDoubleTapMs = null;
@@ -724,7 +724,7 @@ ZgraphInteraction.moveTouch = function (
   if (drag.touchDirections!.y) {
     for (i = 0; i < 1 /*chart.axes_.length*/; i++) {
       let axis = chart.axes_[i]!;
-      let logscale = chart.attributes_.getForAxis('logscale', i);
+      let logscale = chart.attributes_.getForAxis("logscale", i);
       if (logscale) {
         // Log-scale y pinch zoom not implemented yet.
       } else {
@@ -744,11 +744,11 @@ ZgraphInteraction.moveTouch = function (
   if (
     didZoom &&
     touches.length > 1 &&
-    chart.getFunctionOption('zoomCallback')
+    chart.getFunctionOption("zoomCallback")
   ) {
     let viewWindow = chart.xAxisRange();
     chart
-      .getFunctionOption('zoomCallback')
+      .getFunctionOption("zoomCallback")
       .call(chart, viewWindow[0], viewWindow[1], chart.yAxisRanges());
   }
 };
@@ -756,7 +756,7 @@ ZgraphInteraction.moveTouch = function (
 /**
  * @private
  */
-ZgraphInteraction.endTouch = function (
+ZpgraphInteraction.endTouch = function (
   event: TouchEvent,
   g: unknown,
   context: InteractionContext,
@@ -764,7 +764,7 @@ ZgraphInteraction.endTouch = function (
   const drag = context as DragContext;
   if (event.touches.length !== 0) {
     // this is effectively a "reset"
-    ZgraphInteraction.startTouch(event, g, context);
+    ZpgraphInteraction.startTouch(event, g, context);
   } else if (event.changedTouches.length === 1) {
     // Could be part of a "double tap"
     // The heuristic here is that it's a double-tap if the two touchend events
@@ -779,7 +779,7 @@ ZgraphInteraction.endTouch = function (
       drag.doubleTapY &&
       Math.abs(drag.doubleTapY - t.screenY) < 50
     ) {
-      (g as ZgraphInstance).resetZoom();
+      (g as ZpgraphInstance).resetZoom();
     } else {
       drag.startTimeForDoubleTapMs = now;
       drag.doubleTapX = t.screenX;
@@ -803,7 +803,7 @@ let distanceFromInterval = function (x: number, left: number, right: number) {
  * Returns the number of pixels by which the event happens from the nearest
  * edge of the chart. For events in the interior of the chart, this returns zero.
  */
-let distanceFromChart = function (event: MouseEvent, g: ZgraphInstance) {
+let distanceFromChart = function (event: MouseEvent, g: ZpgraphInstance) {
   let chartPos = utils.findPos(g.canvas_);
   let box = {
     left: chartPos.x,
@@ -823,22 +823,22 @@ let distanceFromChart = function (event: MouseEvent, g: ZgraphInstance) {
 };
 
 /**
- * Default interation model for zgraph. You can refer to specific elements of
+ * Default interation model for zpgraph. You can refer to specific elements of
  * this when constructing your own interaction model, e.g.:
  * g.updateOptions( {
  *   interactionModel: {
- *     mousedown: ZgraphInteraction.defaultInteractionModel.mousedown
+ *     mousedown: ZpgraphInteraction.defaultInteractionModel.mousedown
  *   }
  * } );
  */
-ZgraphInteraction.defaultModel = {
+ZpgraphInteraction.defaultModel = {
   // Track the beginning of drag events
   mousedown: function (
     event: MouseEvent,
     g: unknown,
     context: InteractionContext,
   ) {
-    const chart = g as ZgraphInstance;
+    const chart = g as ZpgraphInstance;
     const drag = context as DragContext;
     // Right-click should not initiate a zoom.
     if (event.button && event.button === 2) return;
@@ -846,9 +846,9 @@ ZgraphInteraction.defaultModel = {
     context.initializeMouseDown(event, g, context);
 
     if (event.altKey || event.shiftKey) {
-      ZgraphInteraction.startPan(event, g, context);
+      ZpgraphInteraction.startPan(event, g, context);
     } else {
-      ZgraphInteraction.startZoom(event, g, context);
+      ZpgraphInteraction.startZoom(event, g, context);
     }
 
     // Note: we register mousemove/mouseup on document to allow some leeway for
@@ -863,7 +863,7 @@ ZgraphInteraction.defaultModel = {
         // When the mouse moves >200px from the chart edge, cancel the zoom.
         let d = distanceFromChart(moveEvent, chart);
         if (d < DRAG_EDGE_MARGIN) {
-          ZgraphInteraction.moveZoom(moveEvent, g, context);
+          ZpgraphInteraction.moveZoom(moveEvent, g, context);
         } else {
           if (drag.dragEndX !== null) {
             drag.dragEndX = null;
@@ -872,7 +872,7 @@ ZgraphInteraction.defaultModel = {
           }
         }
       } else if (drag.isPanning) {
-        ZgraphInteraction.movePan(moveEvent, g, context);
+        ZpgraphInteraction.movePan(moveEvent, g, context);
       }
     } as (...args: unknown[]) => void);
     let mouseup = function (upEvent: MouseEvent) {
@@ -881,21 +881,21 @@ ZgraphInteraction.defaultModel = {
       mousemove.flush();
       if (drag.isZooming) {
         if (drag.dragEndX !== null) {
-          ZgraphInteraction.endZoom(upEvent, g, context);
+          ZpgraphInteraction.endZoom(upEvent, g, context);
         } else {
-          ZgraphInteraction.maybeTreatMouseOpAsClick(upEvent, g, context);
+          ZpgraphInteraction.maybeTreatMouseOpAsClick(upEvent, g, context);
         }
       } else if (drag.isPanning) {
-        ZgraphInteraction.endPan(upEvent, g, context);
+        ZpgraphInteraction.endPan(upEvent, g, context);
       }
 
-      utils.removeEvent(document, 'mousemove', mousemove as EventListener);
-      utils.removeEvent(document, 'mouseup', mouseup as EventListener);
+      utils.removeEvent(document, "mousemove", mousemove as EventListener);
+      utils.removeEvent(document, "mouseup", mouseup as EventListener);
       (context.destroy as () => void)();
     };
 
-    chart.addAndTrackEvent(document, 'mousemove', mousemove as EventListener);
-    chart.addAndTrackEvent(document, 'mouseup', mouseup as EventListener);
+    chart.addAndTrackEvent(document, "mousemove", mousemove as EventListener);
+    chart.addAndTrackEvent(document, "mouseup", mouseup as EventListener);
   },
   willDestroyContextMyself: true,
 
@@ -904,21 +904,21 @@ ZgraphInteraction.defaultModel = {
     g: unknown,
     context: InteractionContext,
   ) {
-    ZgraphInteraction.startTouch(event, g, context);
+    ZpgraphInteraction.startTouch(event, g, context);
   },
   touchmove: function (
     event: TouchEvent,
     g: unknown,
     context: InteractionContext,
   ) {
-    ZgraphInteraction.moveTouch(event, g, context);
+    ZpgraphInteraction.moveTouch(event, g, context);
   },
   touchend: function (
     event: TouchEvent,
     g: unknown,
     context: InteractionContext,
   ) {
-    ZgraphInteraction.endTouch(event, g, context);
+    ZpgraphInteraction.endTouch(event, g, context);
   },
 
   // Disable zooming out if panning.
@@ -927,7 +927,7 @@ ZgraphInteraction.defaultModel = {
     g: unknown,
     context: InteractionContext,
   ) {
-    const chart = g as ZgraphInstance;
+    const chart = g as ZpgraphInstance;
     const drag = context as DragContext;
     if (drag.cancelNextDblclick) {
       drag.cancelNextDblclick = false;
@@ -940,7 +940,7 @@ ZgraphInteraction.defaultModel = {
       canvasy: drag.dragEndY,
       cancelable: true,
     };
-    if (chart.cascadeEvents_('dblclick', e)) {
+    if (chart.cascadeEvents_("dblclick", e)) {
       return;
     }
 
@@ -952,19 +952,19 @@ ZgraphInteraction.defaultModel = {
 };
 
 /*
-Zgraph.DEFAULT_ATTRS.interactionModel = ZgraphInteraction.defaultModel;
+Zpgraph.DEFAULT_ATTRS.interactionModel = ZpgraphInteraction.defaultModel;
 
 // old ways of accessing these methods/properties
-Zgraph.defaultInteractionModel = ZgraphInteraction.defaultModel;
-Zgraph.endZoom = ZgraphInteraction.endZoom;
-Zgraph.moveZoom = ZgraphInteraction.moveZoom;
-Zgraph.startZoom = ZgraphInteraction.startZoom;
-Zgraph.endPan = ZgraphInteraction.endPan;
-Zgraph.movePan = ZgraphInteraction.movePan;
-Zgraph.startPan = ZgraphInteraction.startPan;
+Zpgraph.defaultInteractionModel = ZpgraphInteraction.defaultModel;
+Zpgraph.endZoom = ZpgraphInteraction.endZoom;
+Zpgraph.moveZoom = ZpgraphInteraction.moveZoom;
+Zpgraph.startZoom = ZpgraphInteraction.startZoom;
+Zpgraph.endPan = ZpgraphInteraction.endPan;
+Zpgraph.movePan = ZpgraphInteraction.movePan;
+Zpgraph.startPan = ZpgraphInteraction.startPan;
 */
 
-ZgraphInteraction.nonInteractiveModel_ = {
+ZpgraphInteraction.nonInteractiveModel_ = {
   mousedown: function (
     event: MouseEvent,
     g: unknown,
@@ -972,18 +972,18 @@ ZgraphInteraction.nonInteractiveModel_ = {
   ) {
     context.initializeMouseDown(event, g, context);
   },
-  mouseup: ZgraphInteraction.maybeTreatMouseOpAsClick,
+  mouseup: ZpgraphInteraction.maybeTreatMouseOpAsClick,
 };
 
 // Default interaction model when using the range selector.
-ZgraphInteraction.dragIsPanInteractionModel = {
+ZpgraphInteraction.dragIsPanInteractionModel = {
   mousedown: function (
     event: MouseEvent,
     g: unknown,
     context: InteractionContext,
   ) {
     context.initializeMouseDown(event, g, context);
-    ZgraphInteraction.startPan(event, g, context);
+    ZpgraphInteraction.startPan(event, g, context);
   },
   mousemove: function (
     event: MouseEvent,
@@ -991,7 +991,7 @@ ZgraphInteraction.dragIsPanInteractionModel = {
     context: InteractionContext,
   ) {
     if ((context as DragContext).isPanning) {
-      ZgraphInteraction.movePan(event, g, context);
+      ZpgraphInteraction.movePan(event, g, context);
     }
   },
   mouseup: function (
@@ -1000,9 +1000,9 @@ ZgraphInteraction.dragIsPanInteractionModel = {
     context: InteractionContext,
   ) {
     if ((context as DragContext).isPanning) {
-      ZgraphInteraction.endPan(event, g, context);
+      ZpgraphInteraction.endPan(event, g, context);
     }
   },
 };
 
-export default ZgraphInteraction;
+export default ZpgraphInteraction;

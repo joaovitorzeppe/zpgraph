@@ -11,9 +11,9 @@
  * how it is found from a coordinate, and how the highlight is drawn and faded.
  */
 
-import * as utils from './utils';
-import type { Point } from './types';
-import type Zgraph from './zgraph';
+import * as utils from "./utils";
+import type { Point } from "./types";
+import type Zpgraph from "./zpgraph";
 
 /**
  * Given a canvas X coordinate, find the closest row.
@@ -21,7 +21,7 @@ import type Zgraph from './zgraph';
  * Returns {number} row number.
  * @private
  */
-export const findClosestRow = (g: Zgraph, domX: number) => {
+export const findClosestRow = (g: Zpgraph, domX: number) => {
   let minDistX = Infinity;
   let closestRow = -1;
   let sets = g.layout_.points;
@@ -74,7 +74,7 @@ export const findClosestRow = (g: Zgraph, domX: number) => {
  * Returns: {row, seriesName, point}
  * @private
  */
-export const findClosestPoint = (g: Zgraph, domX: number, domY = 0) => {
+export const findClosestPoint = (g: Zpgraph, domX: number, domY = 0) => {
   let minDist = Infinity;
   let dist: number;
   let dx: number;
@@ -118,7 +118,7 @@ export const findClosestPoint = (g: Zgraph, domX: number, domY = 0) => {
  * Returns: {row, seriesName, point}
  * @private
  */
-export const findStackedPoint = (g: Zgraph, domX: number, domY: number) => {
+export const findStackedPoint = (g: Zpgraph, domX: number, domY: number) => {
   let row = findClosestRow(g, domX);
   let closestPoint: Point | undefined;
   let closestSeries: number | undefined;
@@ -172,7 +172,7 @@ export const findStackedPoint = (g: Zgraph, domX: number, domY: number) => {
  * @param event The mousemove event from the browser.
  * @private
  */
-export const mouseMove = (g: Zgraph, event: MouseEvent) => {
+export const mouseMove = (g: Zpgraph, event: MouseEvent) => {
   // This prevents JS errors when mousing over the canvas before data loads.
   let points = g.layout_.points;
   if (points === undefined || points === null) return;
@@ -181,11 +181,11 @@ export const mouseMove = (g: Zgraph, event: MouseEvent) => {
   let canvasx = canvasCoords[0]!;
   let canvasy = canvasCoords[1]!;
 
-  let highlightSeriesOpts = g.getOption('highlightSeriesOpts');
+  let highlightSeriesOpts = g.getOption("highlightSeriesOpts");
   let selectionChanged = false;
   if (highlightSeriesOpts && !g.isSeriesLocked()) {
     let closest;
-    if (g.getBooleanOption('stackedGraph')) {
+    if (g.getBooleanOption("stackedGraph")) {
       closest = findStackedPoint(g, canvasx, canvasy);
     } else {
       closest = findClosestPoint(g, canvasx, canvasy);
@@ -196,7 +196,7 @@ export const mouseMove = (g: Zgraph, event: MouseEvent) => {
     selectionChanged = setSelection(g, idx);
   }
 
-  let callback = g.getFunctionOption('highlightCallback');
+  let callback = g.getFunctionOption("highlightCallback");
   if (callback && selectionChanged) {
     callback.call(
       g,
@@ -214,7 +214,7 @@ export const mouseMove = (g: Zgraph, event: MouseEvent) => {
  * first defined boundaryIds record (see bug #236).
  * @private
  */
-export const getLeftBoundary = (g: Zgraph, setIdx: number) => {
+export const getLeftBoundary = (g: Zpgraph, setIdx: number) => {
   if (g.boundaryIds_[setIdx]) {
     return g.boundaryIds_[setIdx]![0];
   } else {
@@ -227,7 +227,7 @@ export const getLeftBoundary = (g: Zgraph, setIdx: number) => {
   }
 };
 
-export const animateSelection = (g: Zgraph, direction: number) => {
+export const animateSelection = (g: Zpgraph, direction: number) => {
   let totalSteps = 10;
   let millis = 30;
   if (g.fadeLevel === undefined) g.fadeLevel = 0;
@@ -267,9 +267,9 @@ export const animateSelection = (g: Zgraph, direction: number) => {
  * takes care of cleanup of previously-drawn dots.
  * @private
  */
-export const updateSelection = (g: Zgraph, opt_animFraction?: number) => {
+export const updateSelection = (g: Zpgraph, opt_animFraction?: number) => {
   /*let defaultPrevented = */
-  g.cascadeEvents_('select', {
+  g.cascadeEvents_("select", {
     selectedRow: g.lastRow_ === -1 ? undefined : g.lastRow_,
     selectedX: g.lastx_ === null ? undefined : g.lastx_,
     selectedPoints: g.selPoints_,
@@ -278,17 +278,17 @@ export const updateSelection = (g: Zgraph, opt_animFraction?: number) => {
   // Clear the previously drawn vertical, if there is one
   let i;
   let ctx = g.canvas_ctx_;
-  if (g.getOption('highlightSeriesOpts')) {
+  if (g.getOption("highlightSeriesOpts")) {
     ctx.clearRect(0, 0, g.width_, g.height_);
-    let alpha = 1.0 - g.getNumericOption('highlightSeriesBackgroundAlpha');
+    let alpha = 1.0 - g.getNumericOption("highlightSeriesBackgroundAlpha");
     let backgroundColor = utils.toRGB_(
-      g.getOption('highlightSeriesBackgroundColor') as string,
+      g.getOption("highlightSeriesBackgroundColor") as string,
     );
 
     if (alpha) {
       // Activating background fade includes an animation effect for a gradual
       // fade. Controlled by animateBackgroundFade.
-      let animateBackgroundFade = g.getBooleanOption('animateBackgroundFade');
+      let animateBackgroundFade = g.getBooleanOption("animateBackgroundFade");
       if (animateBackgroundFade) {
         if (opt_animFraction === undefined) {
           // start a new animation
@@ -298,15 +298,15 @@ export const updateSelection = (g: Zgraph, opt_animFraction?: number) => {
         alpha *= opt_animFraction;
       }
       ctx.fillStyle =
-        'rgba(' +
+        "rgba(" +
         backgroundColor!.r +
-        ',' +
+        "," +
         backgroundColor!.g +
-        ',' +
+        "," +
         backgroundColor!.b +
-        ',' +
+        "," +
         alpha +
-        ')';
+        ")";
       ctx.fillRect(0, 0, g.width_, g.height_);
     }
 
@@ -316,9 +316,9 @@ export const updateSelection = (g: Zgraph, opt_animFraction?: number) => {
   } else if (g.previousVerticalX_ >= 0) {
     // Determine the maximum highlight circle size.
     let maxCircleSize = 0;
-    let labels = g.attr_('labels') as string[];
+    let labels = g.attr_("labels") as string[];
     for (i = 1; i < labels.length; i++) {
-      let r = g.getNumericOption('highlightCircleSize', labels[i]!);
+      let r = g.getNumericOption("highlightCircleSize", labels[i]!);
       if (r > maxCircleSize) maxCircleSize = r;
     }
     let px = g.previousVerticalX_;
@@ -333,16 +333,16 @@ export const updateSelection = (g: Zgraph, opt_animFraction?: number) => {
       const pt = g.selPoints_[i]!;
       if (isNaN(pt.canvasy!)) continue;
 
-      let circleSize = g.getNumericOption('highlightCircleSize', pt.name);
+      let circleSize = g.getNumericOption("highlightCircleSize", pt.name);
       let callback = g.getFunctionOption(
-        'drawHighlightPointCallback',
+        "drawHighlightPointCallback",
         pt.name,
       ) as typeof utils.Circles.DEFAULT | undefined;
-      const color = g.plotter_.colors[pt.name] ?? '#000';
+      const color = g.plotter_.colors[pt.name] ?? "#000";
       if (!callback) {
         callback = utils.Circles.DEFAULT;
       }
-      ctx.lineWidth = g.getNumericOption('strokeWidth', pt.name);
+      ctx.lineWidth = g.getNumericOption("strokeWidth", pt.name);
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
       callback.call(
@@ -382,7 +382,7 @@ export const updateSelection = (g: Zgraph, opt_animFraction?: number) => {
  * user-defined highlightCallback if highlightCallback has been set.
  */
 export const setSelection = (
-  g: Zgraph,
+  g: Zpgraph,
   row: number | number[] | false,
   opt_seriesName?: string | null,
   opt_locked?: boolean,
@@ -392,7 +392,7 @@ export const setSelection = (
   g.selPoints_ = [];
 
   let changed = false;
-  if (row !== false && typeof row === 'number' && row >= 0) {
+  if (row !== false && typeof row === "number" && row >= 0) {
     const selectedRow: number = row;
     if (selectedRow !== g.lastRow_) changed = true;
     g.lastRow_ = selectedRow;
@@ -445,7 +445,7 @@ export const setSelection = (
     updateSelection(g, undefined);
 
     if (opt_trigger_highlight_callback) {
-      let callback = g.getFunctionOption('highlightCallback');
+      let callback = g.getFunctionOption("highlightCallback");
       if (callback) {
         const event = {} as MouseEvent;
         callback.call(
@@ -467,12 +467,12 @@ export const setSelection = (
  * @param event the mouseout event from the browser.
  * @private
  */
-export const mouseOut = (g: Zgraph, event: MouseEvent) => {
-  if (g.getFunctionOption('unhighlightCallback')) {
-    g.getFunctionOption('unhighlightCallback').call(g, event);
+export const mouseOut = (g: Zpgraph, event: MouseEvent) => {
+  if (g.getFunctionOption("unhighlightCallback")) {
+    g.getFunctionOption("unhighlightCallback").call(g, event);
   }
 
-  if (g.getBooleanOption('hideOverlayOnMouseOut') && !g.lockedSet_) {
+  if (g.getBooleanOption("hideOverlayOnMouseOut") && !g.lockedSet_) {
     clearSelection(g);
   }
 };
@@ -481,8 +481,8 @@ export const mouseOut = (g: Zgraph, event: MouseEvent) => {
  * Clears the current selection (i.e. points that were highlighted by moving
  * the mouse over the chart).
  */
-export const clearSelection = (g: Zgraph) => {
-  g.cascadeEvents_('deselect', {});
+export const clearSelection = (g: Zpgraph) => {
+  g.cascadeEvents_("deselect", {});
 
   g.lockedSet_ = false;
   // Get rid of the overlay data
@@ -503,7 +503,7 @@ export const clearSelection = (g: Zgraph) => {
  * you can use the getValue method.
  * @return row number, or -1 if nothing is selected
  */
-export const getSelection = (g: Zgraph) => {
+export const getSelection = (g: Zpgraph) => {
   if (!g.selPoints_ || g.selPoints_.length < 1) {
     return -1;
   }

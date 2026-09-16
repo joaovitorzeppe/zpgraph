@@ -8,19 +8,19 @@
 
 /**
  * @fileoverview
- * Including this file will add several additional shapes to Zgraph.Circles
+ * Including this file will add several additional shapes to Zpgraph.Circles
  * which can be passed to drawPointCallback.
  * See tests/custom-circles.html for usage.
  */
 
-import ZgraphImport from 'zpgraph';
-import type { DrawPointCallback } from '../types';
+import ZpgraphImport from "zpgraph";
+import type { DrawPointCallback } from "../types";
 
-type ZgraphCirclesHost = {
+type ZpgraphCirclesHost = {
   Circles: Record<string, DrawPointCallback> & { DEFAULT: DrawPointCallback };
 };
 
-const Zgraph = ZgraphImport as ZgraphCirclesHost;
+const Zpgraph = ZpgraphImport as ZpgraphCirclesHost;
 
 /**
  * @param ctx the canvas context
@@ -76,7 +76,7 @@ const shapeFunction = (
 ): DrawPointCallback => {
   return (_g, _name, ctx, cx, cy, color, radius) => {
     ctx.strokeStyle = color;
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = "white";
     regularShape(ctx, sides, radius, cx, cy, rotationRadians, delta);
   };
 };
@@ -90,7 +90,7 @@ const customCircles: Record<string, DrawPointCallback> = {
   CIRCLE: (_g, _name, ctx, cx, cy, color, radius) => {
     ctx.beginPath();
     ctx.strokeStyle = color;
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = "white";
     ctx.arc(cx, cy, radius, 0, 2 * Math.PI, false);
     ctx.fill();
     ctx.stroke();
@@ -130,7 +130,7 @@ const customCircles: Record<string, DrawPointCallback> = {
 
 for (const k in customCircles) {
   if (!Object.hasOwn(customCircles, k)) continue;
-  Zgraph.Circles[k] = customCircles[k]!;
+  Zpgraph.Circles[k] = customCircles[k]!;
 }
 
-export default Zgraph.Circles;
+export default Zpgraph.Circles;

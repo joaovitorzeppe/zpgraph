@@ -7,24 +7,24 @@
  */
 
 /**
- * Browser IIFE entry: attach constructor to window.Zgraph.
+ * Browser IIFE entry: attach constructor to window.Zpgraph.
  * Injects base stylesheet once (script-tag users have no CSS bundler).
  */
-import Zgraph from './zgraph';
-import cssText from './style.css';
+import Zpgraph from "./zpgraph";
+import cssText from "./style.css";
 
 function injectStylesheet(css: string) {
-  if (typeof document === 'undefined') return;
-  if (document.getElementById('zgraph-stylesheet')) return;
-  const style = document.createElement('style');
-  style.id = 'zgraph-stylesheet';
+  if (typeof document === "undefined") return;
+  if (document.getElementById("zpgraph-stylesheet")) return;
+  const style = document.createElement("style");
+  style.id = "zpgraph-stylesheet";
   style.textContent = css;
   document.head.appendChild(style);
 }
 
 injectStylesheet(cssText as unknown as string);
 
-const g = globalThis as typeof globalThis & { Zgraph?: typeof Zgraph };
-g.Zgraph = Zgraph;
+const g = globalThis as typeof globalThis & { Zpgraph?: typeof Zpgraph };
+g.Zpgraph = Zpgraph;
 
-export default Zgraph;
+export default Zpgraph;

@@ -6,14 +6,14 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZgraphImport from 'zpgraph';
-import type { PlotterEvent } from '../types';
+import ZpgraphImport from "zpgraph";
+import type { PlotterEvent } from "../types";
 
-type ZgraphExtrasHost = typeof ZgraphImport & {
+type ZpgraphExtrasHost = typeof ZpgraphImport & {
   smoothPlotter: typeof smoothPlotter;
 };
 
-const Zgraph = ZgraphImport as ZgraphExtrasHost;
+const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
 
 interface CanvasPoint {
   x: number;
@@ -157,11 +157,11 @@ function smoothPlotter(e: PlotterEvent) {
 smoothPlotter.smoothing = 1 / 3;
 smoothPlotter._getControlPoints = getControlPoints; // for testing
 
-// Preferred: Zgraph.smoothPlotter. Global kept for older demos.
-if (typeof window !== 'undefined') {
+// Preferred: Zpgraph.smoothPlotter. Global kept for older demos.
+if (typeof window !== "undefined") {
   (window as unknown as { smoothPlotter: typeof smoothPlotter }).smoothPlotter =
     smoothPlotter;
 }
-Zgraph.smoothPlotter = smoothPlotter;
+Zpgraph.smoothPlotter = smoothPlotter;
 
-export default Zgraph.smoothPlotter;
+export default Zpgraph.smoothPlotter;

@@ -8,24 +8,24 @@
     "graph",
     "timeseries",
     "visualization",
-    "zgraph",
+    "zpgraph",
     "dygraphs",
     "zpgraph"
   ],
   "license": "MIT",
   "author": "João Vitor Zeppe <zeppejoaovitor@gmail.com>",
-  "homepage": "https://github.com/joaovitorzeppe/zgraph#readme",
+  "homepage": "https://github.com/joaovitorzeppe/zpgraph#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/joaovitorzeppe/zgraph.git"
+    "url": "git+https://github.com/joaovitorzeppe/zpgraph.git"
   },
   "bugs": {
-    "url": "https://github.com/joaovitorzeppe/zgraph/issues"
+    "url": "https://github.com/joaovitorzeppe/zpgraph/issues"
   },
   "type": "module",
   "sideEffects": [
     "**/*.css",
-    "./dist/zgraph.min.global.js"
+    "./dist/zpgraph.min.global.js"
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

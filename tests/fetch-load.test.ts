@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Zgraph } from '../src/index';
-import { mockCanvas, mountDiv } from './helpers';
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Zpgraph } from "../src/index";
+import { mockCanvas, mountDiv } from "./helpers";
 
-describe('Zgraph URL data load via fetch', () => {
+describe("Zpgraph URL data load via fetch", () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
     mockCanvas();
   });
 
@@ -13,10 +13,10 @@ describe('Zgraph URL data load via fetch', () => {
     vi.restoreAllMocks();
   });
 
-  it('loads CSV from URL with fetch', async () => {
-    const csv = 'X,A,B\n1,10,20\n2,15,25\n';
+  it("loads CSV from URL with fetch", async () => {
+    const csv = "X,A,B\n1,10,20\n2,15,25\n";
     vi.stubGlobal(
-      'fetch',
+      "fetch",
       vi.fn(() =>
         Promise.resolve({
           ok: true,
@@ -26,8 +26,8 @@ describe('Zgraph URL data load via fetch', () => {
       ),
     );
 
-    const g = new Zgraph(mountDiv(), 'https://example.test/data.csv', {
-      labels: ['X', 'A', 'B'],
+    const g = new Zpgraph(mountDiv(), "https://example.test/data.csv", {
+      labels: ["X", "A", "B"],
       width: 480,
       height: 320,
     });
@@ -37,52 +37,52 @@ describe('Zgraph URL data load via fetch', () => {
     });
 
     expect(fetch).toHaveBeenCalledWith(
-      'https://example.test/data.csv',
+      "https://example.test/data.csv",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     g.destroy();
   });
 
-  it('aborts in-flight fetch on destroy', async () => {
+  it("aborts in-flight fetch on destroy", async () => {
     let rejectFetch: ((err: Error) => void) | undefined;
     const fetchPromise = new Promise((_resolve, reject) => {
       rejectFetch = reject;
     });
     vi.stubGlobal(
-      'fetch',
+      "fetch",
       vi.fn((_url: string, init?: { signal?: AbortSignal }) => {
-        init?.signal?.addEventListener('abort', () => {
-          const err = new Error('aborted');
-          err.name = 'AbortError';
+        init?.signal?.addEventListener("abort", () => {
+          const err = new Error("aborted");
+          err.name = "AbortError";
           rejectFetch?.(err);
         });
         return fetchPromise;
       }),
     );
 
-    const g = new Zgraph(mountDiv(), 'https://example.test/slow.csv', {
-      labels: ['X', 'A'],
+    const g = new Zpgraph(mountDiv(), "https://example.test/slow.csv", {
+      labels: ["X", "A"],
       width: 480,
       height: 320,
     });
 
     expect(fetch).toHaveBeenCalled();
     g.destroy();
-    await expect(fetchPromise).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(fetchPromise).rejects.toMatchObject({ name: "AbortError" });
   });
 
-  it('reports a failed load through dataLoadErrorCallback', async () => {
+  it("reports a failed load through dataLoadErrorCallback", async () => {
     vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve({ ok: false, status: 503, text: () => '' })),
+      "fetch",
+      vi.fn(() => Promise.resolve({ ok: false, status: 503, text: () => "" })),
     );
     const onError = vi.fn();
     const consoleError = vi
-      .spyOn(console, 'error')
+      .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    const g = new Zgraph(mountDiv(), 'https://example.test/down.csv', {
-      labels: ['X', 'A'],
+    const g = new Zpgraph(mountDiv(), "https://example.test/down.csv", {
+      labels: ["X", "A"],
       width: 480,
       height: 320,
       dataLoadErrorCallback: onError,
@@ -93,12 +93,12 @@ describe('Zgraph URL data load via fetch', () => {
     });
 
     const [error, url] = onError.mock.calls[0]!;
-    expect((error as Error).message).toContain('503');
-    expect(url).toBe('https://example.test/down.csv');
+    expect((error as Error).message).toContain("503");
+    expect(url).toBe("https://example.test/down.csv");
     // The callback takes over; the failure is not also logged.
     expect(
       consoleError.mock.calls.some((args) =>
-        String(args[0]!).includes('Failed to load chart data'),
+        String(args[0]!).includes("Failed to load chart data"),
       ),
     ).toBe(false);
 

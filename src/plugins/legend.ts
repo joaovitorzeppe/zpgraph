@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -8,23 +8,23 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-/*global Zgraph:false */
+/*global Zpgraph:false */
 
 /*
 Current bits of jankiness:
 - Uses two private APIs:
-    1. Zgraph.optionsViewForAxis_
-    2. zgraph.plotter_.area
+    1. Zpgraph.optionsViewForAxis_
+    2. zpgraph.plotter_.area
 - Registers for a "predraw" event, which should be renamed.
 */
 
-/*global Zgraph:false */
+/*global Zpgraph:false */
 
-import type { OptionsGetter, ZgraphInstance } from '../internal-types';
-import type { Point, ValueFormatter } from '../types';
+import type { OptionsGetter, ZpgraphInstance } from "../internal-types";
+import type { Point, ValueFormatter } from "../types";
 
 interface LegendPluginEvent {
-  zgraph: ZgraphInstance;
+  zpgraph: ZpgraphInstance;
   selectedX?: number;
   selectedPoints?: Point[];
   selectedRow?: number;
@@ -62,7 +62,7 @@ interface LegendSeriesRow {
 }
 
 interface LegendBuildData {
-  zgraph: LegendGraphLike;
+  zpgraph: LegendGraphLike;
   x?: number;
   xHTML?: string;
   i: number | null;
@@ -90,25 +90,25 @@ class Legend {
   one_em_width_ = 10;
 
   toString() {
-    return 'Legend Plugin';
+    return "Legend Plugin";
   }
 
-  activate(g: ZgraphInstance) {
+  activate(g: ZpgraphInstance) {
     let div: HTMLElement | null = null;
 
-    const userLabelsDiv = g.getOption('labelsDiv');
+    const userLabelsDiv = g.getOption("labelsDiv");
     if (userLabelsDiv && null !== userLabelsDiv) {
-      if (typeof userLabelsDiv == 'string' || userLabelsDiv instanceof String) {
+      if (typeof userLabelsDiv == "string" || userLabelsDiv instanceof String) {
         div = document.getElementById(String(userLabelsDiv));
       } else {
         div = userLabelsDiv as HTMLElement;
       }
     } else {
-      div = document.createElement('div');
-      div.className = 'zgraph-legend';
+      div = document.createElement("div");
+      div.className = "zpgraph-legend";
       // The values under the cursor are the chart's readable content: announce
       // them when they change, without interrupting whatever is being read.
-      div.setAttribute('aria-live', 'polite');
+      div.setAttribute("aria-live", "polite");
       g.graphDiv.appendChild(div);
       this.is_generated_div_ = true;
     }
@@ -132,14 +132,14 @@ class Legend {
     let points = e.selectedPoints;
     let row = e.selectedRow;
 
-    let legendMode = e.zgraph.getOption('legend');
-    if (legendMode === 'never') {
-      div.style.display = 'none';
+    let legendMode = e.zpgraph.getOption("legend");
+    if (legendMode === "never") {
+      div.style.display = "none";
       return;
     }
 
     const html = Legend.generateLegendHTML(
-      e.zgraph,
+      e.zpgraph,
       xValue,
       points,
       this.one_em_width_,
@@ -152,19 +152,19 @@ class Legend {
       div.innerHTML = html;
     }
     // must be done now so offsetWidth isn’t 0…
-    div.style.display = '';
+    div.style.display = "";
 
-    if (legendMode === 'follow') {
+    if (legendMode === "follow") {
       if (!points || points.length === 0) return;
       // create floating legend div
-      const area = e.zgraph.plotter_.area;
+      const area = e.zpgraph.plotter_.area;
       const labelsDivWidth = div.offsetWidth;
       const yAxisLabelWidth = Number(
-        e.zgraph.getOptionForAxis('axisLabelWidth', 'y'),
+        e.zpgraph.getOptionForAxis("axisLabelWidth", "y"),
       );
       // find the closest data point by checking the currently highlighted series,
       // or fall back to using the first data point available
-      const highlightSeries = e.zgraph.getHighlightSeries();
+      const highlightSeries = e.zpgraph.getHighlightSeries();
       let point = points[0]!;
       if (highlightSeries) {
         point = points.find((p) => p.name === highlightSeries) ?? point;
@@ -173,8 +173,8 @@ class Legend {
       // within the plotter_ area
       // offset 50 px to the right and down from the first selection point
       // 50 px is guess based on mouse cursor size
-      const followOffsetX = e.zgraph.getNumericOption('legendFollowOffsetX');
-      const followOffsetY = e.zgraph.getNumericOption('legendFollowOffsetY');
+      const followOffsetX = e.zpgraph.getNumericOption("legendFollowOffsetX");
+      const followOffsetY = e.zpgraph.getNumericOption("legendFollowOffsetY");
       let leftLegend = (point.x ?? 0) * area.w + followOffsetX;
       const topLegend = (point.y ?? 0) * area.h + followOffsetY;
 
@@ -188,14 +188,14 @@ class Legend {
           (yAxisLabelWidth - area.x);
       }
 
-      div.style.left = yAxisLabelWidth + leftLegend + 'px';
-      div.style.top = topLegend + 'px';
-    } else if (legendMode === 'onmouseover' && this.is_generated_div_) {
+      div.style.left = yAxisLabelWidth + leftLegend + "px";
+      div.style.top = topLegend + "px";
+    } else if (legendMode === "onmouseover" && this.is_generated_div_) {
       // synchronise this with Legend.prototype.predraw below
-      let area = e.zgraph.plotter_.area;
+      let area = e.zpgraph.plotter_.area;
       let labelsDivWidth = div.offsetWidth;
-      div.style.left = area.x + area.w - labelsDivWidth - 1 + 'px';
-      div.style.top = area.y + 'px';
+      div.style.left = area.x + area.w - labelsDivWidth - 1 + "px";
+      div.style.top = area.y + "px";
     }
   }
 
@@ -203,17 +203,17 @@ class Legend {
     const div = this.legend_div_;
     if (!div) return;
 
-    let legendMode = e.zgraph.getOption('legend');
-    if (legendMode !== 'always') {
+    let legendMode = e.zpgraph.getOption("legend");
+    if (legendMode !== "always") {
       // Building the rows would only fill a div nobody can see, and the next
       // select rebuilds them anyway. This runs after every draw, so on a drag it
       // is once per frame.
-      div.style.display = 'none';
+      div.style.display = "none";
       return;
     }
 
     let html = Legend.generateLegendHTML(
-      e.zgraph,
+      e.zpgraph,
       undefined,
       undefined,
       this.one_em_width_,
@@ -243,12 +243,12 @@ class Legend {
     // Don't touch a user-specified labelsDiv.
     if (!this.is_generated_div_) return;
 
-    e.zgraph.graphDiv.appendChild(div);
+    e.zpgraph.graphDiv.appendChild(div);
     // synchronise this with Legend.prototype.select above
-    let area = e.zgraph.plotter_.area;
+    let area = e.zpgraph.plotter_.area;
     let labelsDivWidth = div.offsetWidth;
-    div.style.left = area.x + area.w - labelsDivWidth - 1 + 'px';
-    div.style.top = area.y + 'px';
+    div.style.left = area.x + area.w - labelsDivWidth - 1 + "px";
+    div.style.top = area.y + "px";
   }
 
   destroy() {
@@ -270,7 +270,7 @@ class Legend {
     const chart = g as LegendChart;
     // Data about the selection to pass to legendFormatter
     const data: LegendBuildData = {
-      zgraph: g,
+      zpgraph: g,
       i: row,
       series: [],
     };
@@ -285,8 +285,10 @@ class Legend {
         const label = labels[i]!;
         const series = g.getPropertiesForSeries(label);
         if (!series) continue;
-        const strokePattern = g.getOption('strokePattern', label) as
-          number[] | null | undefined;
+        const strokePattern = g.getOption("strokePattern", label) as
+          | number[]
+          | null
+          | undefined;
         // Sanitize once here so the default formatter, the dash markup and any
         // caller-supplied legendFormatter all see a color safe to interpolate.
         const color = sanitizeCssColor(series.color);
@@ -306,22 +308,22 @@ class Legend {
     }
 
     if (
-      typeof x !== 'undefined' &&
+      typeof x !== "undefined" &&
       labels &&
       sel_points &&
       chart.optionsViewForAxis_
     ) {
-      const xOptView = chart.optionsViewForAxis_('x');
-      const xvf = xOptView('valueFormatter') as ValueFormatter;
+      const xOptView = chart.optionsViewForAxis_("x");
+      const xvf = xOptView("valueFormatter") as ValueFormatter;
       data.xHTML = xvf(x, xOptView, labels[0]!, g, row ?? 0, 0);
 
       const yOptViews: OptionsGetter[] = [];
       const num_axes = g.numAxes();
       for (let i = 0; i < num_axes; i++) {
-        yOptViews[i] = chart.optionsViewForAxis_!('y' + (i ? 1 + i : ''));
+        yOptViews[i] = chart.optionsViewForAxis_!("y" + (i ? 1 + i : ""));
       }
 
-      const showZeros = g.getOption('labelsShowZeroValues');
+      const showZeros = g.getOption("labelsShowZeroValues");
       const highlightSeries = g.getHighlightSeries();
       for (let i = 0; i < sel_points.length; i++) {
         const pt = sel_points[i]!;
@@ -337,7 +339,7 @@ class Legend {
         const series = g.getPropertiesForSeries(pt.name);
         if (!series) continue;
         const yOptView = yOptViews[series.axis - 1]!;
-        const fmtFunc = yOptView('valueFormatter') as ValueFormatter;
+        const fmtFunc = yOptView("valueFormatter") as ValueFormatter;
         const yHTML = fmtFunc(
           pt.yval ?? 0,
           yOptView,
@@ -355,21 +357,21 @@ class Legend {
       }
     }
 
-    const formatter = (g.getOption('legendFormatter') ??
+    const formatter = (g.getOption("legendFormatter") ??
       Legend.defaultFormatter) as LegendFormatterFn;
     return formatter.call(chart, data);
   }
 
   static defaultFormatter(data: LegendBuildData): DocumentFragment {
-    const g = data.zgraph;
+    const g = data.zpgraph;
 
     const fragment = document.createDocumentFragment();
-    if (g.getOption('showLabelsOnHighlight') !== true) return fragment;
+    if (g.getOption("showLabelsOnHighlight") !== true) return fragment;
 
-    const sepLines = g.getOption('labelsSeparateLines');
+    const sepLines = g.getOption("labelsSeparateLines");
 
-    if (typeof data.x === 'undefined') {
-      if (g.getOption('legend') !== 'always') {
+    if (typeof data.x === "undefined") {
+      if (g.getOption("legend") !== "always") {
         return fragment;
       }
 
@@ -381,45 +383,45 @@ class Legend {
         if (!first) {
           fragment.appendChild(
             sepLines
-              ? document.createElement('br')
-              : document.createTextNode(' '),
+              ? document.createElement("br")
+              : document.createTextNode(" "),
           );
         }
         first = false;
 
-        let span = document.createElement('span');
-        span.style.fontWeight = 'bold';
+        let span = document.createElement("span");
+        span.style.fontWeight = "bold";
         span.style.color = series.color;
         span.appendChild(
           dashSegmentsToNodes(series.dashSegments_ ?? null, series.color),
         );
-        span.appendChild(document.createTextNode(' ' + series.label));
+        span.appendChild(document.createTextNode(" " + series.label));
         fragment.appendChild(span);
       }
       return fragment;
     }
 
-    fragment.appendChild(document.createTextNode((data.xHTML ?? '') + ':'));
+    fragment.appendChild(document.createTextNode((data.xHTML ?? "") + ":"));
     for (let i = 0; i < data.series.length; i++) {
       const series = data.series[i]!;
       if (!series.y && !series.yHTML) continue;
       if (!series.isVisible) continue;
-      if (sepLines) fragment.appendChild(document.createElement('br'));
+      if (sepLines) fragment.appendChild(document.createElement("br"));
 
-      let span = document.createElement('span');
-      if (series.isHighlighted) span.className = 'highlight';
+      let span = document.createElement("span");
+      if (series.isHighlighted) span.className = "highlight";
 
-      let name = document.createElement('span');
+      let name = document.createElement("span");
       name.style.color = series.color;
       name.textContent = series.label;
-      let bold = document.createElement('b');
+      let bold = document.createElement("b");
       bold.appendChild(name);
 
-      span.appendChild(document.createTextNode(' '));
+      span.appendChild(document.createTextNode(" "));
       span.appendChild(bold);
       // The value comes from a valueFormatter, which callers override; it is
       // inserted as text, the way the axis labels are.
-      span.appendChild(document.createTextNode(':\u00a0' + series.yHTML));
+      span.appendChild(document.createTextNode(":\u00a0" + series.yHTML));
       fragment.appendChild(span);
     }
     return fragment;
@@ -427,7 +429,7 @@ class Legend {
 }
 
 /**
- * This is called during the zgraph constructor, after options have been set
+ * This is called during the zpgraph constructor, after options have been set
  * but before the data is available.
  *
  * Proper tasks to do here include:
@@ -441,12 +443,12 @@ class Legend {
 
 // Needed for dashed lines.
 let calculateEmWidthInDiv = function (div: HTMLElement): number {
-  let sizeSpan = document.createElement('span');
+  let sizeSpan = document.createElement("span");
   // Through the CSSOM rather than a style attribute, which a strict
   // style-src refuses.
-  sizeSpan.style.margin = '0';
-  sizeSpan.style.padding = '0 0 0 1em';
-  sizeSpan.style.border = '0';
+  sizeSpan.style.margin = "0";
+  sizeSpan.style.padding = "0 0 0 1em";
+  sizeSpan.style.border = "0";
   div.appendChild(sizeSpan);
   let oneEmWidth = sizeSpan.offsetWidth;
   div.removeChild(sizeSpan);
@@ -455,10 +457,10 @@ let calculateEmWidthInDiv = function (div: HTMLElement): number {
 
 let escapeHTML = function (str: string): string {
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&#34;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&#34;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 };
 
 // A color still reaches a style="..." attribute through `dashHTML` and through
@@ -469,9 +471,9 @@ const CSS_COLOR = /^(#[0-9a-f]{3,8}|[a-z]+|(rgb|hsl)a?\([0-9a-z%.,/\s+-]*\))$/i;
 
 /** @private */
 const sanitizeCssColor = function (color: unknown): string {
-  return typeof color === 'string' && CSS_COLOR.test(color.trim())
+  return typeof color === "string" && CSS_COLOR.test(color.trim())
     ? color.trim()
-    : 'inherit';
+    : "inherit";
 };
 
 // Right edge should be flush with the right edge of the charting area (which
@@ -484,7 +486,7 @@ const sanitizeCssColor = function (color: unknown): string {
  */
 
 /**
- * Called when zgraph.destroy() is called.
+ * Called when zpgraph.destroy() is called.
  * You should null out any references and detach any DOM elements.
  */
 
@@ -599,14 +601,14 @@ function dashSegmentsToHTML(
   color: string,
 ): string {
   if (!segments) {
-    return `<div class="zgraph-legend-line" style="border-bottom-color: ${color};"></div>`;
+    return `<div class="zpgraph-legend-line" style="border-bottom-color: ${color};"></div>`;
   }
   return segments
     .map(
       (s) =>
-        `<div class="zgraph-legend-dash" style="margin-right: ${s.marginRight}em; padding-left: ${s.paddingLeft}em;"></div>`,
+        `<div class="zpgraph-legend-dash" style="margin-right: ${s.marginRight}em; padding-left: ${s.paddingLeft}em;"></div>`,
     )
-    .join('');
+    .join("");
 }
 
 /**
@@ -620,17 +622,17 @@ function dashSegmentsToNodes(
 ): DocumentFragment {
   const fragment = document.createDocumentFragment();
   if (!segments) {
-    const line = document.createElement('div');
-    line.className = 'zgraph-legend-line';
+    const line = document.createElement("div");
+    line.className = "zpgraph-legend-line";
     line.style.borderBottomColor = color;
     fragment.appendChild(line);
     return fragment;
   }
   for (const s of segments) {
-    const dash = document.createElement('div');
-    dash.className = 'zgraph-legend-dash';
-    dash.style.marginRight = s.marginRight + 'em';
-    dash.style.paddingLeft = s.paddingLeft + 'em';
+    const dash = document.createElement("div");
+    dash.className = "zpgraph-legend-dash";
+    dash.style.marginRight = s.marginRight + "em";
+    dash.style.paddingLeft = s.paddingLeft + "em";
     fragment.appendChild(dash);
   }
   return fragment;

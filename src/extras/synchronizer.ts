@@ -7,31 +7,31 @@
  */
 
 /**
- * Synchronize zooming and/or selections between a set of zgraph.
+ * Synchronize zooming and/or selections between a set of zpgraph.
  *
  * Usage:
  *
- *   const g1 = new Zgraph(...),
- *       g2 = new Zgraph(...),
+ *   const g1 = new Zpgraph(...),
+ *       g2 = new Zpgraph(...),
  *       ...;
- *   const sync = Zgraph.synchronize(g1, g2, ...);
+ *   const sync = Zpgraph.synchronize(g1, g2, ...);
  *   // charts are now synchronized
  *   sync.detach();
  *   // charts are no longer synchronized
  *
  * You can set options using the last parameter, for example:
  *
- *   const sync = Zgraph.synchronize(g1, g2, g3, {
+ *   const sync = Zpgraph.synchronize(g1, g2, g3, {
  *      selection: true,
  *      zoom: true
  *   });
  *
  * The default is to synchronize both of these.
  *
- * Instead of passing one Zgraph object as each parameter, you may also pass an
- * array of zgraph:
+ * Instead of passing one Zpgraph object as each parameter, you may also pass an
+ * array of zpgraph:
  *
- *   const sync = Zgraph.synchronize([g1, g2, g3], {
+ *   const sync = Zpgraph.synchronize([g1, g2, g3], {
  *      selection: false,
  *      zoom: true
  *   });
@@ -40,9 +40,9 @@
  * The `range` option has no effect unless `zoom` is true (the default).
  */
 
-import ZgraphImport from 'zpgraph';
-import type { ZgraphInstance } from '../internal-types';
-import type { Point, ZgraphOptions } from '../types';
+import ZpgraphImport from "zpgraph";
+import type { ZpgraphInstance } from "../internal-types";
+import type { Point, ZpgraphOptions } from "../types";
 
 interface SyncOptions {
   selection: boolean;
@@ -57,11 +57,11 @@ interface StoredCallbacks {
   [key: string]: ((...args: unknown[]) => void) | undefined;
 }
 
-type ZgraphExtrasHost = typeof ZgraphImport & {
+type ZpgraphExtrasHost = typeof ZpgraphImport & {
   synchronize: typeof synchronize;
 };
 
-const Zgraph = ZgraphImport as ZgraphExtrasHost;
+const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
 
 const arraysAreEqual = <T>(a: T[] | unknown, b: T[] | unknown): boolean => {
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
@@ -74,7 +74,7 @@ const arraysAreEqual = <T>(a: T[] | unknown, b: T[] | unknown): boolean => {
 };
 
 const attachZoomHandlers = (
-  gs: ZgraphInstance[],
+  gs: ZpgraphInstance[],
   syncOpts: SyncOptions,
   prevCallbacks: StoredCallbacks[],
 ) => {
@@ -87,7 +87,7 @@ const attachZoomHandlers = (
           me: unknown,
           initial: boolean,
         ) {
-          const chart = me as ZgraphInstance;
+          const chart = me as ZpgraphInstance;
           if (block || initial) {
             // call the user’s drawCallback even if we are blocked
             for (let j = 0; j < gs.length; j++) {
@@ -101,7 +101,7 @@ const attachZoomHandlers = (
 
           block = true;
 
-          let opts: Partial<ZgraphOptions> = {
+          let opts: Partial<ZpgraphOptions> = {
             dateWindow: chart.xAxisRange(),
           };
           if (syncOpts.range) opts.valueRange = chart.yAxisRange();
@@ -115,7 +115,7 @@ const attachZoomHandlers = (
             // If X-zoom differs, update
             let update = !arraysAreEqual(
               opts.dateWindow,
-              gs[j]!.getOption('dateWindow') as [number, number] | null,
+              gs[j]!.getOption("dateWindow") as [number, number] | null,
             );
             // If Y-zoom differs and syncing, update
             if (
@@ -123,8 +123,9 @@ const attachZoomHandlers = (
               syncOpts.range &&
               !arraysAreEqual(
                 opts.valueRange,
-                gs[j]!.getOption('valueRange') as
-                  [number | null, number | null] | null,
+                gs[j]!.getOption("valueRange") as
+                  | [number | null, number | null]
+                  | null,
               )
             )
               update = true;
@@ -143,7 +144,7 @@ const attachZoomHandlers = (
 };
 
 const attachSelectionHandlers = (
-  gs: ZgraphInstance[],
+  gs: ZpgraphInstance[],
   prevCallbacks: StoredCallbacks[],
 ) => {
   let block = false;
@@ -198,7 +199,7 @@ const attachSelectionHandlers = (
 };
 
 const parseSyncOpts = (obj: object, opts: SyncOptions) => {
-  const OPTIONS = ['selection', 'zoom', 'range'] as const;
+  const OPTIONS = ["selection", "zoom", "range"] as const;
   for (const optName of OPTIONS) {
     if (Object.hasOwn(obj, optName)) {
       opts[optName] = (obj as SyncOptions)[optName];
@@ -206,10 +207,10 @@ const parseSyncOpts = (obj: object, opts: SyncOptions) => {
   }
 };
 
-const synchronize = function synchronize(/* zgraph..., opts */) {
+const synchronize = function synchronize(/* zpgraph..., opts */) {
   if (arguments.length === 0) {
     throw new Error(
-      'Invalid invocation of Zgraph.synchronize(). Need >= 1 argument.',
+      "Invalid invocation of Zpgraph.synchronize(). Need >= 1 argument.",
     );
   }
 
@@ -218,55 +219,55 @@ const synchronize = function synchronize(/* zgraph..., opts */) {
     zoom: true,
     range: true,
   };
-  let zgraph: ZgraphInstance[] | null = [];
+  let zpgraph: ZpgraphInstance[] | null = [];
   let prevCallbacks: StoredCallbacks[] | null = [];
 
-  if (arguments[0] instanceof ZgraphImport) {
-    // Arguments are Zgraph objects.
+  if (arguments[0] instanceof ZpgraphImport) {
+    // Arguments are Zpgraph objects.
     let i = 0;
     for (; i < arguments.length; i++) {
-      if (arguments[i] instanceof ZgraphImport) {
-        zgraph.push(arguments[i] as ZgraphInstance);
+      if (arguments[i] instanceof ZpgraphImport) {
+        zpgraph.push(arguments[i] as ZpgraphInstance);
       } else {
         break;
       }
     }
     if (i < arguments.length - 1) {
       throw new Error(
-        'Invalid invocation of Zgraph.synchronize(). ' +
-          'All but the last argument must be Zgraph objects.',
+        "Invalid invocation of Zpgraph.synchronize(). " +
+          "All but the last argument must be Zpgraph objects.",
       );
     } else if (i === arguments.length - 1) {
       parseSyncOpts(arguments[arguments.length - 1] as object, opts);
     }
-  } else if ((arguments[0] as ZgraphInstance[]).length) {
-    // Invoked w/ list of zgraph, options
-    for (let i = 0; i < (arguments[0] as ZgraphInstance[]).length; i++) {
-      zgraph.push((arguments[0] as ZgraphInstance[])[i]!);
+  } else if ((arguments[0] as ZpgraphInstance[]).length) {
+    // Invoked w/ list of zpgraph, options
+    for (let i = 0; i < (arguments[0] as ZpgraphInstance[]).length; i++) {
+      zpgraph.push((arguments[0] as ZpgraphInstance[])[i]!);
     }
     if (arguments.length === 2) {
       parseSyncOpts(arguments[1] as object, opts);
     } else if (arguments.length > 2) {
       throw new Error(
-        'Invalid invocation of Zgraph.synchronize(). ' +
-          'Expected two arguments: array and optional options argument.',
+        "Invalid invocation of Zpgraph.synchronize(). " +
+          "Expected two arguments: array and optional options argument.",
       );
     } // otherwise arguments.length == 1, which is fine.
   } else {
     throw new Error(
-      'Invalid invocation of Zgraph.synchronize(). ' +
-        'First parameter must be either Zgraph or list of Zgraph.',
+      "Invalid invocation of Zpgraph.synchronize(). " +
+        "First parameter must be either Zpgraph or list of Zpgraph.",
     );
   }
 
-  if (zgraph.length < 2) {
+  if (zpgraph.length < 2) {
     throw new Error(
-      'Invalid invocation of Zgraph.synchronize(). ' +
-        'Need two or more zgraph to synchronize.',
+      "Invalid invocation of Zpgraph.synchronize(). " +
+        "Need two or more zpgraph to synchronize.",
     );
   }
 
-  const charts = zgraph;
+  const charts = zpgraph;
   let syncOpts = opts;
   let callbacks = prevCallbacks;
 
@@ -280,13 +281,13 @@ const synchronize = function synchronize(/* zgraph..., opts */) {
           if (!callbacks![j]) {
             callbacks![j] = {};
           }
-          const savedDraw = charts[j]!.getFunctionOption('drawCallback');
+          const savedDraw = charts[j]!.getFunctionOption("drawCallback");
           if (savedDraw) callbacks![j]!.drawCallback = savedDraw;
           const savedHighlight =
-            charts[j]!.getFunctionOption('highlightCallback');
+            charts[j]!.getFunctionOption("highlightCallback");
           if (savedHighlight) callbacks![j]!.highlightCallback = savedHighlight;
           const savedUnhighlight = charts[j]!.getFunctionOption(
-            'unhighlightCallback',
+            "unhighlightCallback",
           );
           if (savedUnhighlight)
             callbacks![j]!.unhighlightCallback = savedUnhighlight;
@@ -306,32 +307,32 @@ const synchronize = function synchronize(/* zgraph..., opts */) {
 
   return {
     detach: function detach() {
-      if (!zgraph || !opts || !prevCallbacks) {
-        throw new Error('Zgraph.synchronize(): already detached.');
+      if (!zpgraph || !opts || !prevCallbacks) {
+        throw new Error("Zpgraph.synchronize(): already detached.");
       }
-      for (let i = 0; i < zgraph.length; i++) {
-        let g = zgraph[i]!;
+      for (let i = 0; i < zpgraph.length; i++) {
+        let g = zpgraph[i]!;
         if (opts.zoom) {
           g.updateOptions({
             drawCallback: prevCallbacks[i]?.drawCallback ?? null,
-          } as Partial<ZgraphOptions>);
+          } as Partial<ZpgraphOptions>);
         }
         if (opts.selection) {
           g.updateOptions({
             highlightCallback: prevCallbacks[i]?.highlightCallback ?? null,
             unhighlightCallback: prevCallbacks[i]?.unhighlightCallback ?? null,
-          } as Partial<ZgraphOptions>);
+          } as Partial<ZpgraphOptions>);
         }
       }
       // release references & make subsequent calls throw.
-      zgraph = null;
+      zpgraph = null;
       opts = null;
       prevCallbacks = null;
     },
   };
 };
 
-Zgraph.synchronize = synchronize;
+Zpgraph.synchronize = synchronize;
 
 export default synchronize;
 export { synchronize };

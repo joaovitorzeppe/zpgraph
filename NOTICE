@@ -1,9 +1,9 @@
-Zgraph
+Zpgraph
 ======
 
-Copyright (c) 2026 João Vitor Zeppe and Zgraph contributors.
+Copyright (c) 2026 João Vitor Zeppe and Zpgraph contributors.
 
-Zgraph is a spiritual successor to the dygraphs charting library
+Zpgraph is a spiritual successor to the dygraphs charting library
 (https://github.com/danvk/dygraphs), originally created by Dan Vanderkam.
 
 Substantial portions of this codebase are derived from dygraphs, which is

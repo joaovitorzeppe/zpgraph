@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -12,10 +12,10 @@ import type {
   OptionsManagerLike,
   RawData,
   UnifiedSeries,
-} from '../internal-types';
-import ZgraphDataHandler, { seriesOption } from './datahandler';
+} from "../internal-types";
+import ZpgraphDataHandler, { seriesOption } from "./datahandler";
 
-class DefaultHandler extends ZgraphDataHandler {
+class DefaultHandler extends ZpgraphDataHandler {
   /** @inheritDoc */
   override extractSeries(
     rawData: RawData,
@@ -23,7 +23,7 @@ class DefaultHandler extends ZgraphDataHandler {
     options: OptionsManagerLike,
   ): UnifiedSeries {
     const series = new Array(rawData.length);
-    const logScale = seriesOption<boolean>(options, i, 'logscale');
+    const logScale = seriesOption<boolean>(options, i, "logscale");
     for (let j = 0; j < rawData.length; j++) {
       const row = rawData[j]!;
       let x = row[0] as number;

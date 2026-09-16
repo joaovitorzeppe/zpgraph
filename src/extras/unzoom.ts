@@ -6,16 +6,16 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZgraphImport from 'zpgraph';
-import type { ChartDrawPluginEvent } from '../internal-types';
-import type ZgraphClass from '../zgraph';
+import ZpgraphImport from "zpgraph";
+import type { ChartDrawPluginEvent } from "../internal-types";
+import type ZpgraphClass from "../zpgraph";
 
-type ZgraphExtrasHost = typeof ZgraphImport & {
+type ZpgraphExtrasHost = typeof ZpgraphImport & {
   Plugins: Record<string, unknown> & { Unzoom?: typeof Unzoom };
 };
 
-const Zgraph = ZgraphImport as ZgraphExtrasHost;
-Zgraph.Plugins = Zgraph.Plugins || {};
+const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
+Zpgraph.Plugins = Zpgraph.Plugins || {};
 
 /**
  * @fileoverview Plug-in for providing unzoom-on-hover.
@@ -29,17 +29,17 @@ class Unzoom {
   over_ = false;
 
   toString() {
-    return 'Unzoom Plugin';
+    return "Unzoom Plugin";
   }
 
-  activate(_g: ZgraphClass) {
+  activate(_g: ZpgraphClass) {
     return {
       willDrawChart: this.willDrawChart,
     };
   }
 
   willDrawChart(e: ChartDrawPluginEvent) {
-    let g = e.zgraph;
+    let g = e.zpgraph;
 
     if (this.button_ !== null) {
       // short-circuit: show the button only when we're moused over, and zoomed in.
@@ -48,15 +48,15 @@ class Unzoom {
       return;
     }
 
-    const button = document.createElement('button');
+    const button = document.createElement("button");
     this.button_ = button;
-    button.textContent = 'Reset Zoom';
-    button.style.display = 'none';
-    button.style.position = 'absolute';
+    button.textContent = "Reset Zoom";
+    button.style.display = "none";
+    button.style.position = "absolute";
     let area = g.plotter_.area;
-    button.style.top = area.y + 4 + 'px';
-    button.style.left = area.x + 4 + 'px';
-    button.style.zIndex = '11';
+    button.style.top = area.y + 4 + "px";
+    button.style.left = area.x + 4 + "px";
+    button.style.zIndex = "11";
     let parent = g.graphDiv;
     parent.insertBefore(button, parent.firstChild);
 
@@ -64,21 +64,21 @@ class Unzoom {
       g.resetZoom();
     };
 
-    g.addAndTrackEvent(parent, 'mouseover', () => {
+    g.addAndTrackEvent(parent, "mouseover", () => {
       if (g.isZoomed()) {
         this.show(true);
       }
       this.over_ = true;
     });
 
-    g.addAndTrackEvent(parent, 'mouseout', () => {
+    g.addAndTrackEvent(parent, "mouseout", () => {
       this.show(false);
       this.over_ = false;
     });
   }
 
   show(enabled: boolean) {
-    this.button_!.style.display = enabled ? '' : 'none';
+    this.button_!.style.display = enabled ? "" : "none";
   }
 
   destroy() {
@@ -87,6 +87,6 @@ class Unzoom {
   }
 }
 
-Zgraph.Plugins.Unzoom = Unzoom;
+Zpgraph.Plugins.Unzoom = Unzoom;
 
 export default Unzoom;

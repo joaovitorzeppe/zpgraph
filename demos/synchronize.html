@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Synchronize · Zgraph</title>
+  <title>Synchronize · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -17,14 +17,14 @@
   <h1>Synchronize</h1>
   <p class="lede">
     Zoom or select on either chart; the other follows via
-    <code>zgraph/extras/synchronizer</code>.
+    <code>zpgraph/extras/synchronizer</code>.
   </p>
   <div class="row">
     <div id="a" class="chart sm" style="width: min(470px, 100%)"></div>
     <div id="b" class="chart sm" style="width: min(470px, 100%)"></div>
   </div>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { synchronize } from '../dist/extras/synchronizer.js';
     import { makeSeries } from './helpers.js';
 
@@ -36,11 +36,11 @@
       animatedZooms: true,
     };
 
-    const g1 = new Zgraph(document.getElementById('a'), shared, {
+    const g1 = new Zpgraph(document.getElementById('a'), shared, {
       ...opts,
       title: 'Chart 1',
     });
-    const g2 = new Zgraph(
+    const g2 = new Zpgraph(
       document.getElementById('b'),
       makeSeries({ points: 100, series: 2, seed: 19 }),
       { ...opts, title: 'Chart 2', colors: ['#2a9d8f', '#6d597a'] },

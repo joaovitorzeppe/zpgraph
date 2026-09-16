@@ -1,24 +1,24 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { Zgraph } from '../src/index';
-import { mockCanvas, mountDiv, sampleData } from './helpers';
+import { beforeEach, describe, expect, it } from "vitest";
+import { Zpgraph } from "../src/index";
+import { mockCanvas, mountDiv, sampleData } from "./helpers";
 
-describe('Zgraph chart smoke', () => {
+describe("Zpgraph chart smoke", () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
     mockCanvas();
   });
 
-  it('renders array data and exposes ranges', () => {
-    const g = new Zgraph(mountDiv(), sampleData, {
-      labels: ['x', 'A', 'B'],
+  it("renders array data and exposes ranges", () => {
+    const g = new Zpgraph(mountDiv(), sampleData, {
+      labels: ["x", "A", "B"],
       width: 480,
       height: 320,
-      legend: 'always',
+      legend: "always",
     });
 
     expect(g.numRows()).toBe(4);
     expect(g.numColumns()).toBe(3);
-    expect(g.getLabels()).toEqual(['x', 'A', 'B']);
+    expect(g.getLabels()).toEqual(["x", "A", "B"]);
     const xr = g.xAxisRange();
     expect(xr[0]!).toBeLessThanOrEqual(1);
     expect(xr[1]!).toBeGreaterThanOrEqual(4);

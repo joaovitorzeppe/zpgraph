@@ -6,12 +6,12 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZgraphImport from 'zpgraph';
-import { log } from '../logger';
-import type { ZgraphInstance } from '../internal-types';
-import type { Point } from '../types';
-import { div, drag, makeEmitter, setStyle, toggle } from './dom-helpers';
-import type { Emitter } from './dom-helpers';
+import ZpgraphImport from "zpgraph";
+import { log } from "../logger";
+import type { ZpgraphInstance } from "../internal-types";
+import type { Point } from "../types";
+import { div, drag, makeEmitter, setStyle, toggle } from "./dom-helpers";
+import type { Emitter } from "./dom-helpers";
 
 interface PublicHairline {
   xval: number;
@@ -35,7 +35,7 @@ interface HairlineDivFillerData {
   closestRow: number | undefined;
   points: HairlineSelPoint[];
   hairline: PublicHairline;
-  zgraph: ZgraphInstance;
+  zpgraph: ZpgraphInstance;
 }
 
 interface HairlinesOptions {
@@ -48,7 +48,7 @@ interface ChartClickEvent {
 
 type LegendPluginStatic = {
   generateLegendHTML: (
-    g: ZgraphInstance,
+    g: ZpgraphInstance,
     x: number,
     sel_points: Point[],
     oneEmWidth: number,
@@ -56,18 +56,18 @@ type LegendPluginStatic = {
   ) => string | Node;
 };
 
-type ZgraphExtrasHost = typeof ZgraphImport & {
+type ZpgraphExtrasHost = typeof ZpgraphImport & {
   Plugins: Record<string, unknown> & { Legend?: LegendPluginStatic };
 };
 
-const Zgraph = ZgraphImport as ZgraphExtrasHost;
-Zgraph.Plugins = Zgraph.Plugins || {};
+const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
+Zpgraph.Plugins = Zpgraph.Plugins || {};
 
-const chartValue = (g: ZgraphInstance, row: number, col: number): number =>
+const chartValue = (g: ZpgraphInstance, row: number, col: number): number =>
   Number(g.getValue(row, col));
 
-Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
-  'use strict';
+Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
+  "use strict";
 
   /**
    * @typedef {
@@ -96,15 +96,16 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     lastWidth_ = -1;
     lastHeight = -1;
 
-    zgraph_: ZgraphInstance | null = null;
+    zpgraph_: ZpgraphInstance | null = null;
     addTimer_: ReturnType<typeof setTimeout> | null = null;
     divFiller_:
-      ((div: HTMLElement, data: HairlineDivFillerData) => void) | null = null;
+      | ((div: HTMLElement, data: HairlineDivFillerData) => void)
+      | null = null;
 
     // Installed by makeEmitter in the constructor.
-    addEventListener!: Emitter['addEventListener'];
-    removeEventListener!: Emitter['removeEventListener'];
-    emit_!: Emitter['emit_'];
+    addEventListener!: Emitter["addEventListener"];
+    removeEventListener!: Emitter["removeEventListener"];
+    emit_!: Emitter["emit_"];
 
     constructor(opt_options?: HairlinesOptions) {
       opt_options = opt_options || {};
@@ -114,11 +115,11 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     }
 
     toString() {
-      return 'Hairlines Plugin';
+      return "Hairlines Plugin";
     }
 
-    activate(g: ZgraphInstance) {
-      this.zgraph_ = g;
+    activate(g: ZpgraphInstance) {
+      this.zpgraph_ = g;
       this.hairlines_ = [];
 
       return {
@@ -136,40 +137,40 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
       this.hairlines_ = [];
     }
 
-    g_(): ZgraphInstance {
-      return this.zgraph_!;
+    g_(): ZpgraphInstance {
+      return this.zpgraph_!;
     }
 
     hairlineWasDragged(h: Hairline, left: number) {
       let oldXVal = h.xval;
-      h.xval = this.zgraph_!.toDataXCoord(left)!;
+      h.xval = this.zpgraph_!.toDataXCoord(left)!;
       this.moveHairlineToTop(h);
       this.updateHairlineDivPositions();
       this.updateHairlineInfo();
       this.updateHairlineStyles();
-      this.emit_('hairlineMoved', {
+      this.emit_("hairlineMoved", {
         oldXVal: oldXVal,
         newXVal: h.xval,
       });
-      this.emit_('hairlinesChanged', {});
+      this.emit_("hairlinesChanged", {});
     }
 
-    createHairline(props: Partial<Hairline> & Pick<Hairline, 'xval'>) {
+    createHairline(props: Partial<Hairline> & Pick<Hairline, "xval">) {
       let h: Hairline;
 
-      const lineContainerDiv = div('zgraph-hairline', {
-        width: '6px',
-        'margin-left': '-3px',
-        position: 'absolute',
-        'z-index': '10',
+      const lineContainerDiv = div("zpgraph-hairline", {
+        width: "6px",
+        "margin-left": "-3px",
+        position: "absolute",
+        "z-index": "10",
       });
 
       const lineDiv = div(undefined, {
-        width: '1px',
-        position: 'relative',
-        left: '3px',
-        background: 'black',
-        height: '100%',
+        width: "1px",
+        position: "relative",
+        left: "3px",
+        background: "black",
+        height: "100%",
       });
       lineContainerDiv.appendChild(lineDiv);
 
@@ -193,18 +194,18 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
         return { min: area.x, max: area.x + area.w };
       };
       const onMove = (left: number) => this.hairlineWasDragged(h, left);
-      const stopLine = drag(lineContainerDiv, { axis: 'x', bounds, onMove });
-      const stopInfo = drag(infoDiv, { axis: 'x', bounds, onMove });
+      const stopLine = drag(lineContainerDiv, { axis: "x", bounds, onMove });
+      const stopInfo = drag(infoDiv, { axis: "x", bounds, onMove });
       h.stopDrag = () => {
         stopLine();
         stopInfo();
       };
 
-      infoDiv.addEventListener('click', (e: MouseEvent) => {
-        if ((e.target as Element)?.closest?.('.hairline-kill-button')) {
+      infoDiv.addEventListener("click", (e: MouseEvent) => {
+        if ((e.target as Element)?.closest?.(".hairline-kill-button")) {
           this.removeHairline(h);
-          this.emit_('hairlineDeleted', { xval: h.xval });
-          this.emit_('hairlinesChanged', {});
+          this.emit_("hairlineDeleted", { xval: h.xval });
+          this.emit_("hairlinesChanged", {});
           e.stopPropagation(); // don't want the click below to trigger.
           return;
         }
@@ -234,13 +235,13 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
         let left = g.toDomXCoord(h.xval) ?? 0;
         h.domX = left; // See comments in this.dataDidUpdate
         setStyle(h.lineDiv, {
-          left: left + 'px',
-          top: layout.y + 'px',
-          height: layout.h + 'px',
+          left: left + "px",
+          top: layout.y + "px",
+          height: layout.h + "px",
         });
         setStyle(h.infoDiv, {
-          left: left + 'px',
-          top: layout.y + 'px',
+          left: left + "px",
+          top: layout.y + "px",
         });
 
         let visible = left >= chartLeft && left <= chartRight;
@@ -251,13 +252,13 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
 
     updateHairlineStyles() {
       for (const h of this.hairlines_) {
-        h.infoDiv.classList.toggle('selected', !!h.selected);
-        h.lineDiv.classList.toggle('selected', !!h.selected);
+        h.infoDiv.classList.toggle("selected", !!h.selected);
+        h.lineDiv.classList.toggle("selected", !!h.selected);
       }
     }
 
     static findPrevNextRows(
-      g: ZgraphInstance,
+      g: ZpgraphInstance,
       xval: number,
       col: number,
     ): [number | null, number | null] {
@@ -350,12 +351,12 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
             closestRow: row,
             points: selPoints,
             hairline: this.createPublicHairline_(h),
-            zgraph: g,
+            zpgraph: g,
           });
         } else {
-          let target = h.infoDiv.querySelector('.hairline-legend');
+          let target = h.infoDiv.querySelector(".hairline-legend");
           if (target) {
-            let content = Zgraph.Plugins.Legend!.generateLegendHTML(
+            let content = Zpgraph.Plugins.Legend!.generateLegendHTML(
               g,
               h.xval,
               selPoints,
@@ -386,7 +387,7 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
         this.hairlines_.splice(idx, 1);
         teardownHairline(h);
       } else {
-        log.warn('Tried to remove non-existent hairline.');
+        log.warn("Tried to remove non-existent hairline.");
       }
     }
 
@@ -418,7 +419,7 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
         return;
       }
 
-      let xval = this.zgraph_!.toDataXCoord(e.canvasx)!;
+      let xval = this.zpgraph_!.toDataXCoord(e.canvasx)!;
 
       this.addTimer_ = setTimeout(() => {
         this.addTimer_ = null;
@@ -429,8 +430,8 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
         this.updateHairlineStyles();
         this.attachHairlinesToChart_();
 
-        this.emit_('hairlineCreated', { xval: xval });
-        this.emit_('hairlinesChanged', {});
+        this.emit_("hairlineCreated", { xval: xval });
+        this.emit_("hairlinesChanged", {});
       }, CLICK_DELAY_MS);
     }
 
@@ -497,7 +498,7 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
         this.attachHairlinesToChart_();
       }
 
-      this.emit_('hairlinesChanged', {});
+      this.emit_("hairlinesChanged", {});
     }
   }
 
@@ -514,16 +515,16 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
    * @private
    */
   const makeInfoDiv = function () {
-    let template = document.getElementById('hairline-template');
+    let template = document.getElementById("hairline-template");
     let infoDiv: HTMLElement;
     if (template) {
       infoDiv = template.cloneNode(true) as HTMLElement;
-      infoDiv.removeAttribute('id');
+      infoDiv.removeAttribute("id");
     } else {
       infoDiv = div();
-      infoDiv.appendChild(div('hairline-legend'));
+      infoDiv.appendChild(div("hairline-legend"));
     }
-    setStyle(infoDiv, { position: 'absolute', display: 'block' });
+    setStyle(infoDiv, { position: "absolute", display: "block" });
     return infoDiv;
   };
 
@@ -587,4 +588,4 @@ Zgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
   return hairlines;
 })();
 
-export default Zgraph.Plugins.Hairlines;
+export default Zpgraph.Plugins.Hairlines;

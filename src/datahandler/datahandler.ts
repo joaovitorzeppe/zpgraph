@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -13,8 +13,8 @@ import type {
   OptionsManagerLike,
   RawData,
   UnifiedSeries,
-} from '../internal-types';
-import type { Point } from '../types';
+} from "../internal-types";
+import type { Point } from "../types";
 
 /**
  * Reads a per-series option. Every handler needs the series label before it can
@@ -27,7 +27,7 @@ export const seriesOption = <T>(
 ): T =>
   options.getForSeries(
     name,
-    (options.get('labels') as string[])[seriesIndex]!,
+    (options.get("labels") as string[])[seriesIndex]!,
   ) as T;
 
 /**
@@ -35,7 +35,7 @@ export const seriesOption = <T>(
  * series data it receives and returns is always in the unified data format.
  * Initially the unified data is created by the extractSeries method.
  */
-abstract class ZgraphDataHandler {
+abstract class ZpgraphDataHandler {
   /** X-value array index constant for unified data samples. */
   static X = 0;
 
@@ -67,11 +67,11 @@ abstract class ZgraphDataHandler {
    * unified data format.
    * This is where undesirable points (i.e. negative values on log scales) are dropped.
    *
-   * @param rawData The raw data passed into zgraph where
+   * @param rawData The raw data passed into zpgraph where
    *     rawData[i] = [x,ySeries1,...,ySeriesN].
    * @param seriesIndex Index of the series to extract. All other
    *     series should be ignored.
-   * @param options Zgraph options.
+   * @param options Zpgraph options.
    * @return The series in the unified data format
    *     where series[i] = [x,y,{extras}].
    */
@@ -129,8 +129,8 @@ abstract class ZgraphDataHandler {
         point.canvasy = NaN;
         point.name = setName;
       }
-      point.xval = ZgraphDataHandler.parseFloat(item[0]);
-      point.yval = yraw === null ? null : ZgraphDataHandler.parseFloat(yraw);
+      point.xval = ZpgraphDataHandler.parseFloat(item[0]);
+      point.yval = yraw === null ? null : ZpgraphDataHandler.parseFloat(yraw);
       point.idx = i + boundaryIdStart;
     }
     points.length = length;
@@ -159,7 +159,7 @@ abstract class ZgraphDataHandler {
    * @param series The series in the unified
    *          data format where series[i] = [x,y,{extras}].
    * @param rollPeriod The number of points over which to average the data
-   * @param options The zgraph options.
+   * @param options The zpgraph options.
    * @param seriesIndex Index of the series this was extracted from.
    * @return the rolled series.
    */
@@ -203,4 +203,4 @@ abstract class ZgraphDataHandler {
   ): void {}
 }
 
-export default ZgraphDataHandler;
+export default ZpgraphDataHandler;

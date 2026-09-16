@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { Zgraph } from '../src/index';
+import { beforeEach, describe, expect, it } from "vitest";
+import { Zpgraph } from "../src/index";
 import {
   DECIMATION_THRESHOLD,
   decimatePointsByX,
   type DecimatedPoints,
-} from '../src/decimate';
-import type { Point } from '../src/types';
-import { mockCanvas, mountDiv } from './helpers';
+} from "../src/decimate";
+import type { Point } from "../src/types";
+import { mockCanvas, mountDiv } from "./helpers";
 
 const makePoints = (
   count: number,
@@ -16,7 +16,7 @@ const makePoints = (
   for (let i = 0; i < count; i++) {
     points.push({
       idx: i,
-      name: 'A',
+      name: "A",
       xval: i,
       yval: yFn(i),
     });
@@ -24,15 +24,15 @@ const makePoints = (
   return points;
 };
 
-describe('decimatePointsByX', () => {
-  it('returns the original array when the series is sparse enough', () => {
+describe("decimatePointsByX", () => {
+  it("returns the original array when the series is sparse enough", () => {
     const points = makePoints(100);
     const result = decimatePointsByX(points, 0, 99, 100);
     expect(result).toBe(points);
     expect((result as DecimatedPoints)._decimated).toBeUndefined();
   });
 
-  it('reduces dense series to roughly pixelWidth * threshold points', () => {
+  it("reduces dense series to roughly pixelWidth * threshold points", () => {
     const points = makePoints(10000);
     const pixelWidth = 100;
     const result = decimatePointsByX(points, 0, 9999, pixelWidth);
@@ -45,7 +45,7 @@ describe('decimatePointsByX', () => {
     expect((result as DecimatedPoints)._decimated).toBe(true);
   });
 
-  it('preserves gaps in the decimated output', () => {
+  it("preserves gaps in the decimated output", () => {
     const points = makePoints(10000, (i) => (i % 500 === 0 ? null : i % 100));
     const result = decimatePointsByX(points, 0, 9999, 100);
     const gaps = result.filter((p) => p.yval === null);
@@ -55,14 +55,14 @@ describe('decimatePointsByX', () => {
     }
   });
 
-  it('keeps first, min, max and last per column', () => {
+  it("keeps first, min, max and last per column", () => {
     const points: Point[] = [];
     for (let col = 0; col < 10; col++) {
       const base = col * 10;
-      points.push({ idx: base, name: 'A', xval: base, yval: 5 });
-      points.push({ idx: base + 1, name: 'A', xval: base + 1, yval: 1 });
-      points.push({ idx: base + 2, name: 'A', xval: base + 2, yval: 9 });
-      points.push({ idx: base + 3, name: 'A', xval: base + 3, yval: 7 });
+      points.push({ idx: base, name: "A", xval: base, yval: 5 });
+      points.push({ idx: base + 1, name: "A", xval: base + 1, yval: 1 });
+      points.push({ idx: base + 2, name: "A", xval: base + 2, yval: 9 });
+      points.push({ idx: base + 3, name: "A", xval: base + 3, yval: 7 });
     }
     const result = decimatePointsByX(points, 0, 99, 10, 1);
     const idxs = new Set(result.map((p) => p.idx));
@@ -72,13 +72,13 @@ describe('decimatePointsByX', () => {
     expect(idxs.has(3)).toBe(true);
   });
 
-  it('returns the original array for invalid span or width', () => {
+  it("returns the original array for invalid span or width", () => {
     const points = makePoints(10000);
     expect(decimatePointsByX(points, 0, 0, 100)).toBe(points);
     expect(decimatePointsByX(points, 0, 9999, 0)).toBe(points);
   });
 
-  it('emits points sorted by xval', () => {
+  it("emits points sorted by xval", () => {
     const points = makePoints(5000);
     const result = decimatePointsByX(points, 0, 4999, 50);
     for (let i = 1; i < result.length; i++) {
@@ -87,20 +87,20 @@ describe('decimatePointsByX', () => {
   });
 });
 
-describe('selection with decimated data', () => {
+describe("selection with decimated data", () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
     mockCanvas();
   });
 
-  it('setSelection and getSelection use Point.idx after draw with dateWindow', () => {
+  it("setSelection and getSelection use Point.idx after draw with dateWindow", () => {
     const data: Array<[number, number]> = [];
     for (let i = 0; i < 10000; i++) {
       data.push([i, Math.sin(i * 0.01) * 100]);
     }
 
-    const g = new Zgraph(mountDiv(), data, {
-      labels: ['x', 'A'],
+    const g = new Zpgraph(mountDiv(), data, {
+      labels: ["x", "A"],
       width: 480,
       height: 320,
       dateWindow: [2000, 8000],
@@ -120,14 +120,14 @@ describe('selection with decimated data', () => {
     g.destroy();
   });
 
-  it('findClosestRow returns a surviving idx near the requested x', () => {
+  it("findClosestRow returns a surviving idx near the requested x", () => {
     const data: Array<[number, number]> = [];
     for (let i = 0; i < 10000; i++) {
       data.push([i, i]);
     }
 
-    const g = new Zgraph(mountDiv(), data, {
-      labels: ['x', 'A'],
+    const g = new Zpgraph(mountDiv(), data, {
+      labels: ["x", "A"],
       width: 480,
       height: 320,
       dateWindow: [1000, 9000],

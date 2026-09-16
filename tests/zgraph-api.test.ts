@@ -1,17 +1,17 @@
-import { describe, expect, it } from 'vitest';
-import { Zgraph } from '../src/index';
+import { describe, expect, it } from "vitest";
+import { Zpgraph } from "../src/index";
 
-describe('Zgraph package surface', () => {
-  it('exports constructor and version', () => {
-    expect(typeof Zgraph).toBe('function');
-    expect(Zgraph.VERSION).toBe('0.1.0');
-    expect(Zgraph.NAME).toBe('Zgraph');
+describe("Zpgraph package surface", () => {
+  it("exports constructor and version", () => {
+    expect(typeof Zpgraph).toBe("function");
+    expect(Zpgraph.VERSION).toBe("0.1.0");
+    expect(Zpgraph.NAME).toBe("Zpgraph");
   });
 
-  it('exposes plugins and data handlers', () => {
-    expect(Zgraph.Plugins.Legend).toBeTruthy();
-    expect(Zgraph.Plugins.Axes).toBeTruthy();
-    expect(Zgraph.DataHandlers.DefaultHandler).toBeTruthy();
-    expect(Zgraph.PLUGINS.length).toBeGreaterThan(0);
+  it("exposes plugins and data handlers", () => {
+    expect(Zpgraph.Plugins.Legend).toBeTruthy();
+    expect(Zpgraph.Plugins.Axes).toBeTruthy();
+    expect(Zpgraph.DataHandlers.DefaultHandler).toBeTruthy();
+    expect(Zpgraph.PLUGINS.length).toBeGreaterThan(0);
   });
 });

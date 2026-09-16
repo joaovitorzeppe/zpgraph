@@ -12,25 +12,25 @@
  * the plot area.
  */
 
-import { computeYAxisRanges, gatherDatasets } from './render';
-import * as utils from './utils';
-import type Zgraph from './zgraph';
+import { computeYAxisRanges, gatherDatasets } from "./render";
+import * as utils from "./utils";
+import type Zpgraph from "./zpgraph";
 
 /**
  * Returns the currently-visible x-range. This can be affected by zooming,
  * panning or a call to updateOptions.
  * Returns a two-element array: [left, right].
- * If the Zgraph has dates on the x-axis, these will be millis since epoch.
+ * If the Zpgraph has dates on the x-axis, these will be millis since epoch.
  */
-export const xAxisRange = (g: Zgraph): [number, number] => {
+export const xAxisRange = (g: Zpgraph): [number, number] => {
   return g.dateWindow_ ? g.dateWindow_ : xAxisExtremes(g);
 };
 
 /**
  * Returns the lower- and upper-bound x-axis values of the data set.
  */
-export const xAxisExtremes = (g: Zgraph): [number, number] => {
-  let pad = g.getNumericOption('xRangePad') / g.plotter_.area.w;
+export const xAxisExtremes = (g: Zpgraph): [number, number] => {
+  let pad = g.getNumericOption("xRangePad") / g.plotter_.area.w;
   if (g.numRows() === 0) {
     return [0 - pad, 1 + pad];
   }
@@ -50,7 +50,7 @@ export const xAxisExtremes = (g: Zgraph): [number, number] => {
  * the ranges you'll get if you double-click to zoom out or call resetZoom().
  * The return value is an array of [low, high] tuples, one for each y-axis.
  */
-export const yAxisExtremes = (g: Zgraph) => {
+export const yAxisExtremes = (g: Zpgraph) => {
   const packed = gatherDatasets(g, g.rolledSeries_, null);
   const { extremes } = packed;
   const saveAxes = g.axes_;
@@ -67,10 +67,10 @@ export const yAxisExtremes = (g: Zgraph) => {
  * Returns a two-element array: [bottom, top].
  */
 export const yAxisRange = (
-  g: Zgraph,
+  g: Zpgraph,
   idx?: number,
 ): [number, number] | null => {
-  if (typeof idx == 'undefined') idx = 0;
+  if (typeof idx == "undefined") idx = 0;
   if (idx < 0 || idx >= g.axes_.length) {
     return null;
   }
@@ -84,7 +84,7 @@ export const yAxisRange = (
  * zooming, panning, calls to updateOptions, etc.
  * Returns an array of [bottom, top] pairs, one for each y-axis.
  */
-export const yAxisRanges = (g: Zgraph) => {
+export const yAxisRanges = (g: Zpgraph) => {
   const ret: Array<[number, number] | null> = [];
   for (let i = 0; i < g.axes_.length; i++) {
     ret.push(yAxisRange(g, i));
@@ -102,7 +102,7 @@ export const yAxisRanges = (g: Zgraph) => {
  * instead of toDomCoords(null, y, axis).
  */
 export const toDomCoords = (
-  g: Zgraph,
+  g: Zpgraph,
   x: number | null,
   y: number | null,
   axis?: number,
@@ -116,7 +116,7 @@ export const toDomCoords = (
  * axis.
  * Returns a single value or null if x is null.
  */
-export const toDomXCoord = (g: Zgraph, x: number | null) => {
+export const toDomXCoord = (g: Zpgraph, x: number | null) => {
   if (x === null) {
     return null;
   }
@@ -132,7 +132,7 @@ export const toDomXCoord = (g: Zgraph, x: number | null) => {
  *
  * returns a single value or null if y is null.
  */
-export const toDomYCoord = (g: Zgraph, y: number | null, axis?: number) => {
+export const toDomYCoord = (g: Zpgraph, y: number | null, axis?: number) => {
   let pct = g.toPercentYCoord(y, axis);
 
   if (pct === null) {
@@ -152,7 +152,7 @@ export const toDomYCoord = (g: Zgraph, y: number | null, axis?: number) => {
  * instead of toDataCoords(null, y, axis).
  */
 export const toDataCoords = (
-  g: Zgraph,
+  g: Zpgraph,
   x: number | null,
   y: number | null,
   axis?: number,
@@ -165,7 +165,7 @@ export const toDataCoords = (
  *
  * If x is null, this returns null.
  */
-export const toDataXCoord = (g: Zgraph, x: number | null) => {
+export const toDataXCoord = (g: Zpgraph, x: number | null) => {
   if (x === null) {
     return null;
   }
@@ -173,7 +173,7 @@ export const toDataXCoord = (g: Zgraph, x: number | null) => {
   let area = g.plotter_.area;
   let xRange = xAxisRange(g);
 
-  if (!g.attributes_.getForAxis('logscale', 'x')) {
+  if (!g.attributes_.getForAxis("logscale", "x")) {
     return xRange[0] + ((x - area.x) / area.w) * (xRange[1] - xRange[0]);
   } else {
     let pct = (x - area.x) / area.w;
@@ -187,18 +187,18 @@ export const toDataXCoord = (g: Zgraph, x: number | null) => {
  * If y is null, this returns null.
  * if axis is null, this uses the first axis.
  */
-export const toDataYCoord = (g: Zgraph, y: number | null, axis?: number) => {
+export const toDataYCoord = (g: Zpgraph, y: number | null, axis?: number) => {
   if (y === null) {
     return null;
   }
 
   let area = g.plotter_.area;
-  if (typeof axis == 'undefined') axis = 0;
+  if (typeof axis == "undefined") axis = 0;
   const yRange = yAxisRange(g, axis)!;
   const y0 = yRange[0]!;
   const y1 = yRange[1]!;
 
-  if (!g.attributes_.getForAxis('logscale', axis)) {
+  if (!g.attributes_.getForAxis("logscale", axis)) {
     return y0 + ((area.y + area.h - y) / area.h) * (y1 - y0);
   } else {
     // Computing the inverse of toDomCoord.
@@ -224,18 +224,22 @@ export const toDataYCoord = (g: Zgraph, y: number | null, axis?: number) => {
  * @param [axis] The axis number on which the data coordinate lives.
  * @return A fraction in [0, 1] where 0 = the top edge.
  */
-export const toPercentYCoord = (g: Zgraph, y: number | null, axis?: number) => {
+export const toPercentYCoord = (
+  g: Zpgraph,
+  y: number | null,
+  axis?: number,
+) => {
   if (y === null) {
     return null;
   }
-  if (typeof axis == 'undefined') axis = 0;
+  if (typeof axis == "undefined") axis = 0;
 
   const yRange = yAxisRange(g, axis)!;
   const y0 = yRange[0]!;
   const y1 = yRange[1]!;
 
   let pct;
-  let logscale = g.attributes_.getForAxis('logscale', axis);
+  let logscale = g.attributes_.getForAxis("logscale", axis);
   if (logscale) {
     let logr0 = utils.log10(y0);
     let logr1 = utils.log10(y1);
@@ -262,14 +266,14 @@ export const toPercentYCoord = (g: Zgraph, y: number | null, axis?: number) => {
  * @param x The data x-coordinate.
  * @return A fraction in [0, 1] where 0 = the left edge.
  */
-export const toPercentXCoord = (g: Zgraph, x: number | null) => {
+export const toPercentXCoord = (g: Zpgraph, x: number | null) => {
   if (x === null) {
     return null;
   }
 
   let xRange = xAxisRange(g);
   let pct;
-  let logscale = g.attributes_.getForAxis('logscale', 'x');
+  let logscale = g.attributes_.getForAxis("logscale", "x");
   if (logscale === true) {
     // logscale can be null so we test for true explicitly.
     let logr0 = utils.log10(xRange[0]);
@@ -289,7 +293,7 @@ export const toPercentXCoord = (g: Zgraph, x: number | null) => {
  *
  * Returns a two-element array: [X, Y].
  */
-export const eventToDomCoords = (g: Zgraph, event: MouseEvent) => {
+export const eventToDomCoords = (g: Zpgraph, event: MouseEvent) => {
   if (event.offsetX && event.offsetY) {
     return [event.offsetX, event.offsetY];
   } else {

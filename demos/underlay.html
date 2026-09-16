@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Underlay · Zgraph</title>
+  <title>Underlay · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -21,13 +21,13 @@
   </p>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { makeSeries } from './helpers.js';
 
     const lo = 16;
     const hi = 24;
 
-    new Zgraph(document.getElementById('chart'), makeSeries({ points: 80, series: 1, seed: 2 }), {
+    new Zpgraph(document.getElementById('chart'), makeSeries({ points: 80, series: 1, seed: 2 }), {
       labels: ['Date', 'Temp'],
       legend: 'always',
       ylabel: '°C',

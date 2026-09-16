@@ -12,36 +12,39 @@
  * routes pointer gestures to the interaction model.
  */
 
-import IFrameTarp from './iframe-tarp';
-import ZgraphLayout from './layout';
-import { log } from './logger';
-import * as utils from './utils';
-import type { ChartInteractionHandler, ZgraphInstance } from './internal-types';
-import type { InteractionContext, InteractionModel } from './types';
-import type Zgraph from './zgraph';
+import IFrameTarp from "./iframe-tarp";
+import ZpgraphLayout from "./layout";
+import { log } from "./logger";
+import * as utils from "./utils";
+import type {
+  ChartInteractionHandler,
+  ZpgraphInstance,
+} from "./internal-types";
+import type { InteractionContext, InteractionModel } from "./types";
+import type Zpgraph from "./zpgraph";
 
 /**
- * Generates interface elements for the Zgraph: a containing div, a div to
+ * Generates interface elements for the Zpgraph: a containing div, a div to
  * display the current point, and a textbox to adjust the rolling average
  * period. Also creates the Renderer/Layout elements.
  * @private
  */
-export const createInterface = (g: Zgraph) => {
+export const createInterface = (g: Zpgraph) => {
   // Create the all-enclosing graph div
   let enclosing = g.maindiv_;
 
-  g.graphDiv = document.createElement('div');
-  g.graphDiv.className = 'zgraph';
+  g.graphDiv = document.createElement("div");
+  g.graphDiv.className = "zpgraph";
 
-  g.graphDiv.style.textAlign = 'left'; // This is a CSS "reset"
-  g.graphDiv.style.position = 'relative';
+  g.graphDiv.style.textAlign = "left"; // This is a CSS "reset"
+  g.graphDiv.style.position = "relative";
   enclosing.appendChild(g.graphDiv);
 
   // Create the canvas for interactive parts of the chart.
   g.canvas_ = utils.createCanvas();
-  g.canvas_.style.position = 'absolute';
-  g.canvas_.style.top = '0';
-  g.canvas_.style.left = '0';
+  g.canvas_.style.position = "absolute";
+  g.canvas_.style.top = "0";
+  g.canvas_.style.left = "0";
 
   // ... and for static parts of the chart.
   g.hidden_ = createHiddenCanvas(g, g.canvas_);
@@ -59,14 +62,14 @@ export const createInterface = (g: Zgraph) => {
   setUpAccessibility(g);
 
   // Create the grapher
-  g.layout_ = new ZgraphLayout(g as unknown as ZgraphInstance);
+  g.layout_ = new ZpgraphLayout(g as unknown as ZpgraphInstance);
 
-  let zgraph = g;
+  let zpgraph = g;
 
   // Hovering repaints the highlight and the legend; one repaint per frame
   // is all that can be seen.
   g.mouseMoveHandler_ = utils.coalesceFrames(function (e: unknown) {
-    zgraph.mouseMove_(e as MouseEvent);
+    zpgraph.mouseMove_(e as MouseEvent);
   });
   g.coalesced_.push(g.mouseMoveHandler_);
 
@@ -77,15 +80,15 @@ export const createInterface = (g: Zgraph) => {
     let target = e.target;
     let relatedTarget = e.relatedTarget;
     if (
-      utils.isNodeContainedBy(target as Node, zgraph.graphDiv) &&
-      !utils.isNodeContainedBy(relatedTarget as Node, zgraph.graphDiv)
+      utils.isNodeContainedBy(target as Node, zpgraph.graphDiv) &&
+      !utils.isNodeContainedBy(relatedTarget as Node, zpgraph.graphDiv)
     ) {
-      zgraph.mouseOut_(e);
+      zpgraph.mouseOut_(e);
     }
   };
 
-  g.addAndTrackEvent(window, 'mouseout', g.mouseOutHandler_ as EventListener);
-  g.addAndTrackEvent(g.mouseEventElement_, 'mousemove', g.mouseMoveHandler_);
+  g.addAndTrackEvent(window, "mouseout", g.mouseOutHandler_ as EventListener);
+  g.addAndTrackEvent(g.mouseEventElement_, "mousemove", g.mouseMoveHandler_);
 
   // Don't recreate and register the resize handler on subsequent calls.
   // This happens when the graph is resized.
@@ -93,49 +96,49 @@ export const createInterface = (g: Zgraph) => {
     // A window drag emits resize events continuously; each one relayouts
     // the chart from scratch.
     g.resizeHandler_ = utils.coalesceFrames(function () {
-      zgraph.resize();
+      zpgraph.resize();
     });
     g.coalesced_.push(g.resizeHandler_);
 
     // Update when the window is resized.
-    g.addAndTrackEvent(window, 'resize', g.resizeHandler_);
+    g.addAndTrackEvent(window, "resize", g.resizeHandler_);
 
     g.resizeObserver_ = null;
-    let resizeMode = g.getStringOption('resizable');
-    if (typeof ResizeObserver === 'undefined' && resizeMode !== 'no') {
-      log.error('ResizeObserver unavailable; ignoring resizable property');
-      resizeMode = 'no';
+    let resizeMode = g.getStringOption("resizable");
+    if (typeof ResizeObserver === "undefined" && resizeMode !== "no") {
+      log.error("ResizeObserver unavailable; ignoring resizable property");
+      resizeMode = "no";
     }
     if (
-      resizeMode === 'horizontal' ||
-      resizeMode === 'vertical' ||
-      resizeMode === 'both'
+      resizeMode === "horizontal" ||
+      resizeMode === "vertical" ||
+      resizeMode === "both"
     ) {
       enclosing.style.resize = resizeMode;
-    } else if (resizeMode !== 'passive') {
-      resizeMode = 'no';
+    } else if (resizeMode !== "passive") {
+      resizeMode = "no";
     }
-    if (resizeMode !== 'no') {
-      if (window.getComputedStyle(enclosing).overflow === 'visible')
-        enclosing.style.overflow = 'hidden';
+    if (resizeMode !== "no") {
+      if (window.getComputedStyle(enclosing).overflow === "visible")
+        enclosing.style.overflow = "hidden";
       g.resizeObserver_ = new ResizeObserver(g.resizeHandler_);
       g.resizeObserver_.observe(enclosing);
     }
   }
 };
 
-export const resizeElements = (g: Zgraph) => {
-  g.graphDiv.style.width = g.width_ + 'px';
-  g.graphDiv.style.height = g.height_ + 'px';
+export const resizeElements = (g: Zpgraph) => {
+  g.graphDiv.style.width = g.width_ + "px";
+  g.graphDiv.style.height = g.height_ + "px";
 
-  let pixelRatioOption = g.getNumericOption('pixelRatio');
+  let pixelRatioOption = g.getNumericOption("pixelRatio");
 
   let canvasScale =
     pixelRatioOption || utils.getContextPixelRatio(g.canvas_ctx_);
   g.canvas_.width = g.width_ * canvasScale;
   g.canvas_.height = g.height_ * canvasScale;
-  g.canvas_.style.width = g.width_ + 'px';
-  g.canvas_.style.height = g.height_ + 'px';
+  g.canvas_.style.width = g.width_ + "px";
+  g.canvas_.style.height = g.height_ + "px";
   if (canvasScale !== 1) {
     g.canvas_ctx_.scale(canvasScale, canvasScale);
   }
@@ -144,8 +147,8 @@ export const resizeElements = (g: Zgraph) => {
     pixelRatioOption || utils.getContextPixelRatio(g.hidden_ctx_);
   g.hidden_.width = g.width_ * hiddenScale;
   g.hidden_.height = g.height_ * hiddenScale;
-  g.hidden_.style.width = g.width_ + 'px';
-  g.hidden_.style.height = g.height_ + 'px';
+  g.hidden_.style.width = g.width_ + "px";
+  g.hidden_.style.height = g.height_ + "px";
   if (hiddenScale !== 1) {
     g.hidden_ctx_.scale(hiddenScale, hiddenScale);
   }
@@ -153,23 +156,23 @@ export const resizeElements = (g: Zgraph) => {
 
 /**
  * Creates the canvas on which the chart will be drawn. Only the Renderer ever
- * draws on this particular canvas. All Zgraph work (i.e. drawing hover dots
+ * draws on this particular canvas. All Zpgraph work (i.e. drawing hover dots
  * or the zoom rectangles) is done on g.canvas_.
- * @param canvas The Zgraph canvas over which to overlay the plot
+ * @param canvas The Zpgraph canvas over which to overlay the plot
  * @return The newly-created canvas
  * @private
  */
-export const createHiddenCanvas = (g: Zgraph, canvas: HTMLCanvasElement) => {
+export const createHiddenCanvas = (g: Zpgraph, canvas: HTMLCanvasElement) => {
   let h = utils.createCanvas();
-  h.style.position = 'absolute';
+  h.style.position = "absolute";
   // Extra area makes zooming the far left/right easier; plot height must stay
   // precise so clipping works.
   h.style.top = canvas.style.top;
   h.style.left = canvas.style.left;
   h.width = g.width_;
   h.height = g.height_;
-  h.style.width = g.width_ + 'px';
-  h.style.height = g.height_ + 'px';
+  h.style.width = g.width_ + "px";
+  h.style.height = g.height_ + "px";
   return h;
 };
 
@@ -178,7 +181,7 @@ export const createHiddenCanvas = (g: Zgraph, canvas: HTMLCanvasElement) => {
  * @return The mouse event element.
  * @private
  */
-export const createMouseEventElement = (g: Zgraph) => {
+export const createMouseEventElement = (g: Zpgraph) => {
   return g.canvas_;
 };
 
@@ -188,11 +191,11 @@ export const createMouseEventElement = (g: Zgraph) => {
  * and answer the arrow keys and Escape.
  * @private
  */
-export const setUpAccessibility = (g: Zgraph) => {
+export const setUpAccessibility = (g: Zpgraph) => {
   // The overlay carries the description for both layers; the one beneath it
   // holds the same picture and would only be read twice.
-  g.canvas_.setAttribute('role', 'img');
-  g.hidden_.setAttribute('aria-hidden', 'true');
+  g.canvas_.setAttribute("role", "img");
+  g.hidden_.setAttribute("aria-hidden", "true");
   updateAriaLabel(g);
 
   // Without this the chart cannot be reached with the keyboard at all.
@@ -200,7 +203,7 @@ export const setUpAccessibility = (g: Zgraph) => {
   g.keyDownHandler_ = (e: KeyboardEvent) => {
     keyDown(g, e);
   };
-  g.addAndTrackEvent(g.graphDiv, 'keydown', g.keyDownHandler_ as EventListener);
+  g.addAndTrackEvent(g.graphDiv, "keydown", g.keyDownHandler_ as EventListener);
 };
 
 /**
@@ -208,31 +211,31 @@ export const setUpAccessibility = (g: Zgraph) => {
  * what range of x it currently shows.
  * @private
  */
-export const updateAriaLabel = (g: Zgraph) => {
+export const updateAriaLabel = (g: Zpgraph) => {
   if (!g.canvas_) return;
 
   const parts = [];
-  const title = g.getOption('title');
-  parts.push(title ? String(title) : 'Chart');
+  const title = g.getOption("title");
+  parts.push(title ? String(title) : "Chart");
 
   const labels = g.getLabels();
   if (labels && labels.length > 1) {
-    parts.push(labels.length - 1 + ' series: ' + labels.slice(1).join(', '));
+    parts.push(labels.length - 1 + " series: " + labels.slice(1).join(", "));
   }
 
   if (g.dateWindow_ || g.rawData_) {
     const range = g.xAxisRange();
-    const view = g.optionsViewForAxis_('x');
-    const formatter = view('valueFormatter') as (...args: unknown[]) => unknown;
+    const view = g.optionsViewForAxis_("x");
+    const formatter = view("valueFormatter") as (...args: unknown[]) => unknown;
     parts.push(
-      'x from ' +
+      "x from " +
         String(formatter.call(g, range[0], view)) +
-        ' to ' +
+        " to " +
         String(formatter.call(g, range[1], view)),
     );
   }
 
-  g.canvas_.setAttribute('aria-label', parts.join('. ') + '.');
+  g.canvas_.setAttribute("aria-label", parts.join(". ") + ".");
 };
 
 /**
@@ -240,7 +243,7 @@ export const updateAriaLabel = (g: Zgraph) => {
  * selection and the zoom. With Shift held, arrows pan or zoom the window.
  * @private
  */
-export const keyDown = (g: Zgraph, e: KeyboardEvent) => {
+export const keyDown = (g: Zpgraph, e: KeyboardEvent) => {
   if (e.altKey || e.ctrlKey || e.metaKey) return;
 
   const lastRow = g.numRows() - 1;
@@ -257,19 +260,19 @@ export const keyDown = (g: Zgraph, e: KeyboardEvent) => {
   let row = g.keyboardRow_;
 
   switch (e.key) {
-    case 'ArrowRight':
+    case "ArrowRight":
       row = row === undefined ? 0 : row + 1;
       break;
-    case 'ArrowLeft':
+    case "ArrowLeft":
       row = row === undefined ? lastRow : row - 1;
       break;
-    case 'Home':
+    case "Home":
       row = 0;
       break;
-    case 'End':
+    case "End":
       row = lastRow;
       break;
-    case 'Escape':
+    case "Escape":
       g.keyboardRow_ = undefined;
       g.clearSelection();
       g.resetZoom();
@@ -285,7 +288,7 @@ export const keyDown = (g: Zgraph, e: KeyboardEvent) => {
 };
 
 /** Shift+←/→ pan the x window; Shift+↑/↓ zoom in/out around the center. */
-const keyDownShift = (g: Zgraph, key: string): boolean => {
+const keyDownShift = (g: Zpgraph, key: string): boolean => {
   const [xMin, xMax] = g.xAxisRange();
   const span = xMax - xMin;
   if (!(span > 0) || !isFinite(span)) return false;
@@ -297,20 +300,20 @@ const keyDownShift = (g: Zgraph, key: string): boolean => {
   let next: [number, number] | null = null;
 
   switch (key) {
-    case 'ArrowLeft':
+    case "ArrowLeft":
       next = [xMin - panStep, xMax - panStep];
       break;
-    case 'ArrowRight':
+    case "ArrowRight":
       next = [xMin + panStep, xMax + panStep];
       break;
-    case 'ArrowUp': {
+    case "ArrowUp": {
       // zoom in
       const mid = (xMin + xMax) / 2;
       const half = (span * zoomFactor) / 2;
       next = [mid - half, mid + half];
       break;
     }
-    case 'ArrowDown': {
+    case "ArrowDown": {
       // zoom out
       const mid = (xMin + xMax) / 2;
       const half = span / zoomFactor / 2;
@@ -344,23 +347,23 @@ const keyDownShift = (g: Zgraph, key: string): boolean => {
  * Create the text box to adjust the averaging period
  * @private
  */
-export const createRollInterface = (g: Zgraph) => {
+export const createRollInterface = (g: Zpgraph) => {
   // Create a roller if one doesn't exist already.
   let roller = g.roller_;
   if (!roller) {
-    g.roller_ = roller = document.createElement('input');
-    roller.type = 'text';
-    roller.style.display = 'none';
-    roller.className = 'zgraph-roller';
+    g.roller_ = roller = document.createElement("input");
+    roller.type = "text";
+    roller.style.display = "none";
+    roller.className = "zpgraph-roller";
     g.graphDiv.appendChild(roller);
   }
 
-  let display = g.getBooleanOption('showRoller') ? 'block' : 'none';
+  let display = g.getBooleanOption("showRoller") ? "block" : "none";
 
   let area = g.getArea();
   let textAttr = {
-    top: area.y + area.h - 25 + 'px',
-    left: area.x + 1 + 'px',
+    top: area.y + area.h - 25 + "px",
+    left: area.x + 1 + "px",
     display: display,
   };
   roller.size = 2;
@@ -378,7 +381,7 @@ export const createRollInterface = (g: Zgraph) => {
  * events.
  * @private
  */
-export const createDragInterface = (g: Zgraph) => {
+export const createDragInterface = (g: Zpgraph) => {
   let context = {
     // Tracks whether the mouse is down right now
     isZooming: false,
@@ -427,7 +430,7 @@ export const createDragInterface = (g: Zgraph) => {
       // prevents mouse drags from selecting page text.
       event.preventDefault();
 
-      let canvasPos = utils.findPos((g as ZgraphInstance).canvas_);
+      let canvasPos = utils.findPos((g as ZpgraphInstance).canvas_);
       contextB.px = canvasPos.x;
       contextB.py = canvasPos.y;
       contextB.dragStartX = utils.dragGetX_(
@@ -463,7 +466,7 @@ export const createDragInterface = (g: Zgraph) => {
     },
   };
 
-  const interactionModel = g.getOption('interactionModel') as InteractionModel &
+  const interactionModel = g.getOption("interactionModel") as InteractionModel &
     Record<string, unknown>;
 
   // Self is the graph.
@@ -474,7 +477,7 @@ export const createDragInterface = (g: Zgraph) => {
     return function (event: Event) {
       handler(
         event,
-        self as unknown as ZgraphInstance,
+        self as unknown as ZpgraphInstance,
         context as InteractionContext,
       );
     };
@@ -489,14 +492,14 @@ export const createDragInterface = (g: Zgraph) => {
     );
     // A move redraws the whole chart, and a finger or a mouse produces far
     // more of them than there are frames to show them in.
-    if (eventName === 'touchmove' || eventName === 'mousemove') {
+    if (eventName === "touchmove" || eventName === "mousemove") {
       const coalesced = utils.coalesceFrames(
         bound as (...args: unknown[]) => void,
       );
       bound = coalesced;
       coalescedMoves.push(coalesced);
       g.coalesced_.push(coalesced);
-    } else if (eventName === 'touchend' || eventName === 'mouseup') {
+    } else if (eventName === "touchend" || eventName === "mouseup") {
       // The gesture ends where the last move left it, so that move has to
       // have run before the end handler reads the viewport.
       let end = bound;
@@ -519,6 +522,6 @@ export const createDragInterface = (g: Zgraph) => {
       context.destroy();
     };
 
-    g.addAndTrackEvent(document, 'mouseup', mouseUpHandler);
+    g.addAndTrackEvent(document, "mouseup", mouseUpHandler);
   }
 };

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Random dataset · Zgraph</title>
+  <title>Random dataset · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -25,7 +25,7 @@
   </div>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { randomDataset } from './helpers.js';
 
     const el = document.getElementById('chart');
@@ -36,7 +36,7 @@
       const next = randomDataset();
       meta.textContent = next.title;
       if (!g) {
-        g = new Zgraph(el, next.data, {
+        g = new Zpgraph(el, next.data, {
           labels: next.labels,
           colors: next.colors,
           legend: 'always',

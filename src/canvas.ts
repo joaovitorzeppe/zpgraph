@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -14,35 +14,38 @@
  * In particular, support for:
  * - grid overlays
  * - high/low bands
- * - zgraph attribute system
+ * - zpgraph attribute system
  */
 
 /**
- * The ZgraphCanvasRenderer class does the actual rendering of the chart onto
+ * The ZpgraphCanvasRenderer class does the actual rendering of the chart onto
  * a canvas.
  * @param element The canvas to attach to
  * @param elementContext The 2d context of the canvas (injected so it
  * can be mocked for testing.)
- * @param layout The ZgraphLayout object for this graph.
+ * @param layout The ZpgraphLayout object for this graph.
  * @constructor
  */
 
-/*global Zgraph:false */
+/*global Zpgraph:false */
 
-import * as utils from './utils';
-import { DECIMATION_THRESHOLD, type DecimatedPoints } from './decimate';
-import { log } from './logger';
-import type { DrawPointCallback, Plotter, PlotterEvent, Point } from './types';
+import * as utils from "./utils";
+import { DECIMATION_THRESHOLD, type DecimatedPoints } from "./decimate";
+import { log } from "./logger";
+import type { DrawPointCallback, Plotter, PlotterEvent, Point } from "./types";
 import type {
   AxisProperties,
   LayoutLike,
   PlotArea,
-  ZgraphInstance,
-} from './internal-types';
+  ZpgraphInstance,
+} from "./internal-types";
 
 /** Plotter payload used by canvas renderers (extends public PlotterEvent). */
-type CanvasPlotterEvent = Omit<PlotterEvent, 'zgraph' | 'axis' | 'plotArea'> & {
-  zgraph: ZgraphInstance;
+type CanvasPlotterEvent = Omit<
+  PlotterEvent,
+  "zpgraph" | "axis" | "plotArea"
+> & {
+  zpgraph: ZpgraphInstance;
   axis: AxisProperties;
   plotArea: PlotArea;
   singleSeriesName?: string | null;
@@ -72,16 +75,16 @@ type FillContext = CanvasRenderingContext2D | FastCanvasProxy;
  * case when the underlying data being charted has changed. It is _not_ called
  * in the common case that the user has zoomed or is panning the view.
  *
- * The chart canvas has already been created by the Zgraph object. The
+ * The chart canvas has already been created by the Zpgraph object. The
  * renderer simply gets a drawing context.
  *
- * @param zgraph The chart to which this renderer belongs.
+ * @param zpgraph The chart to which this renderer belongs.
  * @param element The &lt;canvas&gt; DOM element on which to draw.
  * @param elementContext The drawing context.
- * @param layout The chart's ZgraphLayout object.
+ * @param layout The chart's ZpgraphLayout object.
  */
-export default class ZgraphCanvasRenderer {
-  zgraph_: ZgraphInstance;
+export default class ZpgraphCanvasRenderer {
+  zpgraph_: ZpgraphInstance;
   layout: LayoutLike;
   element: HTMLCanvasElement;
   elementContext: CanvasRenderingContext2D;
@@ -91,31 +94,31 @@ export default class ZgraphCanvasRenderer {
   colors!: Record<string, string>;
 
   constructor(
-    zgraph: ZgraphInstance,
+    zpgraph: ZpgraphInstance,
     element: HTMLCanvasElement,
     elementContext: CanvasRenderingContext2D,
     layout: LayoutLike,
   ) {
-    this.zgraph_ = zgraph;
+    this.zpgraph_ = zpgraph;
 
     this.layout = layout;
     this.element = element;
     this.elementContext = elementContext;
 
-    this.height = zgraph.height_;
-    this.width = zgraph.width_;
+    this.height = zpgraph.height_;
+    this.width = zpgraph.width_;
 
     // internal state
     this.area = layout.getPlotArea();
 
     // Set up a clipping area for the canvas (and the interaction canvas).
     // This ensures that we don't overdraw.
-    let ctx = this.zgraph_.canvas_ctx_;
+    let ctx = this.zpgraph_.canvas_ctx_;
     ctx.beginPath();
     ctx.rect(this.area.x, this.area.y, this.area.w, this.area.h);
     ctx.clip();
 
-    ctx = this.zgraph_.hidden_ctx_;
+    ctx = this.zpgraph_.hidden_ctx_;
     ctx.beginPath();
     ctx.rect(this.area.x, this.area.y, this.area.w, this.area.h);
     ctx.clip();
@@ -156,7 +159,7 @@ export default class ZgraphCanvasRenderer {
     connectSeparatedPoints: boolean,
   ): IteratorPredicateFn | null {
     return connectSeparatedPoints
-      ? ZgraphCanvasRenderer._predicateThatSkipsEmptyPoints
+      ? ZpgraphCanvasRenderer._predicateThatSkipsEmptyPoints
       : null;
   }
 
@@ -178,14 +181,14 @@ export default class ZgraphCanvasRenderer {
     drawPointCallback: DrawPointCallback,
     pointSize: number,
   ) {
-    let g = e.zgraph;
-    let stepPlot = g.getBooleanOption('stepPlot', e.setName);
+    let g = e.zpgraph;
+    let stepPlot = g.getBooleanOption("stepPlot", e.setName);
 
     if (!utils.isArrayLike(strokePattern)) {
       strokePattern = null;
     }
 
-    let drawGapPoints = g.getBooleanOption('drawGapEdgePoints', e.setName);
+    let drawGapPoints = g.getBooleanOption("drawGapEdgePoints", e.setName);
 
     let points = e.points;
     let setName = e.setName;
@@ -193,8 +196,8 @@ export default class ZgraphCanvasRenderer {
       points,
       0,
       points.length,
-      ZgraphCanvasRenderer._getIteratorPredicate(
-        g.getBooleanOption('connectSeparatedPoints', setName),
+      ZpgraphCanvasRenderer._getIteratorPredicate(
+        g.getBooleanOption("connectSeparatedPoints", setName),
       ),
     );
 
@@ -206,7 +209,7 @@ export default class ZgraphCanvasRenderer {
       if (ctx.setLineDash) ctx.setLineDash(strokePattern!);
     }
 
-    let decimated = ZgraphCanvasRenderer._decimateByPixel(
+    let decimated = ZpgraphCanvasRenderer._decimateByPixel(
       iter as utils.Iterator,
       e.plotArea,
     );
@@ -214,7 +217,7 @@ export default class ZgraphCanvasRenderer {
       iter = utils.createIterator(decimated, 0, decimated.length, null);
     }
 
-    let pointsOnLine = ZgraphCanvasRenderer._drawSeries(
+    let pointsOnLine = ZpgraphCanvasRenderer._drawSeries(
       e,
       iter as utils.Iterator,
       strokeWidth,
@@ -224,7 +227,7 @@ export default class ZgraphCanvasRenderer {
       stepPlot,
       color,
     );
-    ZgraphCanvasRenderer._drawPointsOnLine(
+    ZpgraphCanvasRenderer._drawPointsOnLine(
       e,
       pointsOnLine,
       drawPointCallback,
@@ -269,7 +272,7 @@ export default class ZgraphCanvasRenderer {
 
     if (
       !width ||
-      limit - start < width * ZgraphCanvasRenderer.DECIMATION_THRESHOLD
+      limit - start < width * ZpgraphCanvasRenderer.DECIMATION_THRESHOLD
     ) {
       return null;
     }
@@ -454,8 +457,8 @@ export default class ZgraphCanvasRenderer {
       let cb = pointsOnLine[idx]!;
       if (needsIsolation) ctx.save();
       drawPointCallback.call(
-        e.zgraph,
-        e.zgraph,
+        e.zpgraph,
+        e.zpgraph,
         e.setName,
         ctx,
         cb[0],
@@ -482,9 +485,9 @@ export default class ZgraphCanvasRenderer {
     // transformed coordinate space, but you can't specify different values for
     // each dimension (as you can with .scale()). The speedup here is ~12%.
     let sets = this.layout.points;
-    for (let i = sets.length; i--;) {
+    for (let i = sets.length; i--; ) {
       let points = sets[i]!;
-      for (let j = points.length; j--;) {
+      for (let j = points.length; j--; ) {
         let point = points[j]!;
         point.canvasx = this.area.w * point.x! + this.area.x;
         point.canvasy = this.area.h * point.y! + this.area.y;
@@ -495,9 +498,9 @@ export default class ZgraphCanvasRenderer {
   /**
    * Add canvas Actually draw the lines chart, including high/low bands.
    *
-   * This function can only be called if ZgraphLayout's points array has been
+   * This function can only be called if ZpgraphLayout's points array has been
    * updated with canvas{x,y} attributes, i.e. by
-   * ZgraphCanvasRenderer._updatePoints.
+   * ZpgraphCanvasRenderer._updatePoints.
    *
    * @param opt_seriesName when specified, only that series will
    *     be drawn. (This is used for expedited redrawing with highlightSeriesOpts)
@@ -517,10 +520,12 @@ export default class ZgraphCanvasRenderer {
     let setNames = this.layout.setNames;
     let setName;
 
-    this.colors = this.zgraph_.colorsMap_;
+    this.colors = this.zpgraph_.colorsMap_;
 
     // Determine which series have specialized plotters.
-    let plotter_attr = this.zgraph_.getOption('plotter') as Plotter | Plotter[];
+    let plotter_attr = this.zpgraph_.getOption("plotter") as
+      | Plotter
+      | Plotter[];
     let plotters: Plotter[] = utils.isArrayLike(plotter_attr)
       ? (plotter_attr as Plotter[])
       : [plotter_attr as Plotter];
@@ -528,7 +533,7 @@ export default class ZgraphCanvasRenderer {
     const setPlotters: Record<string, Plotter> = {};
     for (i = 0; i < setNames.length; i++) {
       setName = setNames[i]!;
-      let setPlotter = this.zgraph_.getOption('plotter', setName) as Plotter;
+      let setPlotter = this.zpgraph_.getOption("plotter", setName) as Plotter;
       if (setPlotter === plotter_attr) continue; // not specialized.
 
       setPlotters[setName] = setPlotter;
@@ -556,7 +561,10 @@ export default class ZgraphCanvasRenderer {
         }
 
         let color = this.colors[setName]!;
-        let strokeWidth = this.zgraph_.getNumericOption('strokeWidth', setName);
+        let strokeWidth = this.zpgraph_.getNumericOption(
+          "strokeWidth",
+          setName,
+        );
 
         ctx.save();
         ctx.strokeStyle = color;
@@ -568,8 +576,8 @@ export default class ZgraphCanvasRenderer {
           drawingContext: ctx,
           color: color,
           strokeWidth: strokeWidth,
-          zgraph: this.zgraph_,
-          axis: this.zgraph_.axisPropertiesForSeries(setName),
+          zpgraph: this.zpgraph_,
+          axis: this.zpgraph_.axisPropertiesForSeries(setName),
           plotArea: this.area,
           seriesIndex: j,
           seriesCount: sets.length,
@@ -585,20 +593,20 @@ export default class ZgraphCanvasRenderer {
   }
 
   /**
-   * Standard plotters. These may be used by clients via Zgraph.Plotters.
+   * Standard plotters. These may be used by clients via Zpgraph.Plotters.
    * See comments there for more details.
    */
   static _Plotters = {
     linePlotter: (e: CanvasPlotterEvent) => {
-      ZgraphCanvasRenderer._linePlotter(e);
+      ZpgraphCanvasRenderer._linePlotter(e);
     },
 
     fillPlotter: (e: CanvasPlotterEvent) => {
-      ZgraphCanvasRenderer._fillPlotter(e);
+      ZpgraphCanvasRenderer._fillPlotter(e);
     },
 
     errorPlotter: (e: CanvasPlotterEvent) => {
-      ZgraphCanvasRenderer._errorPlotter(e);
+      ZpgraphCanvasRenderer._errorPlotter(e);
     },
   };
 
@@ -607,23 +615,24 @@ export default class ZgraphCanvasRenderer {
    * @private
    */
   static _linePlotter(e: CanvasPlotterEvent) {
-    let g = e.zgraph;
+    let g = e.zpgraph;
     let setName = e.setName;
     let strokeWidth = e.strokeWidth;
 
-    let borderWidth = g.getNumericOption('strokeBorderWidth', setName);
+    let borderWidth = g.getNumericOption("strokeBorderWidth", setName);
     let drawPointCallback =
-      (g.getOption('drawPointCallback', setName) as DrawPointCallback | null) ||
+      (g.getOption("drawPointCallback", setName) as DrawPointCallback | null) ||
       utils.Circles.DEFAULT;
-    let strokePattern = g.getOption('strokePattern', setName) as
-      number[] | null;
-    let drawPoints = g.getBooleanOption('drawPoints', setName);
-    let pointSize = g.getNumericOption('pointSize', setName);
+    let strokePattern = g.getOption("strokePattern", setName) as
+      | number[]
+      | null;
+    let drawPoints = g.getBooleanOption("drawPoints", setName);
+    let pointSize = g.getNumericOption("pointSize", setName);
 
     if (borderWidth && strokeWidth) {
-      ZgraphCanvasRenderer._drawStyledLine(
+      ZpgraphCanvasRenderer._drawStyledLine(
         e,
-        g.getStringOption('strokeBorderColor', setName),
+        g.getStringOption("strokeBorderColor", setName),
         strokeWidth + 2 * borderWidth,
         strokePattern,
         drawPoints,
@@ -632,7 +641,7 @@ export default class ZgraphCanvasRenderer {
       );
     }
 
-    ZgraphCanvasRenderer._drawStyledLine(
+    ZpgraphCanvasRenderer._drawStyledLine(
       e,
       e.color,
       strokeWidth,
@@ -650,13 +659,13 @@ export default class ZgraphCanvasRenderer {
    * @private
    */
   static _errorPlotter(e: CanvasPlotterEvent) {
-    let g = e.zgraph;
+    let g = e.zpgraph;
     let setName = e.setName;
     let errorBars =
-      g.getBooleanOption('errorBars') || g.getBooleanOption('customBars');
+      g.getBooleanOption("errorBars") || g.getBooleanOption("customBars");
     if (!errorBars) return;
 
-    let fillGraph = g.getBooleanOption('fillGraph', setName);
+    let fillGraph = g.getBooleanOption("fillGraph", setName);
     if (fillGraph) {
       log.warn(
         "Can't use fillGraph option with customBars or errorBars option",
@@ -665,16 +674,16 @@ export default class ZgraphCanvasRenderer {
 
     let ctx = e.drawingContext;
     let color = e.color;
-    let fillAlpha = g.getNumericOption('fillAlpha', setName);
-    let stepPlot = g.getBooleanOption('stepPlot', setName);
+    let fillAlpha = g.getNumericOption("fillAlpha", setName);
+    let stepPlot = g.getBooleanOption("stepPlot", setName);
     let points = e.points;
 
     let iter = utils.createIterator(
       points,
       0,
       points.length,
-      ZgraphCanvasRenderer._getIteratorPredicate(
-        g.getBooleanOption('connectSeparatedPoints', setName),
+      ZpgraphCanvasRenderer._getIteratorPredicate(
+        g.getBooleanOption("connectSeparatedPoints", setName),
       ),
     );
 
@@ -687,7 +696,7 @@ export default class ZgraphCanvasRenderer {
     // should be same color as the lines but only 15% opaque.
     let rgb = utils.toRGB_(color)!;
     let err_color =
-      'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + fillAlpha + ')';
+      "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + fillAlpha + ")";
     ctx.fillStyle = err_color;
     ctx.beginPath();
 
@@ -900,7 +909,7 @@ export default class ZgraphCanvasRenderer {
     // We'll handle all the series at once, not one-by-one.
     if (e.seriesIndex !== 0) return;
 
-    let g = e.zgraph;
+    let g = e.zpgraph;
     let setNames = g.getLabels()!.slice(1); // remove x-axis
 
     // getLabels() includes names for invisible series, which are not included in
@@ -911,7 +920,7 @@ export default class ZgraphCanvasRenderer {
 
     let anySeriesFilled = (function () {
       for (let i = 0; i < setNames.length; i++) {
-        if (g.getBooleanOption('fillGraph', setNames[i]!)) return true;
+        if (g.getBooleanOption("fillGraph", setNames[i]!)) return true;
       }
       return false;
     })();
@@ -922,7 +931,7 @@ export default class ZgraphCanvasRenderer {
     let sets = e.allSeriesPoints!;
     let setCount = sets.length;
 
-    let stackedGraph = g.getBooleanOption('stackedGraph');
+    let stackedGraph = g.getBooleanOption("stackedGraph");
     let colors = g.getColors();
 
     // For stacked graphs, track the baseline for filling.
@@ -956,10 +965,10 @@ export default class ZgraphCanvasRenderer {
     for (let setIdx = setCount - 1; setIdx >= 0; setIdx--) {
       let ctx: FillContext = e.drawingContext;
       let setName = setNames[setIdx]!;
-      if (!g.getBooleanOption('fillGraph', setName)) continue;
+      if (!g.getBooleanOption("fillGraph", setName)) continue;
 
-      let fillAlpha = g.getNumericOption('fillAlpha', setName);
-      let stepPlot = g.getBooleanOption('stepPlot', setName);
+      let fillAlpha = g.getNumericOption("fillAlpha", setName);
+      let stepPlot = g.getBooleanOption("stepPlot", setName);
       let color = colors[setIdx]!;
       let axis = g.axisPropertiesForSeries(setName);
       let axisY = 1.0 + axis.minyval! * axis.yscale!;
@@ -972,8 +981,8 @@ export default class ZgraphCanvasRenderer {
         points,
         0,
         points.length,
-        ZgraphCanvasRenderer._getIteratorPredicate(
-          g.getBooleanOption('connectSeparatedPoints', setName),
+        ZpgraphCanvasRenderer._getIteratorPredicate(
+          g.getBooleanOption("connectSeparatedPoints", setName),
         ),
       );
 
@@ -984,7 +993,7 @@ export default class ZgraphCanvasRenderer {
       // should be same color as the lines but only 15% opaque.
       let rgb = utils.toRGB_(color)!;
       let err_color =
-        'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + fillAlpha + ')';
+        "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + fillAlpha + ")";
       ctx.fillStyle = err_color;
       ctx.beginPath();
       let last_x,
@@ -996,7 +1005,7 @@ export default class ZgraphCanvasRenderer {
         points.length > 2 * g.width_ ||
         (g.constructor as { FORCE_FAST_PROXY?: boolean }).FORCE_FAST_PROXY
       ) {
-        ctx = ZgraphCanvasRenderer._fastCanvasProxy(ctx);
+        ctx = ZpgraphCanvasRenderer._fastCanvasProxy(ctx);
       }
 
       // For filled charts, we draw points from left to right, then back along

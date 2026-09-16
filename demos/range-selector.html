@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Range selector · Zgraph</title>
+  <title>Range selector · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -21,10 +21,10 @@
   </p>
   <div id="chart" class="chart" style="height: 460px"></div>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { makeCustomBars } from './helpers.js';
 
-    new Zgraph(document.getElementById('chart'), makeCustomBars(90), {
+    new Zpgraph(document.getElementById('chart'), makeCustomBars(90), {
       labels: ['Date', 'New York', 'San Francisco'],
       customBars: true,
       legend: 'always',

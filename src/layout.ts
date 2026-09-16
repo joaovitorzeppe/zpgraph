@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -13,10 +13,10 @@
  * annotation lands, in fractions of the plot area.
  */
 
-/*global Zgraph:false */
+/*global Zpgraph:false */
 
-import * as utils from './utils';
-import { log } from './logger';
+import * as utils from "./utils";
+import { log } from "./logger";
 import type {
   AxisProperties,
   AxisTick,
@@ -26,12 +26,12 @@ import type {
   ParsedAnnotation,
   PlotArea,
   XAxisLayoutState,
-  ZgraphInstance,
-} from './internal-types';
-import type { Annotation, Point } from './types';
+  ZpgraphInstance,
+} from "./internal-types";
+import type { Annotation, Point } from "./types";
 
 /**
- * Creates a new ZgraphLayout object.
+ * Creates a new ZpgraphLayout object.
  *
  * This class contains all the data to be charted.
  * It uses data coordinates, but also records the chart range (in data
@@ -41,8 +41,8 @@ import type { Annotation, Point } from './types';
  * Despite the name, it does not record pixel coordinates nor decide where
  * chart elements go — that is the renderer's job.
  */
-export default class ZgraphLayout {
-  zgraph_: ZgraphInstance;
+export default class ZpgraphLayout {
+  zpgraph_: ZpgraphInstance;
   points: Point[][];
   setNames: string[];
   annotations: ParsedAnnotation[];
@@ -57,8 +57,8 @@ export default class ZgraphLayout {
   setPointsLengths: number[] | undefined;
   setPointsOffsets: number[] | undefined;
 
-  constructor(zgraph: ZgraphInstance) {
-    this.zgraph_ = zgraph;
+  constructor(zpgraph: ZpgraphInstance) {
+    this.zpgraph_ = zpgraph;
     /**
      * Array of points for each series.
      *
@@ -106,7 +106,7 @@ export default class ZgraphLayout {
 
   // Compute the box which the chart should be drawn in. This is the canvas's
   // box, less space needed for axis, chart labels, and other plug-ins.
-  // NOTE: This should only be called by Zgraph.predraw_().
+  // NOTE: This should only be called by Zpgraph.predraw_().
   computePlotArea() {
     const area: PlotArea = {
       x: 0,
@@ -116,14 +116,14 @@ export default class ZgraphLayout {
     };
 
     area.w =
-      this.zgraph_.width_ -
+      this.zpgraph_.width_ -
       area.x -
-      Number(this.zgraph_.getOption('rightGap') ?? 0);
-    area.h = this.zgraph_.height_;
+      Number(this.zpgraph_.getOption("rightGap") ?? 0);
+    area.h = this.zpgraph_.height_;
 
     // Let plugins reserve space.
     const e: LayoutEventPayload = {
-      chart_div: this.zgraph_.graphDiv,
+      chart_div: this.zpgraph_.graphDiv,
       reserveSpaceLeft: (px: number) => {
         const r = {
           x: area.x,
@@ -168,8 +168,8 @@ export default class ZgraphLayout {
       },
       chartRect: () => ({ x: area.x, y: area.y, w: area.w, h: area.h }),
     };
-    this.zgraph_.cascadeEvents_(
-      'layout',
+    this.zpgraph_.cascadeEvents_(
+      "layout",
       e as unknown as Record<string, unknown>,
     );
 
@@ -177,39 +177,39 @@ export default class ZgraphLayout {
   }
 
   setAnnotations(ann: Annotation[]) {
-    // The Zgraph object's annotations aren't parsed. We parse them here and
+    // The Zpgraph object's annotations aren't parsed. We parse them here and
     // save a copy. If there is no parser, then the user must be using raw format.
     this.annotations = [];
     const parse =
-      (this.zgraph_.getOption('xValueParser') as
-        ((x: string | number | Date) => number) | undefined) ??
-      ((x: string | number | Date) => x as number);
+      (this.zpgraph_.getOption("xValueParser") as
+        | ((x: string | number | Date) => number)
+        | undefined) ?? ((x: string | number | Date) => x as number);
     for (let i = 0; i < ann.length; i++) {
-      const a: ParsedAnnotation = { series: '', x: 0 };
+      const a: ParsedAnnotation = { series: "", x: 0 };
       const src = ann[i]! as Annotation & { xval?: number | null };
       // An invalid annotation is skipped, not fatal: dropping the rest of the
       // list because of one bad entry hides the good ones.
       if (!src.xval && src.x === undefined) {
         log.error(
-          'Ignoring annotation ' +
+          "Ignoring annotation " +
             i +
             ": annotations must have an 'x' property",
         );
         continue;
       }
-      if (typeof src.series !== 'string') {
-        log.error('Ignoring annotation ' + i + ": 'series' must name a series");
+      if (typeof src.series !== "string") {
+        log.error("Ignoring annotation " + i + ": 'series' must name a series");
         continue;
       }
       if (
         src.icon &&
-        !(Object.hasOwn(src, 'width') && Object.hasOwn(src, 'height'))
+        !(Object.hasOwn(src, "width") && Object.hasOwn(src, "height"))
       ) {
         log.error(
-          'Ignoring annotation ' +
+          "Ignoring annotation " +
             i +
-            ': must set width and height when ' +
-            'setting annotation.icon property',
+            ": must set width and height when " +
+            "setting annotation.icon property",
         );
         continue;
       }
@@ -236,13 +236,13 @@ export default class ZgraphLayout {
   }
 
   _evaluateLimits() {
-    const xlimits = this.zgraph_.xAxisRange();
+    const xlimits = this.zpgraph_.xAxisRange();
     this._xAxis.minval = xlimits[0];
     this._xAxis.maxval = xlimits[1];
     const xrange = xlimits[1] - xlimits[0];
     this._xAxis.scale = xrange !== 0 ? 1 / xrange : 1.0;
 
-    if (this.zgraph_.getOptionForAxis('logscale', 'x')) {
+    if (this.zpgraph_.getOptionForAxis("logscale", "x")) {
       this._xAxis.xlogrange =
         utils.log10(this._xAxis.maxval) - utils.log10(this._xAxis.minval);
       this._xAxis.xlogscale =
@@ -257,20 +257,20 @@ export default class ZgraphLayout {
       axis.yrange = axis.maxyval - axis.minyval;
       axis.yscale = axis.yrange !== 0 ? 1.0 / axis.yrange : 1.0;
 
-      if (this.zgraph_.getOption('logscale') || axis.logscale) {
+      if (this.zpgraph_.getOption("logscale") || axis.logscale) {
         axis.ylogrange = utils.log10(axis.maxyval) - utils.log10(axis.minyval);
         axis.ylogscale = axis.ylogrange !== 0 ? 1.0 / axis.ylogrange : 1.0;
         if (!isFinite(axis.ylogrange) || isNaN(axis.ylogrange)) {
           log.error(
-            'axis ' +
+            "axis " +
               i +
-              ' of graph at ' +
+              " of graph at " +
               axis.g +
               " can't be displayed in log scale for range [" +
               axis.minyval +
-              ' - ' +
+              " - " +
               axis.maxyval +
-              ']',
+              "]",
           );
         }
       }
@@ -314,19 +314,19 @@ export default class ZgraphLayout {
   }
 
   _evaluateLineCharts() {
-    const isStacked = this.zgraph_.getOption('stackedGraph');
-    const isLogscaleForX = this.zgraph_.getOptionForAxis('logscale', 'x');
+    const isStacked = this.zpgraph_.getOption("stackedGraph");
+    const isLogscaleForX = this.zpgraph_.getOptionForAxis("logscale", "x");
 
     for (let setIdx = 0; setIdx < this.points.length; setIdx++) {
       const points = this.points[setIdx]!;
       const setName = this.setNames[setIdx]!;
-      const connectSeparated = this.zgraph_.getOption(
-        'connectSeparatedPoints',
+      const connectSeparated = this.zpgraph_.getOption(
+        "connectSeparatedPoints",
         setName,
       );
-      const axis = this.zgraph_.axisPropertiesForSeries(setName);
+      const axis = this.zpgraph_.axisPropertiesForSeries(setName);
       const logscale = Boolean(
-        this.zgraph_.attributes_.getForSeries('logscale', setName),
+        this.zpgraph_.attributes_.getForSeries("logscale", setName),
       );
       let outOfXBounds = 0,
         outOfYBounds = 0;
@@ -335,7 +335,7 @@ export default class ZgraphLayout {
         const point = points[j]!;
 
         // Range from 0-1 where 0 represents left and 1 represents right.
-        point.x = ZgraphLayout.calcXNormal_(
+        point.x = ZpgraphLayout.calcXNormal_(
           point.xval,
           this._xAxis,
           Boolean(isLogscaleForX),
@@ -344,7 +344,7 @@ export default class ZgraphLayout {
         // Range from 0-1 where 0 represents top and 1 represents bottom
         let yval = point.yval;
         if (isStacked) {
-          point.y_stacked = ZgraphLayout.calcYNormal_(
+          point.y_stacked = ZpgraphLayout.calcYNormal_(
             axis,
             point.yval_stacked ?? null,
             logscale,
@@ -359,30 +359,30 @@ export default class ZgraphLayout {
             point.yval = NaN;
           }
         }
-        point.y = ZgraphLayout.calcYNormal_(axis, yval, logscale);
+        point.y = ZpgraphLayout.calcYNormal_(axis, yval, logscale);
         outOfYBounds += +(point.y < 0 || point.y > 1);
       }
 
       if (outOfXBounds > 2) {
         log.warn(
           outOfXBounds +
-            ' points out of X bounds:' +
+            " points out of X bounds:" +
             this._xAxis.minval +
-            ' - ' +
+            " - " +
             this._xAxis.maxval,
         );
       }
       if (outOfYBounds > 0) {
         log.warn(
           outOfYBounds +
-            ' points out of Y bounds:' +
+            " points out of Y bounds:" +
             axis.minyval +
-            ' - ' +
+            " - " +
             axis.maxyval,
         );
       }
 
-      this.zgraph_.dataHandler_.onLineEvaluated(points, axis, logscale);
+      this.zpgraph_.dataHandler_.onLineEvaluated(points, axis, logscale);
     }
   }
 
@@ -393,9 +393,9 @@ export default class ZgraphLayout {
     for (i = 0; i < xTicks.length; i++) {
       tick = xTicks[i]!;
       label = tick.label;
-      has_tick = !('label_v' in tick);
+      has_tick = !("label_v" in tick);
       v = has_tick ? tick.v : tick.label_v!;
-      pos = this.zgraph_.toPercentXCoord(v);
+      pos = this.zpgraph_.toPercentXCoord(v);
       if (pos !== null && pos >= 0.0 && pos < 1.0) {
         this.xticks.push({ pos, label, has_tick });
       }
@@ -409,9 +409,9 @@ export default class ZgraphLayout {
       for (let j = 0; j < ticks.length; j++) {
         tick = ticks[j]!;
         label = tick.label;
-        has_tick = !('label_v' in tick);
+        has_tick = !("label_v" in tick);
         v = has_tick ? tick.v : tick.label_v!;
-        pos = this.zgraph_.toPercentYCoord(v, i);
+        pos = this.zpgraph_.toPercentYCoord(v, i);
         if (pos !== null && pos > 0.0 && pos <= 1.0) {
           this.yticks.push({ axis: i, pos, label, has_tick });
         }
@@ -426,7 +426,7 @@ export default class ZgraphLayout {
     const annotations: Record<string, ParsedAnnotation> = {};
     for (i = 0; i < this.annotations.length; i++) {
       const a = this.annotations[i]!;
-      annotations[a.xval + ',' + a.series] = a;
+      annotations[a.xval + "," + a.series] = a;
     }
 
     this.annotated_points = [];
@@ -440,7 +440,7 @@ export default class ZgraphLayout {
       const points = this.points[setIdx]!;
       for (i = 0; i < points.length; i++) {
         const p = points[i]!;
-        const k = p.xval + ',' + p.name;
+        const k = p.xval + "," + p.name;
         const matched = annotations[k];
         if (matched) {
           (p as Point & { annotation?: ParsedAnnotation }).annotation = matched;

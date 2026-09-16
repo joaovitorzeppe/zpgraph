@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stacked fill · Zgraph</title>
+  <title>Stacked fill · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -18,7 +18,7 @@
   <p class="lede">Positive contributions stacked into an area chart.</p>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { utcDay, dayMs } from './helpers.js';
 
     const start = utcDay(2024, 6, 1);
@@ -32,7 +32,7 @@
       ]);
     }
 
-    new Zgraph(document.getElementById('chart'), data, {
+    new Zpgraph(document.getElementById('chart'), data, {
       labels: ['Date', 'Base', 'Mid', 'Top'],
       stackedGraph: true,
       fillGraph: true,

@@ -6,34 +6,34 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import { log } from './logger';
-import DefaultHandler from './datahandler/default';
-import ErrorBarsHandler from './datahandler/bars-error';
-import CustomBarsHandler from './datahandler/bars-custom';
-import DefaultFractionHandler from './datahandler/default-fractions';
-import FractionsBarsHandler from './datahandler/bars-fractions';
-import DEFAULT_ATTRS from './default-attrs';
-import OptionsManager from './options';
-import { createDragInterface, createInterface } from './dom';
-import { parseArray, parseCSV, parseDataTable } from './parser';
-import { predraw, renderGraph } from './render';
-import * as utils from './utils';
-import type { DataHandlerLike, PluginRegistration } from './internal-types';
-import type Zgraph from './zgraph';
+import { log } from "./logger";
+import DefaultHandler from "./datahandler/default";
+import ErrorBarsHandler from "./datahandler/bars-error";
+import CustomBarsHandler from "./datahandler/bars-custom";
+import DefaultFractionHandler from "./datahandler/default-fractions";
+import FractionsBarsHandler from "./datahandler/bars-fractions";
+import DEFAULT_ATTRS from "./default-attrs";
+import OptionsManager from "./options";
+import { createDragInterface, createInterface } from "./dom";
+import { parseArray, parseCSV, parseDataTable } from "./parser";
+import { predraw, renderGraph } from "./render";
+import * as utils from "./utils";
+import type { DataHandlerLike, PluginRegistration } from "./internal-types";
+import type Zpgraph from "./zpgraph";
 import type {
   Data,
   DataArray,
   Plugin,
   Ticker,
-  ZgraphElement,
-  ZgraphOptions,
-} from './types';
+  ZpgraphElement,
+  ZpgraphOptions,
+} from "./types";
 
-type ZgraphCtor = typeof import('./zgraph').default;
+type ZpgraphCtor = typeof import("./zpgraph").default;
 
-const ctor = (g: Zgraph): ZgraphCtor => g.constructor as ZgraphCtor;
+const ctor = (g: Zpgraph): ZpgraphCtor => g.constructor as ZpgraphCtor;
 
-export const removeTrackedEvents_ = (g: Zgraph): void => {
+export const removeTrackedEvents_ = (g: Zpgraph): void => {
   if (g.registeredEvents_) {
     for (let idx = 0; idx < g.registeredEvents_.length; idx++) {
       const reg = g.registeredEvents_[idx]!;
@@ -45,11 +45,11 @@ export const removeTrackedEvents_ = (g: Zgraph): void => {
 };
 
 /**
- * Detach DOM elements in the zgraph and null out all data references.
- * Calling this when you're done with a zgraph can dramatically reduce memory
+ * Detach DOM elements in the zpgraph and null out all data references.
+ * Calling this when you're done with a zpgraph can dramatically reduce memory
  * usage. See, e.g., the tests/perf.html example.
  */
-export const destroy = (g: Zgraph): void => {
+export const destroy = (g: Zpgraph): void => {
   if (g.fileLoadAbort_) {
     g.fileLoadAbort_.abort();
     g.fileLoadAbort_ = null;
@@ -74,10 +74,10 @@ export const destroy = (g: Zgraph): void => {
   removeTrackedEvents_(g);
 
   // remove mouse event handlers (This may not be necessary anymore)
-  utils.removeEvent(window, 'mouseout', g.mouseOutHandler_ as EventListener);
+  utils.removeEvent(window, "mouseout", g.mouseOutHandler_ as EventListener);
   utils.removeEvent(
     g.mouseEventElement_,
-    'mousemove',
+    "mousemove",
     g.mouseMoveHandler_ as EventListener,
   );
 
@@ -86,7 +86,7 @@ export const destroy = (g: Zgraph): void => {
     g.resizeObserver_.disconnect();
     g.resizeObserver_ = null;
   }
-  utils.removeEvent(window, 'resize', g.resizeHandler_ as EventListener);
+  utils.removeEvent(window, "resize", g.resizeHandler_ as EventListener);
   g.resizeHandler_ = null;
 
   // A frame already requested would otherwise run against a torn-down chart.
@@ -97,7 +97,7 @@ export const destroy = (g: Zgraph): void => {
 
   let nullOut = function nullOut(obj: Record<string, unknown>) {
     for (let n in obj) {
-      if (typeof obj[n] === 'object') {
+      if (typeof obj[n] === "object") {
         obj[n] = null;
       }
     }
@@ -115,7 +115,7 @@ export const destroy = (g: Zgraph): void => {
  * specified, that is used instead.
  * @private
  */
-export const setColors_ = (g: Zgraph): void => {
+export const setColors_ = (g: Zpgraph): void => {
   let labels = g.getLabels();
   if (!labels) return;
   let num = labels.length - 1;
@@ -123,19 +123,20 @@ export const setColors_ = (g: Zgraph): void => {
   g.colorsMap_ = {};
 
   // These are used for when no custom colors are specified.
-  let sat = g.getNumericOption('colorSaturation') || 1.0;
-  let val = g.getNumericOption('colorValue') || 0.5;
+  let sat = g.getNumericOption("colorSaturation") || 1.0;
+  let val = g.getNumericOption("colorValue") || 0.5;
   let half = Math.ceil(num / 2);
 
-  let colors = g.getOption('colors') as string[] | undefined;
+  let colors = g.getOption("colors") as string[] | undefined;
   let vis = visibility(g);
   for (let i = 0; i < num; i++) {
     if (!vis[i]) {
       continue;
     }
     let label = labels[i + 1]!;
-    let colorStr = g.attributes_.getForSeries('color', label) as
-      string | undefined;
+    let colorStr = g.attributes_.getForSeries("color", label) as
+      | string
+      | undefined;
     if (!colorStr) {
       if (colors) {
         colorStr = colors[i % colors.length]!;
@@ -152,16 +153,16 @@ export const setColors_ = (g: Zgraph): void => {
 };
 
 /** Returns a boolean array of visibility statuses. */
-export const visibility = (g: Zgraph): boolean[] => {
+export const visibility = (g: Zpgraph): boolean[] => {
   // Do lazy-initialization, so that this happens after we know the number of
   // data series.
-  if (!g.getOption('visibility')) {
+  if (!g.getOption("visibility")) {
     g.attrs_.visibility = [];
   }
-  while ((g.getOption('visibility') as boolean[]).length < g.numColumns() - 1) {
+  while ((g.getOption("visibility") as boolean[]).length < g.numColumns() - 1) {
     g.attrs_.visibility!.push(true);
   }
-  return g.getOption('visibility') as boolean[];
+  return g.getOption("visibility") as boolean[];
 };
 
 /**
@@ -174,10 +175,13 @@ export const visibility = (g: Zgraph): boolean[] => {
  * @param value the visibility state expressed as a boolean
  */
 type VisibilityInput =
-  number | number[] | boolean[] | Record<number | string, boolean>;
+  | number
+  | number[]
+  | boolean[]
+  | Record<number | string, boolean>;
 
 export const setVisibility = (
-  g: Zgraph,
+  g: Zpgraph,
   num: VisibilityInput,
   value?: boolean,
 ): void => {
@@ -185,7 +189,7 @@ export const setVisibility = (
   let numIsObject = false;
 
   if (!Array.isArray(num)) {
-    if (num !== null && typeof num === 'object') {
+    if (num !== null && typeof num === "object") {
       numIsObject = true;
     } else {
       num = [num];
@@ -198,7 +202,7 @@ export const setVisibility = (
       if (Object.hasOwn(map, i)) {
         let idx = Number(i);
         if (idx < 0 || idx >= x.length) {
-          log.warn('Invalid series number in setVisibility: ' + i);
+          log.warn("Invalid series number in setVisibility: " + i);
         } else {
           x[idx] = map[i]!;
         }
@@ -208,15 +212,15 @@ export const setVisibility = (
     const list = num as number[] | boolean[];
     for (let j = 0; j < list.length; j++) {
       const entry = list[j]!;
-      if (typeof entry === 'boolean') {
+      if (typeof entry === "boolean") {
         if (j >= x.length) {
-          log.warn('Invalid series number in setVisibility: ' + j);
+          log.warn("Invalid series number in setVisibility: " + j);
         } else {
           x[j] = entry;
         }
       } else {
         if (entry < 0 || entry >= x.length) {
-          log.warn('Invalid series number in setVisibility: ' + entry);
+          log.warn("Invalid series number in setVisibility: " + entry);
         } else {
           x[entry] = value ?? false;
         }
@@ -228,14 +232,14 @@ export const setVisibility = (
 };
 
 /** Fires when there's data available to be graphed. @private */
-export const loadedEvent_ = (g: Zgraph, data: string): void => {
+export const loadedEvent_ = (g: Zpgraph, data: string): void => {
   g.rawData_ = parseCSV(g, data);
   g.cascadeDataDidUpdateEvent_();
   predraw(g);
 };
 
 /** Add ticks on the x-axis representing years, months, quarters, weeks, or days @private */
-export const addXTicks_ = (g: Zgraph): void => {
+export const addXTicks_ = (g: Zpgraph): void => {
   // Determine the correct ticks scale on the x-axis: quarterly, monthly, ...
   let range;
   if (g.dateWindow_) {
@@ -244,8 +248,8 @@ export const addXTicks_ = (g: Zgraph): void => {
     range = g.xAxisExtremes();
   }
 
-  let xAxisOptionsView = g.optionsViewForAxis_('x');
-  const ticker = xAxisOptionsView('ticker') as Ticker;
+  let xAxisOptionsView = g.optionsViewForAxis_("x");
+  const ticker = xAxisOptionsView("ticker") as Ticker;
   let xTicks = ticker(
     range[0]!,
     range[1]!,
@@ -257,7 +261,7 @@ export const addXTicks_ = (g: Zgraph): void => {
 };
 
 /**
- * Initializes the Zgraph. This creates a new DIV and constructs the hidden
+ * Initializes the Zpgraph. This creates a new DIV and constructs the hidden
  * and context &lt;canvas&gt; inside of it. See the constructor for details.
  * on the parameters.
  * @param div the Element to render the graph into.
@@ -266,12 +270,12 @@ export const addXTicks_ = (g: Zgraph): void => {
  * @private
  */
 export const init = (
-  g: Zgraph,
-  div: ZgraphElement,
+  g: Zpgraph,
+  div: ZpgraphElement,
   file: Data,
-  attrs: Partial<ZgraphOptions> | null | undefined,
+  attrs: Partial<ZpgraphOptions> | null | undefined,
 ): void => {
-  const Zgraph = ctor(g);
+  const Zpgraph = ctor(g);
 
   g.is_initial_draw_ = true;
   g.readyFns_ = [];
@@ -281,13 +285,13 @@ export const init = (
     attrs = {};
   }
 
-  attrs = Zgraph.copyUserAttrs_(attrs);
+  attrs = Zpgraph.copyUserAttrs_(attrs);
 
   let container: HTMLElement;
-  if (typeof div == 'string') {
+  if (typeof div == "string") {
     const el = document.getElementById(div);
     if (!el) {
-      throw new Error('Constructing zgraph with a non-existent div!');
+      throw new Error("Constructing zpgraph with a non-existent div!");
     }
     container = el;
   } else {
@@ -297,7 +301,7 @@ export const init = (
   // Copy the important bits into the object
   g.maindiv_ = container;
   g.file_ = file;
-  g.rollPeriod_ = attrs.rollPeriod || Zgraph.DEFAULT_ROLL_PERIOD;
+  g.rollPeriod_ = attrs.rollPeriod || Zpgraph.DEFAULT_ROLL_PERIOD;
   g.previousVerticalX_ = -1;
   g.fractions_ = attrs.fractions || false;
   g.dateWindow_ = attrs.dateWindow || null;
@@ -305,36 +309,36 @@ export const init = (
   g.annotations_ = [];
   g.selPoints_ = [];
 
-  // Clear the div. This ensure that, if multiple zgraph are passed the same
+  // Clear the div. This ensure that, if multiple zpgraph are passed the same
   // div, then only one will be drawn.
-  container.innerHTML = '';
+  container.innerHTML = "";
 
   const resolved = window.getComputedStyle(container, null);
   if (
-    resolved.paddingLeft !== '0px' ||
-    resolved.paddingRight !== '0px' ||
-    resolved.paddingTop !== '0px' ||
-    resolved.paddingBottom !== '0px'
+    resolved.paddingLeft !== "0px" ||
+    resolved.paddingRight !== "0px" ||
+    resolved.paddingTop !== "0px" ||
+    resolved.paddingBottom !== "0px"
   )
-    log.error('Main div contains padding; graph will misbehave');
+    log.error("Main div contains padding; graph will misbehave");
 
   // For historical reasons, the 'width' and 'height' options trump all CSS
   // rules _except_ for an explicit 'width' or 'height' on the div.
   // As an added convenience, if the div has zero height (like <div></div> does
   // without any styles), then we use a default height/width.
-  if (container.style.width === '' && attrs.width) {
-    container.style.width = attrs.width + 'px';
+  if (container.style.width === "" && attrs.width) {
+    container.style.width = attrs.width + "px";
   }
-  if (container.style.height === '' && attrs.height) {
-    container.style.height = attrs.height + 'px';
+  if (container.style.height === "" && attrs.height) {
+    container.style.height = attrs.height + "px";
   }
-  if (container.style.height === '' && container.clientHeight === 0) {
-    container.style.height = Zgraph.DEFAULT_HEIGHT + 'px';
-    if (container.style.width === '') {
-      container.style.width = Zgraph.DEFAULT_WIDTH + 'px';
+  if (container.style.height === "" && container.clientHeight === 0) {
+    container.style.height = Zpgraph.DEFAULT_HEIGHT + "px";
+    if (container.style.width === "") {
+      container.style.width = Zpgraph.DEFAULT_WIDTH + "px";
     }
   }
-  // These will be zero if the zgraph's div is hidden. In that case,
+  // These will be zero if the zpgraph's div is hidden. In that case,
   // use the user-specified attributes if present. If not, use zero
   // and assume the user will call resize to fix things later.
   g.width_ = container.clientWidth || attrs.width || 0;
@@ -347,19 +351,19 @@ export const init = (
   // DEPRECATION WARNING: All option processing should be moved from
   // attrs_ and user_attrs_ to options_, which holds all this information.
   //
-  // Zgraph has many options, some of which interact with one another.
+  // Zpgraph has many options, some of which interact with one another.
   // To keep track of everything, we maintain two sets of options:
   //
   //  g.user_attrs_   only options explicitly set by the user.
   //  g.attrs_        defaults, options derived from user_attrs_, data.
   //
   // Options are then accessed g.attr_('attr'), which first looks at
-  // user_attrs_ and then computed attrs_. This way Zgraph can set intelligent
+  // user_attrs_ and then computed attrs_. This way Zpgraph can set intelligent
   // defaults without overriding behavior that the user specifically asks for.
   g.user_attrs_ = {};
   utils.update(g.user_attrs_ as Record<string, unknown>, attrs);
 
-  // This sequence ensures that Zgraph.DEFAULT_ATTRS is never modified.
+  // This sequence ensures that Zpgraph.DEFAULT_ATTRS is never modified.
   g.attrs_ = {} as typeof g.attrs_;
   utils.updateDeep(g.attrs_ as Record<string, unknown>, DEFAULT_ATTRS);
 
@@ -378,15 +382,16 @@ export const init = (
   // Activate plugins.
   g.plugins_ = [];
   const userPlugins =
-    (g.getOption('plugins') as
-      Array<(new () => Plugin) | Plugin> | undefined) ?? [];
-  let plugins = Zgraph.PLUGINS.concat(userPlugins);
+    (g.getOption("plugins") as
+      | Array<(new () => Plugin) | Plugin>
+      | undefined) ?? [];
+  let plugins = Zpgraph.PLUGINS.concat(userPlugins);
   for (let i = 0; i < plugins.length; i++) {
     // the plugins option may contain either plugin classes or instances.
     // Plugin instances contain an activate method.
     const Plugin = plugins[i]!; // either a constructor or an instance.
     let pluginInstance: Plugin;
-    if (typeof (Plugin as Plugin).activate !== 'undefined') {
+    if (typeof (Plugin as Plugin).activate !== "undefined") {
       pluginInstance = Plugin as Plugin;
     } else {
       pluginInstance = new (Plugin as new () => Plugin)();
@@ -444,7 +449,7 @@ export const init = (
  * @private
  */
 export const cascadeEvents_ = (
-  g: Zgraph,
+  g: Zpgraph,
   name: string,
   extra_props?: Record<string, unknown>,
 ): boolean => {
@@ -452,12 +457,12 @@ export const cascadeEvents_ = (
 
   // QUESTION: can we use objects & prototypes to speed this up?
   let e = {
-    zgraph: g,
+    zpgraph: g,
     cancelable: false,
     defaultPrevented: false,
     preventDefault: function () {
       if (!e.cancelable)
-        throw new Error('Cannot call preventDefault on non-cancelable event.');
+        throw new Error("Cannot call preventDefault on non-cancelable event.");
       e.defaultPrevented = true;
     },
     propagationStopped: false,
@@ -485,28 +490,28 @@ export const cascadeEvents_ = (
  * file, fetch it.
  * @private
  */
-export const start = (g: Zgraph): void => {
+export const start = (g: Zpgraph): void => {
   let data: unknown = g.file_;
 
   // Functions can return references of all other types.
-  if (typeof data == 'function') {
+  if (typeof data == "function") {
     data = data();
   }
 
   const datatype = utils.typeArrayLike(data);
-  if (datatype === 'array') {
+  if (datatype === "array") {
     g.rawData_ = parseArray(g, data as DataArray) as typeof g.rawData_;
     g.cascadeDataDidUpdateEvent_();
     predraw(g);
   } else if (
-    datatype === 'object' &&
-    typeof (data as { getColumnRange?: unknown }).getColumnRange == 'function'
+    datatype === "object" &&
+    typeof (data as { getColumnRange?: unknown }).getColumnRange == "function"
   ) {
     // must be a DataTable from gviz.
     parseDataTable(g, data as Parameters<typeof parseDataTable>[1]);
     g.cascadeDataDidUpdateEvent_();
     predraw(g);
-  } else if (datatype === 'string') {
+  } else if (datatype === "string") {
     // Heuristic: a newline means it's CSV data. Otherwise it's an URL.
     const text = data as string;
     let line_delimiter = utils.detectLineDelimiter(text);
@@ -521,7 +526,7 @@ export const start = (g: Zgraph): void => {
       fetch(text, { signal: controller.signal })
         .then((response) => {
           if (!response.ok) {
-            throw new Error('HTTP ' + response.status + ' loading ' + data);
+            throw new Error("HTTP " + response.status + " loading " + data);
           }
           return response.text();
         })
@@ -533,26 +538,26 @@ export const start = (g: Zgraph): void => {
           g.loadedEvent_(body);
         })
         .catch((err) => {
-          if (err && err.name === 'AbortError') {
+          if (err && err.name === "AbortError") {
             return;
           }
           if (g.fileLoadAbort_ === controller) {
             g.fileLoadAbort_ = null;
           }
-          const onError = g.getFunctionOption('dataLoadErrorCallback');
+          const onError = g.getFunctionOption("dataLoadErrorCallback");
           if (onError) {
             onError.call(g, err, data, g);
           } else {
-            log.error('Failed to load chart data from ' + data, err);
+            log.error("Failed to load chart data from " + data, err);
           }
         });
     }
   } else {
     throw new TypeError(
-      'Zgraph: unsupported data (' +
+      "Zpgraph: unsupported data (" +
         datatype +
-        '). Pass an array of rows, a CSV ' +
-        'string, a URL, a gviz DataTable or a function returning one of those.',
+        "). Pass an array of rows, a CSV " +
+        "string, a URL, a gviz DataTable or a function returning one of those.",
     );
   }
 };
@@ -576,33 +581,33 @@ export const start = (g: Zgraph): void => {
  *     callback).
  */
 export const updateOptions = (
-  g: Zgraph,
-  input_attrs: Partial<ZgraphOptions>,
+  g: Zpgraph,
+  input_attrs: Partial<ZpgraphOptions>,
   block_redraw?: boolean,
 ): void => {
-  const Zgraph = ctor(g);
+  const Zpgraph = ctor(g);
 
   if (
     input_attrs === null ||
-    typeof input_attrs !== 'object' ||
+    typeof input_attrs !== "object" ||
     Array.isArray(input_attrs)
   ) {
     throw new TypeError(
-      'updateOptions expects an options object, got ' +
-        (Array.isArray(input_attrs) ? 'an array' : typeof input_attrs),
+      "updateOptions expects an options object, got " +
+        (Array.isArray(input_attrs) ? "an array" : typeof input_attrs),
     );
   }
-  if (typeof block_redraw == 'undefined') block_redraw = false;
+  if (typeof block_redraw == "undefined") block_redraw = false;
 
   // copyUserAttrs_ drops the "file" parameter as a convenience to us.
   let file = input_attrs.file;
-  let attrs = Zgraph.copyUserAttrs_(input_attrs);
+  let attrs = Zpgraph.copyUserAttrs_(input_attrs);
   let prevNumAxes = g.attributes_.numAxes();
 
-  if ('rollPeriod' in attrs) {
+  if ("rollPeriod" in attrs) {
     g.rollPeriod_ = attrs.rollPeriod;
   }
-  if ('dateWindow' in attrs) {
+  if ("dateWindow" in attrs) {
     g.dateWindow_ = attrs.dateWindow;
   }
 
@@ -614,7 +619,7 @@ export const updateOptions = (
 
   // Check if this set options will require new points.
   let requiresNewPoints = utils.isPixelChangingOptionList(
-    g.attr_('labels') as string[],
+    g.attr_("labels") as string[],
     attrs,
   );
 
@@ -625,7 +630,7 @@ export const updateOptions = (
   if (prevNumAxes < g.attributes_.numAxes()) g.plotter_.clear();
   if (file) {
     // This event indicates that the data is about to change, but hasn't yet.
-    cascadeEvents_(g, 'dataWillUpdate', {});
+    cascadeEvents_(g, "dataWillUpdate", {});
 
     g.file_ = file;
     if (!block_redraw) start(g);
@@ -641,19 +646,19 @@ export const updateOptions = (
 };
 
 /** Returns the correct handler class for the currently set options. @private */
-export const getHandlerClass_ = (g: Zgraph): new () => DataHandlerLike => {
+export const getHandlerClass_ = (g: Zpgraph): new () => DataHandlerLike => {
   let handlerClass: new () => DataHandlerLike;
-  if (g.attr_('dataHandler')) {
-    handlerClass = g.attr_('dataHandler') as new () => DataHandlerLike;
+  if (g.attr_("dataHandler")) {
+    handlerClass = g.attr_("dataHandler") as new () => DataHandlerLike;
   } else if (g.fractions_) {
-    if (g.getBooleanOption('errorBars')) {
+    if (g.getBooleanOption("errorBars")) {
       handlerClass = FractionsBarsHandler;
     } else {
       handlerClass = DefaultFractionHandler;
     }
-  } else if (g.getBooleanOption('customBars')) {
+  } else if (g.getBooleanOption("customBars")) {
     handlerClass = CustomBarsHandler;
-  } else if (g.getBooleanOption('errorBars')) {
+  } else if (g.getBooleanOption("errorBars")) {
     handlerClass = ErrorBarsHandler;
   } else {
     handlerClass = DefaultHandler;

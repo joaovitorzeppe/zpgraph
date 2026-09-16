@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -13,12 +13,12 @@
  * information about options.
  */
 
-import * as utils from './utils';
-import { log } from './logger';
-import DEFAULT_ATTRS_ from './default-attrs';
-import OPTIONS_REFERENCE_ from './options-reference';
-import type Zgraph from './zgraph';
-import type { ZgraphOptions } from './types';
+import * as utils from "./utils";
+import { log } from "./logger";
+import DEFAULT_ATTRS_ from "./default-attrs";
+import OPTIONS_REFERENCE_ from "./options-reference";
+import type Zpgraph from "./zpgraph";
+import type { ZpgraphOptions } from "./types";
 
 const DEFAULT_ATTRS: typeof DEFAULT_ATTRS_ = DEFAULT_ATTRS_;
 const OPTIONS_REFERENCE: Record<string, unknown> | null = OPTIONS_REFERENCE_;
@@ -50,16 +50,16 @@ interface SeriesEntry {
  * if labels are not yet available, since those drive details of the per-series
  * and per-axis options.
  *
- * @param zgraph The chart to which these options belong.
+ * @param zpgraph The chart to which these options belong.
  * @constructor
  */
 class OptionsManager {
-  zgraph_: Zgraph;
+  zpgraph_: Zpgraph;
   yAxes_: AxisBucket[];
   xAxis_: { options: Record<string, unknown> };
   series_: Record<string, SeriesEntry>;
-  global_: ZgraphOptions;
-  user_: ZgraphOptions;
+  global_: ZpgraphOptions;
+  user_: ZpgraphOptions;
   labels_: string[];
   highlightSeries_: Record<string, unknown>;
 
@@ -84,21 +84,21 @@ class OptionsManager {
    * @private
    */
   static axisToIndex_(axis: unknown): number {
-    if (typeof axis == 'string') {
+    if (typeof axis == "string") {
       if (Object.hasOwn(OptionsManager.AXIS_STRING_MAPPINGS_, axis)) {
         const mapped = OptionsManager.AXIS_STRING_MAPPINGS_[axis];
         if (mapped !== undefined) return mapped;
       }
-      throw new Error('Unknown axis : ' + axis);
+      throw new Error("Unknown axis : " + axis);
     }
-    if (typeof axis == 'number') {
+    if (typeof axis == "number") {
       if (axis === 0 || axis === 1) {
         return axis;
       }
-      throw new Error('Zgraph only supports two y-axes, indexed from 0-1.');
+      throw new Error("Zpgraph only supports two y-axes, indexed from 0-1.");
     }
     if (axis) {
-      throw new Error('Unknown axis : ' + axis);
+      throw new Error("Unknown axis : " + axis);
     }
     // No axis specification means axis 0.
     return 0;
@@ -109,12 +109,12 @@ class OptionsManager {
     WARNINGS = {};
   }
 
-  constructor(zgraph: Zgraph) {
+  constructor(zpgraph: Zpgraph) {
     /**
-     * The zgraph.
+     * The zpgraph.
 
      */
-    this.zgraph_ = zgraph;
+    this.zpgraph_ = zpgraph;
 
     /**
      * Array of axis index to { series : [ series names ] , options : { axis-specific options. } }
@@ -132,8 +132,8 @@ class OptionsManager {
     this.series_ = {};
 
     // Once these two objects are initialized, you can call get();
-    this.global_ = this.zgraph_.attrs_;
-    this.user_ = this.zgraph_.user_attrs_ || {};
+    this.global_ = this.zpgraph_.attrs_;
+    this.user_ = this.zpgraph_.user_attrs_ || {};
 
     /**
      * A list of series in columnar order.
@@ -142,7 +142,7 @@ class OptionsManager {
     this.labels_ = [];
 
     this.highlightSeries_ =
-      (this.get('highlightSeriesOpts') as Record<string, unknown> | null) || {};
+      (this.get("highlightSeriesOpts") as Record<string, unknown> | null) || {};
     this.reparseSeries();
   }
 
@@ -151,7 +151,7 @@ class OptionsManager {
    * options are either updated, or source data has been made available.
    */
   reparseSeries() {
-    const labels = this.get('labels') as string[] | null | undefined;
+    const labels = this.get("labels") as string[] | null | undefined;
     if (!labels) {
       return; // -- can't do more for now, will parse after getting the labels.
     }
@@ -184,7 +184,7 @@ class OptionsManager {
     for (let idx = 0; idx < this.labels_.length; idx++) {
       const seriesName = this.labels_[idx]!;
       const optionsForSeries = seriesDict[seriesName] || {};
-      const yAxis = OptionsManager.axisToIndex_(optionsForSeries['axis']);
+      const yAxis = OptionsManager.axisToIndex_(optionsForSeries["axis"]);
 
       this.series_[seriesName] = {
         idx: idx,
@@ -199,15 +199,15 @@ class OptionsManager {
       }
     }
 
-    const axis_opts = (this.user_['axes'] || {}) as Record<
+    const axis_opts = (this.user_["axes"] || {}) as Record<
       string,
       Record<string, unknown>
     >;
-    utils.update(this.yAxes_[0]!.options, axis_opts['y'] || {});
+    utils.update(this.yAxes_[0]!.options, axis_opts["y"] || {});
     if (this.yAxes_.length > 1) {
-      utils.update(this.yAxes_[1]!.options, axis_opts['y2'] || {});
+      utils.update(this.yAxes_[1]!.options, axis_opts["y2"] || {});
     }
-    utils.update(this.xAxis_.options, axis_opts['x'] || {});
+    utils.update(this.xAxis_.options, axis_opts["x"] || {});
 
     this.validateOptions_();
   }
@@ -258,21 +258,21 @@ class OptionsManager {
     let axisString: string;
 
     // Since axis can be a number or a string, straighten everything out here.
-    if (typeof axis == 'number') {
+    if (typeof axis == "number") {
       axisIdx = axis;
-      axisString = axisIdx === 0 ? 'y' : 'y2';
+      axisString = axisIdx === 0 ? "y" : "y2";
     } else {
-      if (axis === 'y1') {
-        axis = 'y';
+      if (axis === "y1") {
+        axis = "y";
       } // Standardize on 'y'. Is this bad? I think so.
-      if (axis === 'y') {
+      if (axis === "y") {
         axisIdx = 0;
-      } else if (axis === 'y2') {
+      } else if (axis === "y2") {
         axisIdx = 1;
-      } else if (axis === 'x') {
+      } else if (axis === "x") {
         axisIdx = -1; // simply a placeholder for below.
       } else {
-        throw new Error('Unknown axis ' + axis);
+        throw new Error("Unknown axis " + axis);
       }
       axisString = axis;
     }
@@ -290,7 +290,7 @@ class OptionsManager {
 
     // User-specified global options second.
     // But, hack, ignore globally-specified 'logscale' for 'x' axis declaration.
-    if (!(axis === 'x' && name === 'logscale')) {
+    if (!(axis === "x" && name === "logscale")) {
       const result = this.getGlobalUser_(name);
       if (result !== null) {
         return result;
@@ -319,14 +319,14 @@ class OptionsManager {
    */
   getForSeries(name: string, series: string): unknown {
     // Honors indexes as series.
-    if (series === this.zgraph_.getHighlightSeries()) {
+    if (series === this.zpgraph_.getHighlightSeries()) {
       if (Object.hasOwn(this.highlightSeries_, name)) {
         return this.highlightSeries_[name];
       }
     }
 
     if (!Object.hasOwn(this.series_, series)) {
-      throw new Error('Unknown series: ' + series);
+      throw new Error("Unknown series: " + series);
     }
 
     const seriesObj = this.series_[series]!;
@@ -424,20 +424,20 @@ class OptionsManager {
       const isSeries = this.labels_.indexOf(optionName) >= 0;
       if (isSeries) {
         log.warn(
-          'Use per-series options (saw ' +
+          "Use per-series options (saw " +
             optionName +
-            ' as a top-level options key): put it under series[' +
+            " as a top-level options key): put it under series[" +
             JSON.stringify(optionName) +
-            '] or axes.',
+            "] or axes.",
         );
       } else {
         log.warn(
-          'Unknown option ' +
+          "Unknown option " +
             optionName +
-            ' (see the options reference in the README for the full list)',
+            " (see the options reference in the README for the full list)",
         );
       }
-      throw new Error('invalid option ' + optionName);
+      throw new Error("invalid option " + optionName);
     }
   }
 }

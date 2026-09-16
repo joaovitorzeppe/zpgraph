@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Error bars · Zgraph</title>
+  <title>Error bars · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -18,10 +18,10 @@
   <p class="lede">Each point is <code>[value, stddev]</code> with <code>errorBars: true</code>.</p>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { makeErrorBars } from './helpers.js';
 
-    new Zgraph(document.getElementById('chart'), makeErrorBars(55), {
+    new Zpgraph(document.getElementById('chart'), makeErrorBars(55), {
       labels: ['Date', 'Signal'],
       errorBars: true,
       legend: 'always',

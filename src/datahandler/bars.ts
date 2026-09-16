@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -8,17 +8,17 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import type { AxisProperties, UnifiedSeries } from '../internal-types';
-import type { Point } from '../types';
-import ZgraphLayout from '../layout';
-import ZgraphDataHandler from './datahandler';
+import type { AxisProperties, UnifiedSeries } from "../internal-types";
+import type { Point } from "../types";
+import ZpgraphLayout from "../layout";
+import ZpgraphDataHandler from "./datahandler";
 
 /**
  * Shared base of every handler whose samples carry a low/high pair in the
  * extras. It has no data format of its own: extractSeries and rollingAverage
  * stay abstract, each bars flavour brings its own.
  */
-abstract class BarsHandler extends ZgraphDataHandler {
+abstract class BarsHandler extends ZpgraphDataHandler {
   /** @inheritDoc */
   protected override onPointsCreated_(
     series: UnifiedSeries,
@@ -29,8 +29,8 @@ abstract class BarsHandler extends ZgraphDataHandler {
       const point = points[i]!;
       point.y_top = NaN;
       point.y_bottom = NaN;
-      point.yval_minus = ZgraphDataHandler.parseFloat(item[2][0] ?? null);
-      point.yval_plus = ZgraphDataHandler.parseFloat(item[2][1] ?? null);
+      point.yval_minus = ZpgraphDataHandler.parseFloat(item[2][0] ?? null);
+      point.yval_plus = ZpgraphDataHandler.parseFloat(item[2][1] ?? null);
     }
   }
 
@@ -75,8 +75,12 @@ abstract class BarsHandler extends ZgraphDataHandler {
     for (let j = 0; j < points.length; j++) {
       // Copy over the error terms
       const point = points[j]!;
-      point.y_top = ZgraphLayout.calcYNormal_(axis, point.yval_minus, logscale);
-      point.y_bottom = ZgraphLayout.calcYNormal_(
+      point.y_top = ZpgraphLayout.calcYNormal_(
+        axis,
+        point.yval_minus,
+        logscale,
+      );
+      point.y_bottom = ZpgraphLayout.calcYNormal_(
         axis,
         point.yval_plus,
         logscale,

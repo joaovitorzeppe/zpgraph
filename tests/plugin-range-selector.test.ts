@@ -1,39 +1,41 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Zgraph } from '../src/index';
-import type { ZgraphOptions } from '../src/types';
-import { mockCanvas, mountDiv, sampleData, stubLayoutMetrics } from './helpers';
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Zpgraph } from "../src/index";
+import type { ZpgraphOptions } from "../src/types";
+import { mockCanvas, mountDiv, sampleData, stubLayoutMetrics } from "./helpers";
 
-const base: ZgraphOptions = {
-  labels: ['x', 'A', 'B'],
+const base: ZpgraphOptions = {
+  labels: ["x", "A", "B"],
   width: 480,
   height: 320,
 };
 
-const makeChart = (options: ZgraphOptions = {}) => {
+const makeChart = (options: ZpgraphOptions = {}) => {
   const el = mountDiv();
-  const g = new Zgraph(el, sampleData, { ...base, ...options });
+  const g = new Zpgraph(el, sampleData, { ...base, ...options });
   return { el, g };
 };
 
 const parts = (el: HTMLElement) => ({
-  bg: el.querySelector<HTMLCanvasElement>('.zgraph-rangesel-bgcanvas'),
-  fg: el.querySelector<HTMLCanvasElement>('.zgraph-rangesel-fgcanvas'),
-  handles: el.querySelectorAll<HTMLImageElement>('.zgraph-rangesel-zoomhandle'),
+  bg: el.querySelector<HTMLCanvasElement>(".zpgraph-rangesel-bgcanvas"),
+  fg: el.querySelector<HTMLCanvasElement>(".zpgraph-rangesel-fgcanvas"),
+  handles: el.querySelectorAll<HTMLImageElement>(
+    ".zpgraph-rangesel-zoomhandle",
+  ),
 });
 
 /** The plugin keeps its canvases and contexts private; tests reach in by name. */
-const rangeSelectorOf = (g: Zgraph) =>
+const rangeSelectorOf = (g: Zpgraph) =>
   (
     g as unknown as {
       plugins_: Array<{ plugin: Record<string, unknown> }>;
     }
   ).plugins_
     .map((entry) => entry.plugin)
-    .find((plugin) => String(plugin) === 'RangeSelector Plugin')!;
+    .find((plugin) => String(plugin) === "RangeSelector Plugin")!;
 
-describe('RangeSelector plugin', () => {
+describe("RangeSelector plugin", () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
     mockCanvas();
   });
 
@@ -41,7 +43,7 @@ describe('RangeSelector plugin', () => {
     vi.useRealTimers();
   });
 
-  it('adds nothing to the chart while showRangeSelector is off', () => {
+  it("adds nothing to the chart while showRangeSelector is off", () => {
     const { el, g } = makeChart();
 
     const { bg, fg, handles } = parts(el);
@@ -52,7 +54,7 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('creates the two canvases and the two zoom handles when enabled', () => {
+  it("creates the two canvases and the two zoom handles when enabled", () => {
     const { el, g } = makeChart({ showRangeSelector: true });
 
     const { bg, fg, handles } = parts(el);
@@ -60,13 +62,13 @@ describe('RangeSelector plugin', () => {
     expect(fg).not.toBeNull();
     expect(handles).toHaveLength(2);
     expect(bg!.parentElement).toBe(fg!.parentElement);
-    expect(handles[0]!.tagName).toBe('IMG');
-    expect(handles[0]!.src.startsWith('data:image/png;base64,')).toBe(true);
+    expect(handles[0]!.tagName).toBe("IMG");
+    expect(handles[0]!.src.startsWith("data:image/png;base64,")).toBe(true);
 
     g.destroy();
   });
 
-  it('sizes the canvases to rangeSelectorHeight below the plot area', () => {
+  it("sizes the canvases to rangeSelectorHeight below the plot area", () => {
     const { el, g } = makeChart({
       showRangeSelector: true,
       rangeSelectorHeight: 50,
@@ -74,15 +76,15 @@ describe('RangeSelector plugin', () => {
 
     const { bg, fg } = parts(el);
     const area = g.getArea();
-    expect(bg!.style.height).toBe('50px');
-    expect(fg!.style.height).toBe('50px');
+    expect(bg!.style.height).toBe("50px");
+    expect(fg!.style.height).toBe("50px");
     expect(bg!.style.width).toBe(`${area.w}px`);
     expect(parseFloat(bg!.style.top)).toBeGreaterThan(area.y + area.h);
 
     g.destroy();
   });
 
-  it('reserves vertical space so the plot area shrinks', () => {
+  it("reserves vertical space so the plot area shrinks", () => {
     const { g: plain } = makeChart();
     const plainHeight = plain.getArea().h;
     plain.destroy();
@@ -95,7 +97,7 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('places both zoom handles and makes them visible after the first draw', () => {
+  it("places both zoom handles and makes them visible after the first draw", () => {
     const { el, g } = makeChart({ showRangeSelector: true });
 
     const { handles } = parts(el);
@@ -103,8 +105,8 @@ describe('RangeSelector plugin', () => {
       HTMLImageElement,
       HTMLImageElement,
     ];
-    expect(left.style.visibility).toBe('visible');
-    expect(right.style.visibility).toBe('visible');
+    expect(left.style.visibility).toBe("visible");
+    expect(right.style.visibility).toBe("visible");
     expect(parseFloat(left.style.left)).toBeLessThan(
       parseFloat(right.style.left),
     );
@@ -113,7 +115,7 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('draws the mini plot and the frame into the background canvas', () => {
+  it("draws the mini plot and the frame into the background canvas", () => {
     const { g } = makeChart({ showRangeSelector: true });
 
     const ctx = rangeSelectorOf(g).bgcanvas_ctx_ as Record<
@@ -129,7 +131,7 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('draws the unzoomed frame into the foreground canvas', () => {
+  it("draws the unzoomed frame into the foreground canvas", () => {
     const { g } = makeChart({ showRangeSelector: true });
 
     const ctx = rangeSelectorOf(g).fgcanvas_ctx_ as Record<
@@ -144,7 +146,7 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('adds the selector when the option is turned on via updateOptions', () => {
+  it("adds the selector when the option is turned on via updateOptions", () => {
     const { el, g } = makeChart();
     expect(parts(el).bg).toBeNull();
 
@@ -158,7 +160,7 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('removes the selector when the option is turned off via updateOptions', () => {
+  it("removes the selector when the option is turned off via updateOptions", () => {
     vi.useFakeTimers();
     const { el, g } = makeChart({ showRangeSelector: true });
     expect(parts(el).handles).toHaveLength(2);
@@ -176,7 +178,7 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('survives being toggled off and on again', () => {
+  it("survives being toggled off and on again", () => {
     vi.useFakeTimers();
     const { el, g } = makeChart({ showRangeSelector: true });
 
@@ -192,18 +194,18 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('disables animatedZooms, which is incompatible with the selector', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("disables animatedZooms, which is incompatible with the selector", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { g } = makeChart({ showRangeSelector: true, animatedZooms: true });
 
-    expect(g.getOption('animatedZooms')).toBe(false);
+    expect(g.getOption("animatedZooms")).toBe(false);
     expect(warn).toHaveBeenCalled();
 
     warn.mockRestore();
     g.destroy();
   });
 
-  it('changes dateWindow when a zoom handle is dragged', () => {
+  it("changes dateWindow when a zoom handle is dragged", () => {
     const { el, g } = makeChart({ showRangeSelector: true });
     const { handles, fg } = parts(el);
     const left = handles[0]!;
@@ -238,9 +240,9 @@ describe('RangeSelector plugin', () => {
         new MouseEvent(type, { bubbles: true, clientX, clientY: 0, button: 0 }),
       );
 
-    mouse('dragstart', left, leftCenter);
-    mouse('mousemove', document, leftCenter + 60);
-    mouse('mouseup', document, leftCenter + 60);
+    mouse("dragstart", left, leftCenter);
+    mouse("mousemove", document, leftCenter + 60);
+    mouse("mouseup", document, leftCenter + 60);
 
     const rangeAfter = g.xAxisRange();
     expect(rangeAfter[0]).toBeGreaterThan(rangeBefore[0]);
@@ -249,7 +251,7 @@ describe('RangeSelector plugin', () => {
     g.destroy();
   });
 
-  it('drops the canvas references on destroy', () => {
+  it("drops the canvas references on destroy", () => {
     const { g } = makeChart({ showRangeSelector: true });
     const plugin = rangeSelectorOf(g);
 

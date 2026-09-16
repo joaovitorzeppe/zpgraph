@@ -6,37 +6,37 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZgraphCanvasRenderer from './canvas';
-import ZgraphInteraction from './interaction-model';
-import * as ZgraphTickers from './tickers';
-import * as utils from './utils';
+import ZpgraphCanvasRenderer from "./canvas";
+import ZpgraphInteraction from "./interaction-model";
+import * as ZpgraphTickers from "./tickers";
+import * as utils from "./utils";
 
-import DefaultHandler from './datahandler/default';
-import ErrorBarsHandler from './datahandler/bars-error';
-import CustomBarsHandler from './datahandler/bars-custom';
-import DefaultFractionHandler from './datahandler/default-fractions';
-import FractionsBarsHandler from './datahandler/bars-fractions';
-import BarsHandler from './datahandler/bars';
+import DefaultHandler from "./datahandler/default";
+import ErrorBarsHandler from "./datahandler/bars-error";
+import CustomBarsHandler from "./datahandler/bars-custom";
+import DefaultFractionHandler from "./datahandler/default-fractions";
+import FractionsBarsHandler from "./datahandler/bars-fractions";
+import BarsHandler from "./datahandler/bars";
 
-import AnnotationsPlugin from './plugins/annotations';
-import AxesPlugin from './plugins/axes';
-import ChartLabelsPlugin from './plugins/chart-labels';
-import GridPlugin from './plugins/grid';
-import LegendPlugin from './plugins/legend';
-import RangeSelectorPlugin from './plugins/range-selector';
+import AnnotationsPlugin from "./plugins/annotations";
+import AxesPlugin from "./plugins/axes";
+import ChartLabelsPlugin from "./plugins/chart-labels";
+import GridPlugin from "./plugins/grid";
+import LegendPlugin from "./plugins/legend";
+import RangeSelectorPlugin from "./plugins/range-selector";
 
-type ZgraphStaticsTarget = Record<string, unknown> & {
+type ZpgraphStaticsTarget = Record<string, unknown> & {
   new (div: unknown, data: unknown, opts?: unknown): unknown;
   PLUGINS?: unknown[];
   Plugins?: Record<string, unknown>;
   DataHandlers?: Record<string, unknown>;
 };
 
-export const registerZgraphStatics = (Zgraph: unknown): void => {
-  const Z = Zgraph as ZgraphStaticsTarget;
+export const registerZpgraphStatics = (Zpgraph: unknown): void => {
+  const Z = Zpgraph as ZpgraphStaticsTarget;
 
-  Z.NAME = 'Zgraph';
-  Z.VERSION = '0.1.0';
+  Z.NAME = "Zpgraph";
+  Z.VERSION = "0.1.0";
 
   // Various default values
   Z.DEFAULT_ROLL_PERIOD = 1;
@@ -46,14 +46,14 @@ export const registerZgraphStatics = (Zgraph: unknown): void => {
   /**
    * Standard plotters. These may be used by clients.
    * Available plotters are:
-   * - Zgraph.Plotters.linePlotter: draws central lines (most common)
-   * - Zgraph.Plotters.errorPlotter: draws high/low bands
-   * - Zgraph.Plotters.fillPlotter: draws fills under lines (used with fillGraph)
+   * - Zpgraph.Plotters.linePlotter: draws central lines (most common)
+   * - Zpgraph.Plotters.errorPlotter: draws high/low bands
+   * - Zpgraph.Plotters.fillPlotter: draws fills under lines (used with fillGraph)
    *
    * By default, the plotter is [fillPlotter, errorPlotter, linePlotter].
    * This causes all the lines to be drawn over all the fills/bands.
    */
-  Z.Plotters = ZgraphCanvasRenderer._Plotters;
+  Z.Plotters = ZpgraphCanvasRenderer._Plotters;
 
   // Used for initializing annotation CSS rules only once.
   Z.addedAnnotationCSS = false;
@@ -81,8 +81,8 @@ export const registerZgraphStatics = (Zgraph: unknown): void => {
   Z.findPos = utils.findPos;
   Z.pageX = utils.pageX;
   Z.pageY = utils.pageY;
-  Z.defaultInteractionModel = ZgraphInteraction.defaultModel;
-  Z.nonInteractiveModel = ZgraphInteraction.nonInteractiveModel_;
+  Z.defaultInteractionModel = ZpgraphInteraction.defaultModel;
+  Z.nonInteractiveModel = ZpgraphInteraction.nonInteractiveModel_;
   Z.Circles = utils.Circles;
 
   Z.Plugins = {
@@ -103,20 +103,20 @@ export const registerZgraphStatics = (Zgraph: unknown): void => {
     FractionsBarsHandler,
   };
 
-  Z.startPan = ZgraphInteraction.startPan;
-  Z.startZoom = ZgraphInteraction.startZoom;
-  Z.movePan = ZgraphInteraction.movePan;
-  Z.moveZoom = ZgraphInteraction.moveZoom;
-  Z.endPan = ZgraphInteraction.endPan;
-  Z.endZoom = ZgraphInteraction.endZoom;
+  Z.startPan = ZpgraphInteraction.startPan;
+  Z.startZoom = ZpgraphInteraction.startZoom;
+  Z.movePan = ZpgraphInteraction.movePan;
+  Z.moveZoom = ZpgraphInteraction.moveZoom;
+  Z.endPan = ZpgraphInteraction.endPan;
+  Z.endZoom = ZpgraphInteraction.endZoom;
 
-  Z.numericLinearTicks = ZgraphTickers.numericLinearTicks;
-  Z.numericTicks = ZgraphTickers.numericTicks;
-  Z.integerTicks = ZgraphTickers.integerTicks;
-  Z.dateTicker = ZgraphTickers.dateTicker;
-  Z.Granularity = ZgraphTickers.Granularity;
-  Z.pickDateTickGranularity = ZgraphTickers.pickDateTickGranularity;
-  Z.getDateAxis = ZgraphTickers.getDateAxis;
+  Z.numericLinearTicks = ZpgraphTickers.numericLinearTicks;
+  Z.numericTicks = ZpgraphTickers.numericTicks;
+  Z.integerTicks = ZpgraphTickers.integerTicks;
+  Z.dateTicker = ZpgraphTickers.dateTicker;
+  Z.Granularity = ZpgraphTickers.Granularity;
+  Z.pickDateTickGranularity = ZpgraphTickers.pickDateTickGranularity;
+  Z.getDateAxis = ZpgraphTickers.getDateAxis;
   Z.floatFormat = utils.floatFormat;
 
   utils.setupDOMready_(

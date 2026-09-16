@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -8,32 +8,32 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-/*global Zgraph:false,TouchEvent:false */
+/*global Zpgraph:false,TouchEvent:false */
 
 /**
  * @fileoverview This file contains the RangeSelector plugin used to provide
- * a timeline range selector widget for zgraph.
+ * a timeline range selector widget for zpgraph.
  */
 
-/*global Zgraph:false */
+/*global Zpgraph:false */
 
-import * as utils from '../utils';
-import { log } from '../logger';
-import ZgraphInteraction from '../interaction-model';
-import IFrameTarp from '../iframe-tarp';
+import * as utils from "../utils";
+import { log } from "../logger";
+import ZpgraphInteraction from "../interaction-model";
+import IFrameTarp from "../iframe-tarp";
 import type {
   LayoutPluginEvent,
   PlotArea,
   UnifiedSeries,
-} from '../internal-types';
-import type { ZgraphInstance } from '../internal-types';
+} from "../internal-types";
+import type { ZpgraphInstance } from "../internal-types";
 
 class rangeSelector {
-  hasTouchInterface_ = typeof TouchEvent != 'undefined';
+  hasTouchInterface_ = typeof TouchEvent != "undefined";
   isMobileDevice_ = /mobile|android/gi.test(navigator.appVersion);
   interfaceCreated_ = false;
 
-  zgraph_: ZgraphInstance | null = null;
+  zpgraph_: ZpgraphInstance | null = null;
   graphDiv_: HTMLElement | null = null;
 
   // The mini plot: a static background layer and an interactive one above it.
@@ -48,16 +48,16 @@ class rangeSelector {
   isChangingRange_ = false;
 
   toString() {
-    return 'RangeSelector Plugin';
+    return "RangeSelector Plugin";
   }
 
-  chart_(): ZgraphInstance {
-    return this.zgraph_!;
+  chart_(): ZpgraphInstance {
+    return this.zpgraph_!;
   }
 
-  activate(zgraph: ZgraphInstance) {
-    this.zgraph_ = zgraph;
-    if (this.getOptionBool_('showRangeSelector')) {
+  activate(zpgraph: ZpgraphInstance) {
+    this.zpgraph_ = zpgraph;
+    if (this.getOptionBool_("showRangeSelector")) {
       this.createInterface_();
     }
     return {
@@ -100,9 +100,9 @@ class rangeSelector {
     this.initInteraction_();
 
     // Range selector and animatedZooms have a bad interaction. See issue 359.
-    if (this.getOptionBool_('animatedZooms')) {
+    if (this.getOptionBool_("animatedZooms")) {
       log.warn(
-        'Animated zooms and range selector are not compatible; disabling animatedZooms.',
+        "Animated zooms and range selector are not compatible; disabling animatedZooms.",
       );
       this.chart_().updateOptions({ animatedZooms: false }, true);
     }
@@ -132,8 +132,8 @@ class rangeSelector {
   }
 
   reserveSpace_(e: LayoutPluginEvent) {
-    if (this.getOptionBool_('showRangeSelector')) {
-      e.reserveSpaceBottom(this.getOptionNum_('rangeSelectorHeight') + 4);
+    if (this.getOptionBool_("showRangeSelector")) {
+      e.reserveSpaceBottom(this.getOptionNum_("rangeSelectorHeight") + 4);
     }
   }
 
@@ -154,7 +154,7 @@ class rangeSelector {
   }
 
   updateVisibility_() {
-    let enabled = this.getOptionBool_('showRangeSelector');
+    let enabled = this.getOptionBool_("showRangeSelector");
     if (enabled) {
       if (!this.interfaceCreated_) {
         this.createInterface_();
@@ -163,10 +163,10 @@ class rangeSelector {
       }
     } else if (this.graphDiv_) {
       this.removeFromGraph_();
-      let zgraph = this.chart_();
+      let zpgraph = this.chart_();
       setTimeout(function () {
-        zgraph.width_ = 0;
-        zgraph.resize();
+        zpgraph.width_ = 0;
+        zpgraph.resize();
       }, 1);
     }
     return enabled;
@@ -182,12 +182,12 @@ class rangeSelector {
       if (!canvas || !context) return;
       let canvasScale = pixelRatioOption || utils.getContextPixelRatio(context);
 
-      canvas.style.top = rect.y + 'px';
-      canvas.style.left = rect.x + 'px';
+      canvas.style.top = rect.y + "px";
+      canvas.style.left = rect.x + "px";
       canvas.width = rect.w * canvasScale;
       canvas.height = rect.h * canvasScale;
-      canvas.style.width = rect.w + 'px';
-      canvas.style.height = rect.h + 'px';
+      canvas.style.width = rect.w + "px";
+      canvas.style.height = rect.h + "px";
 
       if (canvasScale !== 1) {
         context.scale(canvasScale, canvasScale);
@@ -197,20 +197,20 @@ class rangeSelector {
     let plotArea = this.chart_().layout_.getPlotArea();
 
     let xAxisLabelHeight = 0;
-    if (this.chart_().getOptionForAxis('drawAxis', 'x')) {
+    if (this.chart_().getOptionForAxis("drawAxis", "x")) {
       xAxisLabelHeight =
-        this.getOptionNum_('xAxisHeight') ||
-        this.getOptionNum_('axisLabelFontSize') +
-          2 * this.getOptionNum_('axisTickSize');
+        this.getOptionNum_("xAxisHeight") ||
+        this.getOptionNum_("axisLabelFontSize") +
+          2 * this.getOptionNum_("axisTickSize");
     }
     this.canvasRect_ = {
       x: plotArea.x,
       y: plotArea.y + plotArea.h + xAxisLabelHeight + 4,
       w: plotArea.w,
-      h: this.getOptionNum_('rangeSelectorHeight'),
+      h: this.getOptionNum_("rangeSelectorHeight"),
     };
 
-    let pixelRatioOption = this.chart_().getNumericOption('pixelRatio');
+    let pixelRatioOption = this.chart_().getNumericOption("pixelRatio");
     setElementRect(
       this.bgcanvas_,
       this.bgcanvas_ctx_,
@@ -227,35 +227,35 @@ class rangeSelector {
 
   createCanvases_() {
     this.bgcanvas_ = utils.createCanvas();
-    this.bgcanvas_.className = 'zgraph-rangesel-bgcanvas';
-    this.bgcanvas_.style.position = 'absolute';
-    this.bgcanvas_.style.zIndex = '9';
+    this.bgcanvas_.className = "zpgraph-rangesel-bgcanvas";
+    this.bgcanvas_.style.position = "absolute";
+    this.bgcanvas_.style.zIndex = "9";
     this.bgcanvas_ctx_ = utils.getContext(this.bgcanvas_);
 
     this.fgcanvas_ = utils.createCanvas();
-    this.fgcanvas_.className = 'zgraph-rangesel-fgcanvas';
-    this.fgcanvas_.style.position = 'absolute';
-    this.fgcanvas_.style.zIndex = '9';
-    this.fgcanvas_.style.cursor = 'default';
+    this.fgcanvas_.className = "zpgraph-rangesel-fgcanvas";
+    this.fgcanvas_.style.position = "absolute";
+    this.fgcanvas_.style.zIndex = "9";
+    this.fgcanvas_.style.cursor = "default";
     this.fgcanvas_ctx_ = utils.getContext(this.fgcanvas_);
   }
 
   createZoomHandles_() {
     let img = new Image();
-    img.className = 'zgraph-rangesel-zoomhandle';
-    img.style.position = 'absolute';
-    img.style.zIndex = '10';
-    img.style.visibility = 'hidden'; // Initially hidden so they don't show up in the wrong place.
-    img.style.cursor = 'col-resize';
+    img.className = "zpgraph-rangesel-zoomhandle";
+    img.style.position = "absolute";
+    img.style.zIndex = "10";
+    img.style.visibility = "hidden"; // Initially hidden so they don't show up in the wrong place.
+    img.style.cursor = "col-resize";
     img.width = 9;
     img.height = 16;
     img.src =
-      'data:image/png;base64,' +
-      'iVBORw0KGgoAAAANSUhEUgAAAAkAAAAQCAYAAADESFVDAAAAAXNSR0IArs4c6QAAAAZiS0dEANAA' +
-      'zwDP4Z7KegAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAd0SU1FB9sHGw0cMqdt1UwAAAAZdEVYdENv' +
-      'bW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAaElEQVQoz+3SsRFAQBCF4Z9WJM8KCDVwownl' +
-      '6YXsTmCUsyKGkZzcl7zkz3YLkypgAnreFmDEpHkIwVOMfpdi9CEEN2nGpFdwD03yEqDtOgCaun7s' +
-      'qSTDH32I1pQA2Pb9sZecAxc5r3IAb21d6878xsAAAAAASUVORK5CYII=';
+      "data:image/png;base64," +
+      "iVBORw0KGgoAAAANSUhEUgAAAAkAAAAQCAYAAADESFVDAAAAAXNSR0IArs4c6QAAAAZiS0dEANAA" +
+      "zwDP4Z7KegAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAd0SU1FB9sHGw0cMqdt1UwAAAAZdEVYdENv" +
+      "bW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAaElEQVQoz+3SsRFAQBCF4Z9WJM8KCDVwownl" +
+      "6YXsTmCUsyKGkZzcl7zkz3YLkypgAnreFmDEpHkIwVOMfpdi9CEEN2nGpFdwD03yEqDtOgCaun7s" +
+      "qSTDH32I1pQA2Pb9sZecAxc5r3IAb21d6878xsAAAAAASUVORK5CYII=";
 
     if (this.isMobileDevice_) {
       img.width *= 2;
@@ -340,7 +340,7 @@ class rangeSelector {
         );
       }
       const halfHandleWidth = handle.width / 2;
-      handle.style.left = newPos - halfHandleWidth + 'px';
+      handle.style.left = newPos - halfHandleWidth + "px";
       zoomFrame();
       return true;
     };
@@ -353,15 +353,15 @@ class rangeSelector {
       tarp.uncover();
       utils.removeEvent(
         topElem,
-        'mousemove',
+        "mousemove",
         onZoom as unknown as EventListener,
       );
       utils.removeEvent(
         topElem,
-        'mouseup',
+        "mouseup",
         onZoomEnd as unknown as EventListener,
       );
-      this.fgcanvas_!.style.cursor = 'default';
+      this.fgcanvas_!.style.cursor = "default";
 
       // The gesture ends where the last move left the handle.
       zoomFrame.flush();
@@ -377,20 +377,20 @@ class rangeSelector {
       isZooming = true;
       clientXLast = e.clientX;
       handle = e.target as HTMLImageElement;
-      if (e.type === 'mousedown' || e.type === 'dragstart') {
+      if (e.type === "mousedown" || e.type === "dragstart") {
         // These events are removed manually.
         utils.addEvent(
           topElem,
-          'mousemove',
+          "mousemove",
           onZoom as unknown as EventListener,
         );
         utils.addEvent(
           topElem,
-          'mouseup',
+          "mouseup",
           onZoomEnd as unknown as EventListener,
         );
       }
-      this.fgcanvas_!.style.cursor = 'col-resize';
+      this.fgcanvas_!.style.cursor = "col-resize";
       tarp.cover();
       return true;
     };
@@ -450,9 +450,9 @@ class rangeSelector {
         rightHandlePos += delX;
       }
       const halfHandleWidth = this.leftZoomHandle_!.width / 2;
-      this.leftZoomHandle_!.style.left = leftHandlePos - halfHandleWidth + 'px';
+      this.leftZoomHandle_!.style.left = leftHandlePos - halfHandleWidth + "px";
       this.rightZoomHandle_!.style.left =
-        rightHandlePos - halfHandleWidth + 'px';
+        rightHandlePos - halfHandleWidth + "px";
       panFrame();
       return true;
     };
@@ -464,12 +464,12 @@ class rangeSelector {
       isPanning = false;
       utils.removeEvent(
         topElem,
-        'mousemove',
+        "mousemove",
         onPan as unknown as EventListener,
       );
       utils.removeEvent(
         topElem,
-        'mouseup',
+        "mouseup",
         onPanEnd as unknown as EventListener,
       );
       tarp.uncover();
@@ -491,16 +491,16 @@ class rangeSelector {
         utils.cancelEvent(e);
         isPanning = true;
         clientXLast = e.clientX;
-        if (e.type === 'mousedown') {
+        if (e.type === "mousedown") {
           // These events are removed manually.
           utils.addEvent(
             topElem,
-            'mousemove',
+            "mousemove",
             onPan as unknown as EventListener,
           );
           utils.addEvent(
             topElem,
-            'mouseup',
+            "mouseup",
             onPanEnd as unknown as EventListener,
           );
         }
@@ -526,7 +526,7 @@ class rangeSelector {
       if (isZooming || isPanning) {
         return;
       }
-      const cursor = isMouseInPanZone(e) ? 'move' : 'default';
+      const cursor = isMouseInPanZone(e) ? "move" : "default";
       if (cursor !== this.fgcanvas_!.style.cursor) {
         this.fgcanvas_!.style.cursor = cursor;
       }
@@ -534,12 +534,12 @@ class rangeSelector {
 
     const onZoomHandleTouchEvent = (e: Event) => {
       const touch = e as TouchEvent;
-      if (touch.type === 'touchstart' && touch.targetTouches.length === 1) {
+      if (touch.type === "touchstart" && touch.targetTouches.length === 1) {
         if (onZoomStart(touch.targetTouches[0] as unknown as MouseEvent)) {
           utils.cancelEvent(touch);
         }
       } else if (
-        touch.type === 'touchmove' &&
+        touch.type === "touchmove" &&
         touch.targetTouches.length === 1
       ) {
         if (onZoom(touch.targetTouches[0] as unknown as MouseEvent)) {
@@ -552,12 +552,12 @@ class rangeSelector {
 
     const onCanvasTouchEvent = (e: Event) => {
       const touch = e as TouchEvent;
-      if (touch.type === 'touchstart' && touch.targetTouches.length === 1) {
+      if (touch.type === "touchstart" && touch.targetTouches.length === 1) {
         if (onPanStart(touch.targetTouches[0] as unknown as MouseEvent)) {
           utils.cancelEvent(touch);
         }
       } else if (
-        touch.type === 'touchmove' &&
+        touch.type === "touchmove" &&
         touch.targetTouches.length === 1
       ) {
         if (onPan(touch.targetTouches[0] as unknown as MouseEvent)) {
@@ -569,21 +569,21 @@ class rangeSelector {
     };
 
     const addTouchEvents = (elem: HTMLElement, fn: (e: Event) => void) => {
-      const types = ['touchstart', 'touchend', 'touchmove', 'touchcancel'];
+      const types = ["touchstart", "touchend", "touchmove", "touchcancel"];
       for (let i = 0; i < types.length; i++) {
         this.chart_().addAndTrackEvent(elem, types[i]!, fn);
       }
     };
 
     this.setDefaultOption_(
-      'interactionModel',
-      ZgraphInteraction.dragIsPanInteractionModel,
+      "interactionModel",
+      ZpgraphInteraction.dragIsPanInteractionModel,
     );
-    this.setDefaultOption_('panEdgeFraction', 0.0001);
+    this.setDefaultOption_("panEdgeFraction", 0.0001);
 
     let dragStartEvent = (window as Window & { opera?: unknown }).opera
-      ? 'mousedown'
-      : 'dragstart';
+      ? "mousedown"
+      : "dragstart";
     this.chart_().addAndTrackEvent(
       this.leftZoomHandle_!,
       dragStartEvent,
@@ -597,12 +597,12 @@ class rangeSelector {
 
     this.chart_().addAndTrackEvent(
       this.fgcanvas_!,
-      'mousedown',
+      "mousedown",
       onPanStart as unknown as EventListener,
     );
     this.chart_().addAndTrackEvent(
       this.fgcanvas_!,
-      'mousemove',
+      "mousemove",
       onCanvasHover as unknown as EventListener,
     );
 
@@ -625,8 +625,8 @@ class rangeSelector {
     }
 
     const margin = 0.5;
-    ctx.lineWidth = this.getOptionNum_('rangeSelectorBackgroundLineWidth');
-    ctx.strokeStyle = this.getOptionStr_('rangeSelectorBackgroundStrokeColor');
+    ctx.lineWidth = this.getOptionNum_("rangeSelectorBackgroundLineWidth");
+    ctx.strokeStyle = this.getOptionStr_("rangeSelectorBackgroundStrokeColor");
     ctx.beginPath();
     ctx.moveTo(margin, margin);
     ctx.lineTo(margin, canvasRect.h - margin);
@@ -636,16 +636,16 @@ class rangeSelector {
   }
 
   drawMiniPlot_() {
-    let fillStyle = this.getOptionStr_('rangeSelectorPlotFillColor');
+    let fillStyle = this.getOptionStr_("rangeSelectorPlotFillColor");
     let fillGradientStyle = this.getOptionStr_(
-      'rangeSelectorPlotFillGradientColor',
+      "rangeSelectorPlotFillGradientColor",
     );
-    let strokeStyle = this.getOptionStr_('rangeSelectorPlotStrokeColor');
+    let strokeStyle = this.getOptionStr_("rangeSelectorPlotStrokeColor");
     if (!fillStyle && !strokeStyle) {
       return;
     }
 
-    let stepPlot = this.getOptionBool_('stepPlot');
+    let stepPlot = this.getOptionBool_("stepPlot");
 
     let combinedSeriesData = this.computeCombinedSeriesAndLimits_();
     let yRange = combinedSeriesData.yMax - combinedSeriesData.yMin;
@@ -718,14 +718,14 @@ class rangeSelector {
 
     if (strokeStyle) {
       ctx.strokeStyle = strokeStyle;
-      ctx.lineWidth = this.getOptionNum_('rangeSelectorPlotLineWidth');
+      ctx.lineWidth = this.getOptionNum_("rangeSelectorPlotLineWidth");
       ctx.stroke();
     }
   }
 
   computeCombinedSeriesAndLimits_() {
     let g = this.chart_();
-    let logscale = this.getOptionBool_('logscale');
+    let logscale = this.getOptionBool_("logscale");
     let i;
 
     // Select series to combine. By default, all series are combined.
@@ -737,8 +737,9 @@ class rangeSelector {
     const inclusion: Array<boolean | null> = [];
 
     for (i = 1; i < numColumns; i++) {
-      let include = this.getOption_('showInRangeSelector', labels![i]!) as
-        boolean | null;
+      let include = this.getOption_("showInRangeSelector", labels![i]!) as
+        | boolean
+        | null;
       inclusion.push(include);
       if (include !== null) anySet = true; // it's set explicitly for this series
     }
@@ -840,13 +841,13 @@ class rangeSelector {
       canvasRect.y + (canvasRect.h - leftHandle.height) / 2,
     );
     const halfHandleWidth = leftHandle.width / 2;
-    leftHandle.style.left = leftCoord - halfHandleWidth + 'px';
-    leftHandle.style.top = handleTop + 'px';
-    rightHandle.style.left = rightCoord - halfHandleWidth + 'px';
+    leftHandle.style.left = leftCoord - halfHandleWidth + "px";
+    leftHandle.style.top = handleTop + "px";
+    rightHandle.style.left = rightCoord - halfHandleWidth + "px";
     rightHandle.style.top = leftHandle.style.top;
 
-    leftHandle.style.visibility = 'visible';
-    rightHandle.style.visibility = 'visible';
+    leftHandle.style.visibility = "visible";
+    rightHandle.style.visibility = "visible";
   }
 
   drawInteractiveLayer_() {
@@ -858,8 +859,8 @@ class rangeSelector {
     const height = canvasRect.h - margin;
     const zoomHandleStatus = this.getZoomHandleStatus_();
 
-    ctx.strokeStyle = this.getOptionStr_('rangeSelectorForegroundStrokeColor');
-    ctx.lineWidth = this.getOptionNum_('rangeSelectorForegroundLineWidth');
+    ctx.strokeStyle = this.getOptionStr_("rangeSelectorForegroundStrokeColor");
+    ctx.lineWidth = this.getOptionNum_("rangeSelectorForegroundLineWidth");
     if (!zoomHandleStatus.isZoomed) {
       ctx.beginPath();
       ctx.moveTo(margin, margin);
@@ -877,12 +878,12 @@ class rangeSelector {
         zoomHandleStatus.rightHandlePos - canvasRect.x,
       );
 
-      const veilColour = this.getOptionStr_('rangeSelectorVeilColour');
+      const veilColour = this.getOptionStr_("rangeSelectorVeilColour");
       ctx.fillStyle = veilColour
         ? veilColour
-        : 'rgba(240, 240, 240, ' +
-          this.getOptionNum_('rangeSelectorAlpha').toString() +
-          ')';
+        : "rgba(240, 240, 240, " +
+          this.getOptionNum_("rangeSelectorAlpha").toString() +
+          ")";
       ctx.fillRect(0, 0, leftHandleCanvasPos, canvasRect.h);
       ctx.fillRect(
         rightHandleCanvasPos,

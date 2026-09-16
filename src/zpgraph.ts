@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -12,7 +12,7 @@
   Usage:
    <div id="graphdiv" style="width:800px; height:500px;"></div>
    <script type="module">
-     new Zgraph(document.getElementById("graphdiv"),
+     new Zpgraph(document.getElementById("graphdiv"),
                  "datafile.csv",  // CSV file with headers
                  { }); // options
    </script>
@@ -37,11 +37,11 @@
 
  And high/low bands will be calculated automatically using a binomial distribution.
 
- For further documentation and examples, see https://github.com/joaovitorzeppe/zgraph/
+ For further documentation and examples, see https://github.com/joaovitorzeppe/zpgraph/
  */
 
-import ZgraphLayout from './layout';
-import { log } from './logger';
+import ZpgraphLayout from "./layout";
+import { log } from "./logger";
 import type {
   Annotation,
   AxisName,
@@ -50,9 +50,9 @@ import type {
   Plugin,
   Point,
   Ticker,
-  ZgraphElement,
-  ZgraphOptions,
-} from './types';
+  ZpgraphElement,
+  ZpgraphOptions,
+} from "./types";
 import type {
   AxisProperties,
   ChartInteractionHandler,
@@ -60,13 +60,13 @@ import type {
   OptionsGetter,
   RawData,
   UnifiedSeries,
-} from './internal-types';
-import ZgraphCanvasRenderer from './canvas';
-import OptionsManager from './options';
-import * as utils from './utils';
-import OPTIONS_REFERENCE_ from './options-reference';
-import DEFAULT_ATTRS from './default-attrs';
-import * as ZgraphTickers from './tickers';
+} from "./internal-types";
+import ZpgraphCanvasRenderer from "./canvas";
+import OptionsManager from "./options";
+import * as utils from "./utils";
+import OPTIONS_REFERENCE_ from "./options-reference";
+import DEFAULT_ATTRS from "./default-attrs";
+import * as ZpgraphTickers from "./tickers";
 import {
   eventToDomCoords,
   toDataCoords,
@@ -82,8 +82,8 @@ import {
   yAxisExtremes,
   yAxisRange,
   yAxisRanges,
-} from './coords';
-import { resizeElements } from './dom';
+} from "./coords";
+import { resizeElements } from "./dom";
 import {
   clearSelection,
   findClosestPoint,
@@ -94,7 +94,7 @@ import {
   mouseOut,
   setSelection,
   updateSelection,
-} from './selection';
+} from "./selection";
 import {
   clearZoomRect,
   doAnimatedZoom,
@@ -103,8 +103,8 @@ import {
   doZoomY,
   drawZoomRect,
   resetZoom,
-} from './zoom';
-import { drawGraph, predraw } from './render';
+} from "./zoom";
+import { drawGraph, predraw } from "./render";
 import {
   addXTicks_,
   cascadeEvents_ as cascadeEventsFn_,
@@ -118,8 +118,8 @@ import {
   start as start_,
   updateOptions as updateOptionsFn_,
   visibility,
-} from './lifecycle';
-import { registerZgraphStatics } from './register';
+} from "./lifecycle";
+import { registerZpgraphStatics } from "./register";
 
 const OPTIONS_REFERENCE: Record<string, unknown> | null = OPTIONS_REFERENCE_;
 
@@ -138,7 +138,7 @@ type TrackedEvent = {
 
 /**
  * @class Creates an interactive, zoomable chart.
- * @name Zgraph
+ * @name Zpgraph
  *
  * @constructor
  * @param div A div or the id of a div into which to construct
@@ -151,9 +151,9 @@ type TrackedEvent = {
  * whether the input data contains error ranges.
  */
 
-export default class Zgraph {
+export default class Zpgraph {
   is_initial_draw_!: boolean;
-  readyFns_!: Array<(g: Zgraph) => void>;
+  readyFns_!: Array<(g: Zpgraph) => void>;
   maindiv_!: HTMLElement;
   file_!: Data | string | (() => Data);
   rollPeriod_!: number;
@@ -163,8 +163,8 @@ export default class Zgraph {
   annotations_!: Annotation[];
   width_!: number;
   height_!: number;
-  user_attrs_!: ZgraphOptions;
-  attrs_!: ZgraphOptions;
+  user_attrs_!: ZpgraphOptions;
+  attrs_!: ZpgraphOptions;
   boundaryIds_!: Array<[number, number]>;
   setIndexByName_!: Record<string, number>;
   datasetIndex_!: number[];
@@ -178,7 +178,7 @@ export default class Zgraph {
   graphDiv!: HTMLDivElement;
   canvas_!: HTMLCanvasElement;
   hidden_!: HTMLCanvasElement;
-  plotter_!: ZgraphCanvasRenderer;
+  plotter_!: ZpgraphCanvasRenderer;
   mouseMoveHandler_?: utils.Coalesced;
   keyDownHandler_?: (e: KeyboardEvent) => void;
   /** Row the keyboard last moved to, undefined before the first key. */
@@ -190,7 +190,7 @@ export default class Zgraph {
   resizeObserver_?: ResizeObserver | null;
   fileLoadAbort_: AbortController | null = null;
   rawData_!: RawData;
-  layout_!: ZgraphLayout;
+  layout_!: ZpgraphLayout;
   colors_!: string[];
   colorsMap_!: Record<string, string>;
   axes_!: AxisProperties[];
@@ -217,7 +217,7 @@ export default class Zgraph {
   static DEFAULT_ROLL_PERIOD: number;
   static DEFAULT_WIDTH: number;
   static DEFAULT_HEIGHT: number;
-  static Plotters: typeof ZgraphCanvasRenderer._Plotters;
+  static Plotters: typeof ZpgraphCanvasRenderer._Plotters;
   static addedAnnotationCSS: boolean;
   static PLUGINS: Array<(new () => Plugin) | Plugin>;
   static DOTTED_LINE: number[];
@@ -247,8 +247,8 @@ export default class Zgraph {
   static integerTicks: Ticker;
   static dateTicker: Ticker;
   static Granularity: Record<string, number>;
-  static pickDateTickGranularity: typeof ZgraphTickers.pickDateTickGranularity;
-  static getDateAxis: typeof ZgraphTickers.getDateAxis;
+  static pickDateTickGranularity: typeof ZpgraphTickers.pickDateTickGranularity;
+  static getDateAxis: typeof ZpgraphTickers.getDateAxis;
   static floatFormat: typeof utils.floatFormat;
   static DEFAULT_ATTRS: typeof DEFAULT_ATTRS;
   static FORCE_FAST_PROXY: boolean;
@@ -261,12 +261,12 @@ export default class Zgraph {
    * @param attrs Various other attributes, e.g. errorBars determines
    * whether the input data contains error ranges.
    */
-  constructor(div: ZgraphElement, data: Data, opts?: Partial<ZgraphOptions>) {
+  constructor(div: ZpgraphElement, data: Data, opts?: Partial<ZpgraphOptions>) {
     this.__init__(div, data, opts);
   }
 
   /**
-   * Initializes the Zgraph. This creates a new DIV and constructs the hidden
+   * Initializes the Zpgraph. This creates a new DIV and constructs the hidden
    * and context &lt;canvas&gt; inside of it. See the constructor for details.
    * on the parameters.
    * @param div the Element to render the graph into.
@@ -274,7 +274,7 @@ export default class Zgraph {
    * @param attrs Miscellaneous other options
    * @private
    */
-  __init__(div: ZgraphElement, file: Data, attrs?: Partial<ZgraphOptions>) {
+  __init__(div: ZpgraphElement, file: Data, attrs?: Partial<ZpgraphOptions>) {
     init_(this, div, file, attrs);
   }
 
@@ -313,33 +313,33 @@ export default class Zgraph {
    * or when the dateWindow or valueRange are updated. Double-clicking or calling
    * resetZoom() resets the zoom status for the chart.
    */
-  isZoomed(axis?: 'x' | 'y' | null) {
+  isZoomed(axis?: "x" | "y" | null) {
     const isZoomedX = !!this.dateWindow_;
-    if (axis === 'x') return isZoomedX;
+    if (axis === "x") return isZoomedX;
 
     const isZoomedY =
       this.axes_.map((ax) => !!ax.valueRange).indexOf(true) >= 0;
     if (axis === null || axis === undefined) {
       return isZoomedX || isZoomedY;
     }
-    if (axis === 'y') return isZoomedY;
+    if (axis === "y") return isZoomedY;
 
     throw new Error(`axis parameter is [${axis}] must be null, 'x' or 'y'.`);
   }
 
   /**
-   * Returns information about the Zgraph object, including its containing ID.
+   * Returns information about the Zpgraph object, including its containing ID.
    */
   toString() {
     let maindiv = this.maindiv_;
     let id = maindiv && maindiv.id ? maindiv.id : maindiv;
-    return '[Zgraph ' + id + ']';
+    return "[Zpgraph " + id + "]";
   }
 
   /**
    * @private
    * Returns the value of an option. This may be set by the user (either in the
-   * constructor or by calling updateOptions) or by zgraph, and may be set to a
+   * constructor or by calling updateOptions) or by zpgraph, and may be set to a
    * per-series value.
    * @param name The name of the option, e.g. 'rollPeriod'.
    * @param [seriesName] The name of the series to which the option
@@ -351,14 +351,14 @@ export default class Zgraph {
     // OPTIONS_REFERENCE is tree-shaken out of production bundles.
     if (OPTIONS_REFERENCE && !Object.hasOwn(OPTIONS_REFERENCE, name)) {
       log.error(
-        'Zgraph is using property ' +
+        "Zpgraph is using property " +
           name +
-          ', which has no ' +
-          'entry in the Zgraph.OPTIONS_REFERENCE listing.',
+          ", which has no " +
+          "entry in the Zpgraph.OPTIONS_REFERENCE listing.",
       );
-        // Only log this error once.
-        OPTIONS_REFERENCE[name] = true;
-      }
+      // Only log this error once.
+      OPTIONS_REFERENCE[name] = true;
+    }
     return seriesName
       ? this.attributes_.getForSeries(name, seriesName)
       : this.attributes_.get(name);
@@ -371,7 +371,7 @@ export default class Zgraph {
    *
    * All values returned by this method should be considered immutable. If you
    * modify them, there is no guarantee that the changes will be honored or that
-   * zgraph will remain in a consistent state. If you want to modify an option,
+   * zpgraph will remain in a consistent state. If you want to modify an option,
    * use updateOptions() instead.
    *
    * @param name The name of the option (e.g. 'strokeWidth')
@@ -447,7 +447,7 @@ export default class Zgraph {
   optionsViewForAxis_(axis: AxisName | string): OptionsGetter {
     const axisName = axis as AxisName;
     const readAxisOpt = (
-      axes: ZgraphOptions['axes'],
+      axes: ZpgraphOptions["axes"],
       opt: string,
     ): unknown | undefined => {
       const bucket = axes?.[axisName] as Record<string, unknown> | undefined;
@@ -461,14 +461,14 @@ export default class Zgraph {
       if (userAxisOpt !== undefined) return userAxisOpt;
 
       // I don't like that this is in a second spot.
-      if (axis === 'x' && opt === 'logscale') {
+      if (axis === "x" && opt === "logscale") {
         // return the default value.
         return false;
       }
 
       // user-specified attributes always trump defaults, even if they're less
       // specific.
-      if (typeof userAttrs[opt] != 'undefined') {
+      if (typeof userAttrs[opt] != "undefined") {
         return userAttrs[opt];
       }
 
@@ -476,10 +476,10 @@ export default class Zgraph {
       if (attrsAxisOpt !== undefined) return attrsAxisOpt;
 
       // check old-style axis options
-      if (axis === 'y') {
+      if (axis === "y") {
         const y0 = this.axes_?.[0];
         if (y0 && Object.hasOwn(y0, opt)) return y0[opt];
-      } else if (axis === 'y2') {
+      } else if (axis === "y2") {
         const y1 = this.axes_?.[1];
         if (y1 && Object.hasOwn(y1, opt)) return y1[opt];
       }
@@ -561,7 +561,7 @@ export default class Zgraph {
   numColumns() {
     if (!this.rawData_) return 0;
     if (this.rawData_[0]) return this.rawData_[0].length;
-    const labels = this.attr_('labels');
+    const labels = this.attr_("labels");
     return Array.isArray(labels) ? labels.length : 0;
   }
 
@@ -593,8 +593,8 @@ export default class Zgraph {
   }
 
   /**
-   * Detach DOM elements in the zgraph and null out all data references.
-   * Calling this when you're done with a zgraph can dramatically reduce memory
+   * Detach DOM elements in the zpgraph and null out all data references.
+   * Calling this when you're done with a zpgraph can dramatically reduce memory
    * usage. See, e.g., the tests/perf.html example.
    */
   destroy() {
@@ -858,7 +858,7 @@ export default class Zgraph {
   cascadeDataDidUpdateEvent_() {
     // Do not call xAxisRange()/toDomCoords from handlers of this event.
     // The visible range should be set when the chart is drawn, not derived from the data.
-    this.cascadeEvents_('dataDidUpdate', {});
+    this.cascadeEvents_("dataDidUpdate", {});
   }
 
   /**
@@ -888,7 +888,7 @@ export default class Zgraph {
    *     preventing redraws when it's not necessary (e.g. when updating a
    *     callback).
    */
-  updateOptions(input_attrs: Partial<ZgraphOptions>, block_redraw?: boolean) {
+  updateOptions(input_attrs: Partial<ZpgraphOptions>, block_redraw?: boolean) {
     updateOptionsFn_(this, input_attrs, block_redraw);
   }
 
@@ -896,24 +896,24 @@ export default class Zgraph {
    * Make a copy of input attributes, removing file as a convenience.
    * @private
    */
-  static copyUserAttrs_(attrs: Partial<ZgraphOptions>) {
+  static copyUserAttrs_(attrs: Partial<ZpgraphOptions>) {
     const src = attrs as Record<string, unknown>;
     const my_attrs: Record<string, unknown> = {};
     for (let k in src) {
       if (!Object.hasOwn(src, k)) continue;
-      if (k === 'file') continue;
+      if (k === "file") continue;
       my_attrs[k] = src[k];
     }
-    return my_attrs as Partial<ZgraphOptions>;
+    return my_attrs as Partial<ZpgraphOptions>;
   }
 
   /**
-   * Resizes the zgraph. If no parameters are specified, resizes to fill the
-   * containing div (which has presumably changed size since the zgraph was
+   * Resizes the zpgraph. If no parameters are specified, resizes to fill the
+   * containing div (which has presumably changed size since the zpgraph was
    * instantiated). If the width/height are specified, the div will be resized.
    *
    * This is far more efficient than destroying and re-instantiating a
-   * Zgraph, since it doesn't have to reparse the underlying data.
+   * Zpgraph, since it doesn't have to reparse the underlying data.
    *
    * @param width Width (in pixels)
    * @param height Height (in pixels)
@@ -926,8 +926,8 @@ export default class Zgraph {
 
     if ((width === null) !== (height === null)) {
       log.warn(
-        'Zgraph.resize() should be called with zero parameters or ' +
-          'two non-NULL parameters. Pretending it was zero.',
+        "Zpgraph.resize() should be called with zero parameters or " +
+          "two non-NULL parameters. Pretending it was zero.",
       );
       width = height = null;
     }
@@ -936,8 +936,8 @@ export default class Zgraph {
     let old_height = this.height_;
 
     if (width != null && height != null) {
-      this.maindiv_.style.width = width + 'px';
-      this.maindiv_.style.height = height + 'px';
+      this.maindiv_.style.width = width + "px";
+      this.maindiv_.style.height = height + "px";
       this.width_ = width;
       this.height_ = height;
     } else {
@@ -989,7 +989,7 @@ export default class Zgraph {
   }
 
   /**
-   * How large of an area will the zgraph render itself in?
+   * How large of an area will the zpgraph render itself in?
    * This is used for testing.
    * @return A {width: w, height: h} object.
    * @private
@@ -1007,15 +1007,15 @@ export default class Zgraph {
   setAnnotations(ann: Annotation[], suppressDraw?: boolean) {
     if (!Array.isArray(ann)) {
       throw new TypeError(
-        'setAnnotations expects an array of annotations, got ' + typeof ann,
+        "setAnnotations expects an array of annotations, got " + typeof ann,
       );
     }
     // Only add the annotation CSS rule once we know it will be used.
     this.annotations_ = ann;
     if (!this.layout_) {
       log.warn(
-        'Tried to setAnnotations before zgraph was ready. ' +
-          'Try setting them in a ready() block.',
+        "Tried to setAnnotations before zpgraph was ready. " +
+          "Try setting them in a ready() block.",
       );
       return;
     }
@@ -1040,7 +1040,7 @@ export default class Zgraph {
    * Returns null when labels have not yet been defined.
    */
   getLabels() {
-    const labels = this.attr_('labels');
+    const labels = this.attr_("labels");
     return Array.isArray(labels) ? labels.slice() : null;
   }
 
@@ -1062,7 +1062,7 @@ export default class Zgraph {
    */
   getRowForX(xVal: number) {
     let low = 0,
-        high = this.numRows() - 1;
+      high = this.numRows() - 1;
 
     while (low <= high) {
       let idx = (high + low) >> 1;
@@ -1083,8 +1083,8 @@ export default class Zgraph {
   }
 
   /**
-   * Trigger a callback when the zgraph has drawn itself and is ready to be
-   * manipulated. This is primarily useful when zgraph has to do an XHR for the
+   * Trigger a callback when the zpgraph has drawn itself and is ready to be
+   * manipulated. This is primarily useful when zpgraph has to do an XHR for the
    * data (i.e. a URL is passed as the data source) and the chart is drawn
    * asynchronously. If the chart has already drawn, the callback will fire
    * immediately.
@@ -1094,7 +1094,7 @@ export default class Zgraph {
    * @param callback The callback to trigger when the chart
    *     is ready.
    */
-  ready(callback: (g: Zgraph) => void) {
+  ready(callback: (g: Zpgraph) => void) {
     if (this.is_initial_draw_) {
       this.readyFns_.push(callback);
     } else {
@@ -1122,4 +1122,4 @@ export default class Zgraph {
   }
 }
 
-registerZgraphStatics(Zgraph);
+registerZpgraphStatics(Zpgraph);

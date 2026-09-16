@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Zgraph } from '../src/index';
-import ZgraphInteraction from '../src/interaction-model';
-import type { InteractionContext } from '../src/types';
-import { mockCanvas, mountDiv } from './helpers';
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Zpgraph } from "../src/index";
+import ZpgraphInteraction from "../src/interaction-model";
+import type { InteractionContext } from "../src/types";
+import { mockCanvas, mountDiv } from "./helpers";
 
 /**
  * Pan, zoom and touch run on every frame of a drag, so they are the code
@@ -14,8 +14,8 @@ import { mockCanvas, mountDiv } from './helpers';
 const data = Array.from({ length: 40 }, (_, i) => [i, i, 40 - i]);
 
 const makeChart = (opts: Record<string, unknown> = {}) =>
-  new Zgraph(mountDiv(), data, {
-    labels: ['x', 'A', 'B'],
+  new Zpgraph(mountDiv(), data, {
+    labels: ["x", "A", "B"],
     width: 480,
     height: 320,
     ...opts,
@@ -47,21 +47,21 @@ const newContext = (startX = 0, startY = 0): InteractionContext =>
     initializeMouseDown: vi.fn(),
   }) as InteractionContext;
 
-describe('pan', () => {
+describe("pan", () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
     mockCanvas();
   });
 
-  it('dragging right moves the window to earlier x values', () => {
+  it("dragging right moves the window to earlier x values", () => {
     const g = makeChart({ dateWindow: [10, 20] });
     const context = newContext(200, 100);
 
-    ZgraphInteraction.startPan(dragEvent(200, 100), g, context);
+    ZpgraphInteraction.startPan(dragEvent(200, 100), g, context);
     expect(context.isPanning).toBe(true);
 
     const before = g.xAxisRange();
-    ZgraphInteraction.movePan(dragEvent(260, 100), g, context);
+    ZpgraphInteraction.movePan(dragEvent(260, 100), g, context);
     const after = g.xAxisRange();
 
     expect(after[0]!).toBeLessThan(before[0]!);
@@ -71,31 +71,31 @@ describe('pan', () => {
     g.destroy();
   });
 
-  it('dragging left moves the window to later x values', () => {
+  it("dragging left moves the window to later x values", () => {
     const g = makeChart({ dateWindow: [10, 20] });
     const context = newContext(200, 100);
 
-    ZgraphInteraction.startPan(dragEvent(200, 100), g, context);
-    ZgraphInteraction.movePan(dragEvent(140, 100), g, context);
+    ZpgraphInteraction.startPan(dragEvent(200, 100), g, context);
+    ZpgraphInteraction.movePan(dragEvent(140, 100), g, context);
 
     expect(g.xAxisRange()[0]!).toBeGreaterThan(10);
     g.destroy();
   });
 
-  it('stays one-dimensional until an axis has an explicit valueRange', () => {
+  it("stays one-dimensional until an axis has an explicit valueRange", () => {
     const free = makeChart();
     const freeContext = newContext(200, 100);
-    ZgraphInteraction.startPan(dragEvent(200, 100), free, freeContext);
+    ZpgraphInteraction.startPan(dragEvent(200, 100), free, freeContext);
     expect(freeContext.is2DPan).toBe(false);
     free.destroy();
 
     const pinned = makeChart({ valueRange: [0, 50] });
     const pinnedContext = newContext(200, 100);
-    ZgraphInteraction.startPan(dragEvent(200, 100), pinned, pinnedContext);
+    ZpgraphInteraction.startPan(dragEvent(200, 100), pinned, pinnedContext);
     expect(pinnedContext.is2DPan).toBe(true);
 
     const beforeY = pinned.yAxisRange(0);
-    ZgraphInteraction.movePan(dragEvent(200, 160), pinned, pinnedContext);
+    ZpgraphInteraction.movePan(dragEvent(200, 160), pinned, pinnedContext);
     const afterY = pinned.yAxisRange(0);
     expect(afterY[0]!).not.toBeCloseTo(beforeY[0]!, 6);
     expect(afterY[1] - afterY[0]!).toBeCloseTo(beforeY[1] - beforeY[0]!, 6);
@@ -103,15 +103,15 @@ describe('pan', () => {
     pinned.destroy();
   });
 
-  it('panEdgeFraction stops the window from leaving the data behind', () => {
+  it("panEdgeFraction stops the window from leaving the data behind", () => {
     const g = makeChart({ dateWindow: [10, 20], panEdgeFraction: 0.1 });
     const context = newContext(200, 100);
 
-    ZgraphInteraction.startPan(dragEvent(200, 100), g, context);
+    ZpgraphInteraction.startPan(dragEvent(200, 100), g, context);
     expect(context.boundedDates).not.toBeNull();
 
     // Drag far past the left edge of the data.
-    ZgraphInteraction.movePan(dragEvent(5000, 100), g, context);
+    ZpgraphInteraction.movePan(dragEvent(5000, 100), g, context);
     expect(g.xAxisRange()[0]!).toBeGreaterThanOrEqual(
       (context.boundedDates as [number, number])[0]!,
     );
@@ -120,25 +120,25 @@ describe('pan', () => {
   });
 });
 
-describe('zoom', () => {
+describe("zoom", () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
     mockCanvas();
   });
 
-  it('a horizontal drag narrows the x range to the dragged span', () => {
+  it("a horizontal drag narrows the x range to the dragged span", () => {
     const g = makeChart();
     const context = newContext(150, 100);
     const full = g.xAxisRange();
 
-    ZgraphInteraction.startZoom(dragEvent(150, 100), g, context);
+    ZpgraphInteraction.startZoom(dragEvent(150, 100), g, context);
     expect(context.isZooming).toBe(true);
 
-    ZgraphInteraction.moveZoom(dragEvent(300, 100), g, context);
+    ZpgraphInteraction.moveZoom(dragEvent(300, 100), g, context);
     expect(context.zoomMoved).toBe(true);
 
     context.dragDirection = 1; // HORIZONTAL
-    ZgraphInteraction.endZoom(dragEvent(300, 100), g, context);
+    ZpgraphInteraction.endZoom(dragEvent(300, 100), g, context);
 
     const zoomed = g.xAxisRange();
     expect(zoomed[1] - zoomed[0]!).toBeLessThan(full[1] - full[0]!);
@@ -147,15 +147,15 @@ describe('zoom', () => {
     g.destroy();
   });
 
-  it('resetZoom returns to the full range', () => {
+  it("resetZoom returns to the full range", () => {
     const g = makeChart();
     const full = g.xAxisRange();
 
     const context = newContext(150, 100);
-    ZgraphInteraction.startZoom(dragEvent(150, 100), g, context);
-    ZgraphInteraction.moveZoom(dragEvent(300, 100), g, context);
+    ZpgraphInteraction.startZoom(dragEvent(150, 100), g, context);
+    ZpgraphInteraction.moveZoom(dragEvent(300, 100), g, context);
     context.dragDirection = 1;
-    ZgraphInteraction.endZoom(dragEvent(300, 100), g, context);
+    ZpgraphInteraction.endZoom(dragEvent(300, 100), g, context);
     expect(g.xAxisRange()[1] - g.xAxisRange()[0]!).toBeLessThan(
       full[1] - full[0]!,
     );
@@ -167,7 +167,7 @@ describe('zoom', () => {
     g.destroy();
   });
 
-  it('a drag shorter than 2px is treated as a click, not a zoom', () => {
+  it("a drag shorter than 2px is treated as a click, not a zoom", () => {
     const clickCallback = vi.fn();
     const g = makeChart({ clickCallback });
     const full = g.xAxisRange();
@@ -176,7 +176,11 @@ describe('zoom', () => {
     // what a preceding mousemove (or setSelection) establishes.
     g.setSelection(5);
     const context = newContext(150, 100);
-    ZgraphInteraction.maybeTreatMouseOpAsClick(dragEvent(151, 100), g, context);
+    ZpgraphInteraction.maybeTreatMouseOpAsClick(
+      dragEvent(151, 100),
+      g,
+      context,
+    );
 
     expect(clickCallback).toHaveBeenCalled();
     expect(g.xAxisRange()[1] - g.xAxisRange()[0]!).toBeCloseTo(
@@ -188,9 +192,9 @@ describe('zoom', () => {
   });
 });
 
-describe('touch', () => {
+describe("touch", () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
     mockCanvas();
   });
 
@@ -209,20 +213,20 @@ describe('touch', () => {
       })),
     }) as unknown as TouchEvent;
 
-  it('a one-finger swipe pans without rescaling', () => {
+  it("a one-finger swipe pans without rescaling", () => {
     const g = makeChart({ dateWindow: [10, 20] });
-    const target = g.graphDiv.querySelector('canvas')!;
+    const target = g.graphDiv.querySelector("canvas")!;
     const context = newContext();
 
     const before = g.xAxisRange();
-    ZgraphInteraction.startTouch(
+    ZpgraphInteraction.startTouch(
       touchEvent([{ x: 200, y: 100 }], target),
       g,
       context,
     );
     expect(context.touchDirections).toEqual({ x: true, y: true });
 
-    ZgraphInteraction.moveTouch(
+    ZpgraphInteraction.moveTouch(
       touchEvent([{ x: 260, y: 100 }], target),
       g,
       context,
@@ -235,15 +239,15 @@ describe('touch', () => {
     g.destroy();
   });
 
-  it('a horizontal pinch zooms the x axis only', () => {
+  it("a horizontal pinch zooms the x axis only", () => {
     const g = makeChart({ dateWindow: [10, 20] });
-    const target = g.graphDiv.querySelector('canvas')!;
+    const target = g.graphDiv.querySelector("canvas")!;
     const context = newContext();
 
     const beforeX = g.xAxisRange();
 
     // Two fingers side by side: a horizontal pinch.
-    ZgraphInteraction.startTouch(
+    ZpgraphInteraction.startTouch(
       touchEvent(
         [
           { x: 180, y: 100 },
@@ -262,7 +266,7 @@ describe('touch', () => {
     );
 
     // Spread them apart: zoom in.
-    ZgraphInteraction.moveTouch(
+    ZpgraphInteraction.moveTouch(
       touchEvent(
         [
           { x: 130, y: 100 },
@@ -279,7 +283,7 @@ describe('touch', () => {
     // The y axis is left to auto-scale: a horizontal pinch must not pin it.
     expect(g.axes_[0]!.valueRange).toBeFalsy();
 
-    ZgraphInteraction.endTouch(
+    ZpgraphInteraction.endTouch(
       {
         preventDefault: vi.fn(),
         touches: [],
@@ -291,9 +295,9 @@ describe('touch', () => {
     g.destroy();
   });
 
-  it('a second tap within 500ms resets the zoom, a second finger cancels it', () => {
+  it("a second tap within 500ms resets the zoom, a second finger cancels it", () => {
     const g = makeChart({ dateWindow: [10, 20] });
-    const target = g.graphDiv.querySelector('canvas')!;
+    const target = g.graphDiv.querySelector("canvas")!;
     const context = newContext();
     const tapEnd = {
       preventDefault: vi.fn(),
@@ -302,17 +306,17 @@ describe('touch', () => {
     } as unknown as TouchEvent;
 
     // First tap only arms the double-tap window.
-    ZgraphInteraction.startTouch(
+    ZpgraphInteraction.startTouch(
       touchEvent([{ x: 200, y: 100 }], target),
       g,
       context,
     );
-    ZgraphInteraction.endTouch(tapEnd, g, context);
+    ZpgraphInteraction.endTouch(tapEnd, g, context);
     expect(context.startTimeForDoubleTapMs).toEqual(expect.any(Number));
     expect(g.xAxisRange()[0]!).toBeCloseTo(10, 6);
 
     // A second finger means the gesture is a pinch, not a double tap.
-    ZgraphInteraction.startTouch(
+    ZpgraphInteraction.startTouch(
       touchEvent(
         [
           { x: 180, y: 100 },
@@ -326,51 +330,51 @@ describe('touch', () => {
     expect(context.startTimeForDoubleTapMs).toBeNull();
 
     // Arm it again and complete the double tap: the zoom resets.
-    ZgraphInteraction.startTouch(
+    ZpgraphInteraction.startTouch(
       touchEvent([{ x: 200, y: 100 }], target),
       g,
       context,
     );
-    ZgraphInteraction.endTouch(tapEnd, g, context);
-    ZgraphInteraction.startTouch(
+    ZpgraphInteraction.endTouch(tapEnd, g, context);
+    ZpgraphInteraction.startTouch(
       touchEvent([{ x: 200, y: 100 }], target),
       g,
       context,
     );
-    ZgraphInteraction.endTouch(tapEnd, g, context);
+    ZpgraphInteraction.endTouch(tapEnd, g, context);
     expect(g.xAxisRange()[0]!).toBeLessThan(10);
 
     g.destroy();
   });
 });
 
-describe('interaction models', () => {
-  it('the default model handles the gestures the chart binds', () => {
+describe("interaction models", () => {
+  it("the default model handles the gestures the chart binds", () => {
     // mousemove and mouseup are registered on document by mousedown itself,
     // so they are not keys of the model.
     for (const name of [
-      'mousedown',
-      'dblclick',
-      'touchstart',
-      'touchmove',
-      'touchend',
+      "mousedown",
+      "dblclick",
+      "touchstart",
+      "touchmove",
+      "touchend",
     ]) {
-      expect(typeof ZgraphInteraction.defaultModel[name]).toBe('function');
+      expect(typeof ZpgraphInteraction.defaultModel[name]).toBe("function");
     }
   });
 
-  it('dragIsPanInteractionModel pans instead of zooming', () => {
-    document.body.innerHTML = '';
+  it("dragIsPanInteractionModel pans instead of zooming", () => {
+    document.body.innerHTML = "";
     mockCanvas();
     const g = makeChart({
       dateWindow: [10, 20],
-      interactionModel: ZgraphInteraction.dragIsPanInteractionModel,
+      interactionModel: ZpgraphInteraction.dragIsPanInteractionModel,
     });
     const context = newContext(200, 100);
     const before = g.xAxisRange();
 
     (
-      ZgraphInteraction.dragIsPanInteractionModel.mousemove as (
+      ZpgraphInteraction.dragIsPanInteractionModel.mousemove as (
         e: MouseEvent,
         g: unknown,
         context: unknown,
@@ -379,9 +383,9 @@ describe('interaction models', () => {
     // Not panning yet: mousemove before mousedown must be a no-op.
     expect(g.xAxisRange()[0]!).toBeCloseTo(before[0]!, 6);
 
-    ZgraphInteraction.startPan(dragEvent(200, 100), g, context);
+    ZpgraphInteraction.startPan(dragEvent(200, 100), g, context);
     (
-      ZgraphInteraction.dragIsPanInteractionModel.mousemove as (
+      ZpgraphInteraction.dragIsPanInteractionModel.mousemove as (
         e: MouseEvent,
         g: unknown,
         context: unknown,
@@ -392,20 +396,20 @@ describe('interaction models', () => {
     g.destroy();
   });
 
-  it('the non-interactive model answers no gesture', () => {
-    expect(Object.keys(ZgraphInteraction.nonInteractiveModel_)).toEqual(
-      expect.arrayContaining(['mousedown', 'mouseup']),
+  it("the non-interactive model answers no gesture", () => {
+    expect(Object.keys(ZpgraphInteraction.nonInteractiveModel_)).toEqual(
+      expect.arrayContaining(["mousedown", "mouseup"]),
     );
   });
 
-  it('a custom interactionModel replaces the default handlers', () => {
-    document.body.innerHTML = '';
+  it("a custom interactionModel replaces the default handlers", () => {
+    document.body.innerHTML = "";
     mockCanvas();
     const mousedown = vi.fn();
     const g = makeChart({ interactionModel: { mousedown } });
 
     g.mouseEventElement_.dispatchEvent(
-      new MouseEvent('mousedown', {
+      new MouseEvent("mousedown", {
         bubbles: true,
         clientX: 100,
         clientY: 100,

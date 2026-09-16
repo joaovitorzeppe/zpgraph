@@ -7,7 +7,7 @@
  */
 
 /**
- * The supported part of `utils`, published as `zgraph`'s `utils` namespace.
+ * The supported part of `utils`, published as `zpgraph`'s `utils` namespace.
  *
  * `src/utils.ts` also holds internals — `dragGetX_`, `toRGB_`, `setupDOMready_`,
  * event plumbing — that were previously reachable through `export * as utils`.
@@ -34,4 +34,4 @@ export {
   isNonZeroNonNan,
   update,
   updateDeep,
-} from './utils';
+} from "./utils";

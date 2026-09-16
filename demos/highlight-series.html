@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Highlight series · Zgraph</title>
+  <title>Highlight series · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
   <script type="importmap">
@@ -18,10 +18,10 @@
   <p class="lede">Hover a series to thicken it and fade the background.</p>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zgraph from 'zpgraph';
+    import Zpgraph from 'zpgraph';
     import { makeSeries } from './helpers.js';
 
-    new Zgraph(document.getElementById('chart'), makeSeries({ points: 100, series: 4, seed: 8 }), {
+    new Zpgraph(document.getElementById('chart'), makeSeries({ points: 100, series: 4, seed: 8 }), {
       labels: ['Date', 'North', 'East', 'South', 'West'],
       legend: 'always',
       colors: ['#1b6b93', '#c45c26', '#2a9d8f', '#6d597a'],

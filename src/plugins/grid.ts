@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -8,9 +8,9 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-/*global Zgraph:false */
+/*global Zpgraph:false */
 
-import type { ChartDrawPluginEvent, ZgraphInstance } from '../internal-types';
+import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 
 /*
 
@@ -28,10 +28,10 @@ Current bits of jankiness:
  */
 class grid {
   toString() {
-    return 'Gridline Plugin';
+    return "Gridline Plugin";
   }
 
-  activate(_g: ZgraphInstance) {
+  activate(_g: ZpgraphInstance) {
     return {
       willDrawChart: this.willDrawChart,
     };
@@ -40,10 +40,10 @@ class grid {
   willDrawChart(e: ChartDrawPluginEvent) {
     // Draw the new X/Y grid. Lines appear crisper when pixels are rounded to
     // half-integers. This prevents them from drawing in two rows/cols.
-    let g = e.zgraph;
+    let g = e.zpgraph;
     let ctx = e.drawingContext;
     let layout = g.layout_;
-    let area = e.zgraph.plotter_.area;
+    let area = e.zpgraph.plotter_.area;
 
     function halfUp(x: number) {
       return Math.round(x) + 0.5;
@@ -60,24 +60,25 @@ class grid {
     // Either y axis can carry a grid on its own: the per-axis drawGrid below
     // decides which ones are drawn.
     if (
-      g.getOptionForAxis('drawGrid', 'y') ||
-      g.getOptionForAxis('drawGrid', 'y2')
+      g.getOptionForAxis("drawGrid", "y") ||
+      g.getOptionForAxis("drawGrid", "y2")
     ) {
-      let axes = ['y', 'y2'];
+      let axes = ["y", "y2"];
       const strokeStyles: string[] = [],
         lineWidths: number[] = [],
         drawGrid: boolean[] = [],
         stroking: boolean[] = [],
         strokePattern: Array<number[] | null> = [];
       for (i = 0; i < axes.length; i++) {
-        drawGrid[i] = !!g.getOptionForAxis('drawGrid', axes[i]!);
+        drawGrid[i] = !!g.getOptionForAxis("drawGrid", axes[i]!);
         if (drawGrid[i]) {
           strokeStyles[i] = String(
-            g.getOptionForAxis('gridLineColor', axes[i]!),
+            g.getOptionForAxis("gridLineColor", axes[i]!),
           );
-          lineWidths[i] = Number(g.getOptionForAxis('gridLineWidth', axes[i]!));
-          strokePattern[i] = g.getOptionForAxis('gridLinePattern', axes[i]!) as
-            number[] | null;
+          lineWidths[i] = Number(g.getOptionForAxis("gridLineWidth", axes[i]!));
+          strokePattern[i] = g.getOptionForAxis("gridLinePattern", axes[i]!) as
+            | number[]
+            | null;
           stroking[i] = !!(strokePattern[i] && strokePattern[i]!.length >= 2);
         }
       }
@@ -110,16 +111,17 @@ class grid {
     }
 
     // draw grid for x axis
-    if (g.getOptionForAxis('drawGrid', 'x')) {
+    if (g.getOptionForAxis("drawGrid", "x")) {
       ctx.save();
-      const xStrokePattern = g.getOptionForAxis('gridLinePattern', 'x') as
-        number[] | null;
+      const xStrokePattern = g.getOptionForAxis("gridLinePattern", "x") as
+        | number[]
+        | null;
       const xStroking = !!(xStrokePattern && xStrokePattern.length >= 2);
       if (xStroking) {
         if (ctx.setLineDash) ctx.setLineDash(xStrokePattern);
       }
-      ctx.strokeStyle = String(g.getOptionForAxis('gridLineColor', 'x'));
-      ctx.lineWidth = Number(g.getOptionForAxis('gridLineWidth', 'x'));
+      ctx.strokeStyle = String(g.getOptionForAxis("gridLineColor", "x"));
+      ctx.lineWidth = Number(g.getOptionForAxis("gridLineWidth", "x"));
       ctx.beginPath();
       y = halfDown(area.y + area.h);
       for (const tick of xticks) {

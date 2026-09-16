@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -8,17 +8,17 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import * as ZgraphTickers from './tickers';
-import ZgraphInteraction from './interaction-model';
-import ZgraphCanvasRenderer from './canvas';
-import * as utils from './utils';
+import * as ZpgraphTickers from "./tickers";
+import ZpgraphInteraction from "./interaction-model";
+import ZpgraphCanvasRenderer from "./canvas";
+import * as utils from "./utils";
 
 // Default attribute values.
 let DEFAULT_ATTRS = {
   highlightCircleSize: 3,
   highlightSeriesOpts: null,
   highlightSeriesBackgroundAlpha: 0.5,
-  highlightSeriesBackgroundColor: 'rgb(255, 255, 255)',
+  highlightSeriesBackgroundColor: "rgb(255, 255, 255)",
 
   labelsSeparateLines: false,
   labelsShowZeroValues: true,
@@ -32,7 +32,7 @@ let DEFAULT_ATTRS = {
 
   strokeWidth: 1.0,
   strokeBorderWidth: 0,
-  strokeBorderColor: 'white',
+  strokeBorderColor: "white",
 
   axisTickSize: 3,
   axisLabelFontSize: 14,
@@ -41,7 +41,7 @@ let DEFAULT_ATTRS = {
   showRoller: false,
   xValueParser: undefined,
 
-  delimiter: ',',
+  delimiter: ",",
 
   sigma: 2.0,
   errorBars: false,
@@ -53,11 +53,11 @@ let DEFAULT_ATTRS = {
   connectSeparatedPoints: false,
 
   stackedGraph: false,
-  stackedGraphNaNFill: 'all',
+  stackedGraphNaNFill: "all",
   hideOverlayOnMouseOut: true,
-  resizable: 'no',
+  resizable: "no",
 
-  legend: 'onmouseover',
+  legend: "onmouseover",
   legendFollowOffsetX: 50,
   legendFollowOffsetY: -50,
   stepPlot: false,
@@ -70,26 +70,26 @@ let DEFAULT_ATTRS = {
   xLabelHeight: 18,
   yLabelWidth: 18,
 
-  axisLineColor: 'black',
+  axisLineColor: "black",
   axisLineWidth: 0.3,
   gridLineWidth: 0.3,
   axisLabelWidth: 50,
-  gridLineColor: 'rgb(128,128,128)',
+  gridLineColor: "rgb(128,128,128)",
 
-  interactionModel: ZgraphInteraction.defaultModel,
+  interactionModel: ZpgraphInteraction.defaultModel,
   animatedZooms: false, // (for now)
   animateBackgroundFade: true,
 
   // Range selector options
   showRangeSelector: false,
   rangeSelectorHeight: 40,
-  rangeSelectorPlotStrokeColor: '#808FAB',
-  rangeSelectorPlotFillGradientColor: 'white',
-  rangeSelectorPlotFillColor: '#A7B1C4',
-  rangeSelectorBackgroundStrokeColor: 'gray',
+  rangeSelectorPlotStrokeColor: "#808FAB",
+  rangeSelectorPlotFillGradientColor: "white",
+  rangeSelectorPlotFillColor: "#A7B1C4",
+  rangeSelectorBackgroundStrokeColor: "gray",
   rangeSelectorBackgroundLineWidth: 1,
   rangeSelectorPlotLineWidth: 1.5,
-  rangeSelectorForegroundStrokeColor: 'black',
+  rangeSelectorForegroundStrokeColor: "black",
   rangeSelectorForegroundLineWidth: 1,
   rangeSelectorAlpha: 0.6,
   showInRangeSelector: null,
@@ -97,9 +97,9 @@ let DEFAULT_ATTRS = {
   // The ordering here ensures that central lines always appear above any
   // fill bars/error bars.
   plotter: [
-    ZgraphCanvasRenderer._fillPlotter,
-    ZgraphCanvasRenderer._errorPlotter,
-    ZgraphCanvasRenderer._linePlotter,
+    ZpgraphCanvasRenderer._fillPlotter,
+    ZpgraphCanvasRenderer._errorPlotter,
+    ZpgraphCanvasRenderer._linePlotter,
   ],
 
   plugins: [],
@@ -114,7 +114,7 @@ let DEFAULT_ATTRS = {
       drawGrid: true,
       drawAxis: true,
       independentTicks: true,
-      ticker: ZgraphTickers.dateTicker,
+      ticker: ZpgraphTickers.dateTicker,
     },
     y: {
       axisLabelWidth: 50,
@@ -124,7 +124,7 @@ let DEFAULT_ATTRS = {
       drawGrid: true,
       drawAxis: true,
       independentTicks: true,
-      ticker: ZgraphTickers.numericTicks,
+      ticker: ZpgraphTickers.numericTicks,
     },
     y2: {
       axisLabelWidth: 50,
@@ -134,7 +134,7 @@ let DEFAULT_ATTRS = {
       drawAxis: true, // only applies when there are two axes of data.
       drawGrid: false,
       independentTicks: false,
-      ticker: ZgraphTickers.numericTicks,
+      ticker: ZpgraphTickers.numericTicks,
     },
   },
 };

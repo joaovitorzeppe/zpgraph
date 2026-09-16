@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -9,18 +9,18 @@
  */
 
 /**
- * @fileoverview This file contains utility functions used by zgraph. These
- * are typically static (i.e. not related to any particular zgraph). Examples
+ * @fileoverview This file contains utility functions used by zpgraph. These
+ * are typically static (i.e. not related to any particular zpgraph). Examples
  * include date/time formatting functions, basic algorithms (e.g. binary
  * search) and generic DOM-manipulation functions.
  */
 
-/*global Zgraph:false, Node:false */
+/*global Zpgraph:false, Node:false */
 
-import * as ZgraphTickers from './tickers';
-import { log } from './logger';
-import type { DrawPointCallback, InteractionContext, Point } from './types';
-import type { OptionsGetter } from './internal-types';
+import * as ZpgraphTickers from "./tickers";
+import { log } from "./logger";
+import type { DrawPointCallback, InteractionContext, Point } from "./types";
+import type { OptionsGetter } from "./internal-types";
 
 /** Date field accessors for local or UTC calendar math. */
 export interface DateAccessors {
@@ -53,7 +53,7 @@ type ArrayLikeRecord = Record<string, unknown> & {
 
 /** @private */
 export function type(o: unknown): string {
-  return o === null ? 'null' : typeof o;
+  return o === null ? "null" : typeof o;
 }
 
 /**
@@ -128,7 +128,7 @@ export let HORIZONTAL = 1;
 export let VERTICAL = 2;
 
 /**
- * Return the 2d context for a zgraph canvas.
+ * Return the 2d context for a zpgraph canvas.
  *
  * This method is only exposed for the sake of replacing the function in
  * automated tests.
@@ -137,9 +137,9 @@ export let VERTICAL = 2;
 export function getContext(
   canvas: HTMLCanvasElement,
 ): CanvasRenderingContext2D {
-  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | null;
+  const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
   if (!ctx) {
-    throw new Error('Zgraph: this browser has no 2d canvas context.');
+    throw new Error("Zpgraph: this browser has no 2d canvas context.");
   }
   return ctx;
 }
@@ -148,7 +148,7 @@ export function getContext(
  * EventListener options
  */
 function _eventListenerOptions(type: string) {
-  return type === 'touchstart' || type === 'touchmove'
+  return type === "touchstart" || type === "touchmove"
     ? {
         capture: false,
         passive: true,
@@ -263,7 +263,7 @@ export function hsvToRGB(
   red = Math.floor(255 * red + 0.5);
   green = Math.floor(255 * green + 0.5);
   blue = Math.floor(255 * blue + 0.5);
-  return 'rgb(' + red + ',' + green + ',' + blue + ')';
+  return "rgb(" + red + "," + green + "," + blue + ")";
 }
 
 /**
@@ -407,8 +407,8 @@ export function floatFormat(x: number, opt_precision?: number): string {
  * @private
  */
 export function zeropad(x: number): string {
-  if (x < 10) return '0' + x;
-  else return '' + x;
+  if (x < 10) return "0" + x;
+  else return "" + x;
 }
 
 /**
@@ -479,12 +479,12 @@ export function hmsString_(
   ss: number,
   ms: number,
 ): string {
-  let ret = zeropad(hh) + ':' + zeropad(mm);
+  let ret = zeropad(hh) + ":" + zeropad(mm);
   if (ss) {
-    ret += ':' + zeropad(ss);
+    ret += ":" + zeropad(ss);
     if (ms) {
-      let str = '' + ms;
-      ret += '.' + ('000' + str).substring(str.length);
+      let str = "" + ms;
+      ret += "." + ("000" + str).substring(str.length);
     }
   }
   return ret;
@@ -509,15 +509,15 @@ export function dateString_(time: number, utc: boolean): string {
   let ss = accessors.getSeconds(date);
   let ms = accessors.getMilliseconds(date);
   // Get a year string:
-  let year = '' + y;
+  let year = "" + y;
   // Get a 0 padded month string
   let month = zeropad(m + 1); //months are 0-offset, sigh
   // Get a 0 padded day string
   let day = zeropad(d);
   let frac = hh * 3600 + mm * 60 + ss + 1e-3 * ms;
-  let ret = year + '/' + month + '/' + day;
+  let ret = year + "/" + month + "/" + day;
   if (frac) {
-    ret += ' ' + hmsString_(hh, mm, ss, ms);
+    ret += " " + hmsString_(hh, mm, ss, ms);
   }
   return ret;
 }
@@ -645,7 +645,7 @@ export function binarySearch(
 
 /**
  * Parses a date, returning the number of milliseconds since epoch. This can be
- * passed in as an xValueParser in the Zgraph constructor.
+ * passed in as an xValueParser in the Zpgraph constructor.
  * Supported formats: YYYY/MM/DD, YYYY-MM-DD (normalized to slashes for local
  * time), YYYY-MM-DDTHH:MM:SS (and Z), and any string accepted by Date.parse.
  *
@@ -659,22 +659,22 @@ export function dateParser(dateStr: string) {
 
   // Let the system try the format first, with one caveat:
   // YYYY-MM-DD[ HH:MM:SS] is interpreted as UTC by a variety of browsers.
-  // zgraph displays dates in local time, so this will result in surprising
+  // zpgraph displays dates in local time, so this will result in surprising
   // inconsistencies. But if you specify "T" or "Z" (i.e. YYYY-MM-DDTHH:MM:SS),
   // then you probably know what you're doing, so we'll let you go ahead.
-  // Issue: https://code.google.com/archive/p/zgraph/issues/255
+  // Issue: https://code.google.com/archive/p/zpgraph/issues/255
   if (
-    dateStr.search('-') === -1 ||
-    dateStr.search('T') !== -1 ||
-    dateStr.search('Z') !== -1
+    dateStr.search("-") === -1 ||
+    dateStr.search("T") !== -1 ||
+    dateStr.search("Z") !== -1
   ) {
     d = dateStrToMillis(dateStr);
     if (d != null && !isNaN(d)) return d;
   }
 
-  if (dateStr.search('-') !== -1) {
+  if (dateStr.search("-") !== -1) {
     // e.g. '2009-7-12' or '2009-07-12'
-    let dateStrSlashed = dateStr.replace(_dateParser_re, '/');
+    let dateStrSlashed = dateStr.replace(_dateParser_re, "/");
     d = dateStrToMillis(dateStrSlashed);
     if (d != null && !isNaN(d)) return d;
   }
@@ -684,7 +684,7 @@ export function dateParser(dateStr: string) {
   d = dateStrToMillis(dateStr);
   if (d != null && !isNaN(d)) return d;
 
-  log.error("Couldn't parse " + dateStr + ' as a date');
+  log.error("Couldn't parse " + dateStr + " as a date");
   return NaN;
 }
 
@@ -706,7 +706,7 @@ export function dateStrToMillis(str: string): number {
  * routinely `JSON.parse`d from an API response, so these arrive as own
  * properties and would otherwise be written straight to `Object.prototype`.
  */
-const UNSAFE_MERGE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const UNSAFE_MERGE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 /** @private */
 function mergeableKeys(o: object): string[] {
@@ -723,7 +723,7 @@ export function update(
   self: Record<string, unknown>,
   o: object | null | undefined,
 ): Record<string, unknown> {
-  if (o != null && typeof o === 'object') {
+  if (o != null && typeof o === "object") {
     const src = o as Record<string, unknown>;
     for (const k of mergeableKeys(o)) {
       self[k] = src[k];
@@ -734,16 +734,16 @@ export function update(
 
 // internal: check if o is a DOM node, and we know it’s not null
 let _isNode =
-  typeof Node !== 'undefined' && Node !== null && typeof Node === 'object'
+  typeof Node !== "undefined" && Node !== null && typeof Node === "object"
     ? function _isNode(o: unknown) {
         return o instanceof Node;
       }
     : function _isNode(o: unknown) {
         return (
-          typeof o === 'object' &&
+          typeof o === "object" &&
           o !== null &&
-          typeof (o as { nodeType?: unknown }).nodeType === 'number' &&
-          typeof (o as { nodeName?: unknown }).nodeName === 'string'
+          typeof (o as { nodeType?: unknown }).nodeType === "number" &&
+          typeof (o as { nodeName?: unknown }).nodeName === "string"
         );
       };
 
@@ -760,7 +760,7 @@ export function updateDeep(
   self: Record<string, unknown>,
   o: object | null | undefined,
 ): Record<string, unknown> {
-  if (typeof o != 'undefined' && o !== null) {
+  if (typeof o != "undefined" && o !== null) {
     const src = o as Record<string, unknown>;
     for (const k of mergeableKeys(o)) {
       const v = src[k];
@@ -771,9 +771,9 @@ export function updateDeep(
       } else if (_isNode(v)) {
         // DOM objects are shallowly-copied.
         self[k] = v;
-      } else if (typeof v == 'object') {
+      } else if (typeof v == "object") {
         const nested = self[k];
-        if (typeof nested != 'object' || nested === null) {
+        if (typeof nested != "object" || nested === null) {
           self[k] = {};
         }
         updateDeep(self[k] as Record<string, unknown>, v as object);
@@ -789,17 +789,17 @@ export function updateDeep(
  * @private
  */
 export function typeArrayLike(o: unknown): string {
-  if (o === null) return 'null';
+  if (o === null) return "null";
   const t = typeof o;
   const value = o as ArrayLikeRecord;
   if (
-    (t === 'object' ||
-      (t === 'function' && typeof value.item === 'function')) &&
-    typeof value.length === 'number' &&
+    (t === "object" ||
+      (t === "function" && typeof value.item === "function")) &&
+    typeof value.length === "number" &&
     value.nodeType !== 3 &&
     value.nodeType !== 4
   )
-    return 'array';
+    return "array";
   return t;
 }
 
@@ -811,9 +811,9 @@ export function isArrayLike(o: unknown): boolean {
   const value = o as ArrayLikeRecord;
   return (
     o !== null &&
-    (t === 'object' ||
-      (t === 'function' && typeof value.item === 'function')) &&
-    typeof value.length === 'number' &&
+    (t === "object" ||
+      (t === "function" && typeof value.item === "function")) &&
+    typeof value.length === "number" &&
     value.nodeType !== 3 &&
     value.nodeType !== 4
   );
@@ -825,8 +825,8 @@ export function isArrayLike(o: unknown): boolean {
 export function isDateLike(o: unknown): boolean {
   return (
     o !== null &&
-    typeof o === 'object' &&
-    typeof (o as { getTime?: unknown }).getTime === 'function'
+    typeof o === "object" &&
+    typeof (o as { getTime?: unknown }).getTime === "function"
   );
 }
 
@@ -835,7 +835,7 @@ export function isDateLike(o: unknown): boolean {
  * @private
  */
 export function clone(o: unknown[]): unknown[] {
-  if (typeof structuredClone === 'function') {
+  if (typeof structuredClone === "function") {
     return structuredClone(o);
   }
   const r: unknown[] = [];
@@ -856,7 +856,7 @@ export function clone(o: unknown[]): unknown[] {
  * @return * @private
  */
 export function createCanvas(): HTMLCanvasElement {
-  return document.createElement('canvas');
+  return document.createElement("canvas");
 }
 
 /**
@@ -1158,13 +1158,13 @@ export function isPixelChangingOptionList(
 
     // Find out of this field is actually a series specific options list.
     if (
-      property === 'highlightSeriesOpts' ||
+      property === "highlightSeriesOpts" ||
       (seriesNamesDictionary[property] && !attrs.series)
     ) {
       // This property value is a list of options for this series.
       if (scanFlatOptions(attrs[property] as Record<string, unknown>))
         return true;
-    } else if (property === 'series' || property === 'axes') {
+    } else if (property === "series" || property === "axes") {
       // This is twice-nested options list.
       const perSeries = attrs[property] as Record<
         string,
@@ -1208,17 +1208,17 @@ export const Circles: {
 export function detectLineDelimiter(data: string): string | null {
   for (let i = 0; i < data.length; i++) {
     let code = data.charAt(i);
-    if (code === '\r') {
+    if (code === "\r") {
       // Might actually be "\r\n".
-      if (i + 1 < data.length && data.charAt(i + 1) === '\n') {
-        return '\r\n';
+      if (i + 1 < data.length && data.charAt(i + 1) === "\n") {
+        return "\r\n";
       }
       return code;
     }
-    if (code === '\n') {
+    if (code === "\n") {
       // Might actually be "\n\r".
-      if (i + 1 < data.length && data.charAt(i + 1) === '\r') {
-        return '\n\r';
+      if (i + 1 < data.length && data.charAt(i + 1) === "\r") {
+        return "\n\r";
       }
       return code;
     }
@@ -1296,9 +1296,9 @@ export function toRGB_(colorStr: string) {
   let rgb = parseRGBA(colorStr);
   if (rgb) return rgb;
 
-  let div = document.createElement('div');
+  let div = document.createElement("div");
   div.style.backgroundColor = colorStr;
-  div.style.visibility = 'hidden';
+  div.style.visibility = "hidden";
   document.body.appendChild(div);
   let rgbStr = window.getComputedStyle(div, null).backgroundColor;
   document.body.removeChild(div);
@@ -1334,7 +1334,7 @@ export function parseFloat_(
   let msg = "Unable to parse '" + x + "' as a number";
   if (opt_line !== undefined && opt_line_no !== undefined) {
     msg +=
-      ' on line ' + (1 + (opt_line_no || 0)) + " ('" + opt_line + "') of CSV.";
+      " on line " + (1 + (opt_line_no || 0)) + " ('" + opt_line + "') of CSV.";
   }
   log.error(msg);
 
@@ -1343,21 +1343,21 @@ export function parseFloat_(
 
 // Label constants for the labelsKMB and labelsKMG2 options.
 // (i.e. '100000' -> '100k')
-let KMB_LABELS_LARGE = ['k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'];
-let KMB_LABELS_SMALL = ['m', 'µ', 'n', 'p', 'f', 'a', 'z', 'y'];
-let KMG2_LABELS_LARGE = ['Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi'];
+let KMB_LABELS_LARGE = ["k", "M", "G", "T", "P", "E", "Z", "Y"];
+let KMB_LABELS_SMALL = ["m", "µ", "n", "p", "f", "a", "z", "y"];
+let KMG2_LABELS_LARGE = ["Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"];
 let KMG2_LABELS_SMALL = [
-  'p-10',
-  'p-20',
-  'p-30',
-  'p-40',
-  'p-50',
-  'p-60',
-  'p-70',
-  'p-80',
+  "p-10",
+  "p-20",
+  "p-30",
+  "p-40",
+  "p-50",
+  "p-60",
+  "p-70",
+  "p-80",
 ];
 /* if both are given (legacy/deprecated use only) */
-let KMB2_LABELS_LARGE = ['K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'];
+let KMB2_LABELS_LARGE = ["K", "M", "G", "T", "P", "E", "Z", "Y"];
 let KMB2_LABELS_SMALL = KMB_LABELS_SMALL;
 
 /**
@@ -1368,7 +1368,7 @@ let KMB2_LABELS_SMALL = KMB_LABELS_SMALL;
  * @param opts An options view
  */
 export function numberValueFormatter(x: number, opts: OptionsGetter) {
-  const sigFigs = opts('sigFigs') as number | null;
+  const sigFigs = opts("sigFigs") as number | null;
 
   if (sigFigs !== null) {
     // User has opted for a fixed number of significant figures.
@@ -1376,13 +1376,13 @@ export function numberValueFormatter(x: number, opts: OptionsGetter) {
   }
 
   // shortcut 0 so later code does not need to worry about it
-  if (x === 0.0) return '0';
+  if (x === 0.0) return "0";
 
-  const digits = opts('digitsAfterDecimal') as number;
-  const maxNumberWidth = opts('maxNumberWidth') as number;
+  const digits = opts("digitsAfterDecimal") as number;
+  const maxNumberWidth = opts("maxNumberWidth") as number;
 
-  const kmb = opts('labelsKMB') as boolean;
-  const kmg2 = opts('labelsKMG2') as boolean;
+  const kmb = opts("labelsKMB") as boolean;
+  const kmg2 = opts("labelsKMG2") as boolean;
 
   let label;
   let absx = Math.abs(x);
@@ -1442,7 +1442,7 @@ export function numberValueFormatter(x: number, opts: OptionsGetter) {
     // switch to scientific notation if we underflow or overflow fixed display
     label = x.toExponential(digits);
   } else {
-    label = '' + round_(x, digits);
+    label = "" + round_(x, digits);
   }
 
   return label;
@@ -1466,18 +1466,18 @@ export function numberAxisLabelFormatter(
  * @constant
  */
 let SHORT_MONTH_NAMES_ = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 /**
@@ -1485,7 +1485,7 @@ let SHORT_MONTH_NAMES_ = [
  * is displaying values at the stated granularity. This respects the
  * labelsUTC option.
  * @param date The date to format
- * @param granularity One of the Zgraph granularity constants
+ * @param granularity One of the Zpgraph granularity constants
  * @param opts An options view
  * @return The date formatted as local time
  * @private
@@ -1495,7 +1495,7 @@ export function dateAxisLabelFormatter(
   granularity: number,
   opts: OptionsGetter,
 ): string {
-  const utc = opts('labelsUTC') as boolean;
+  const utc = opts("labelsUTC") as boolean;
   const accessors = utc ? DateAccessorsUTC : DateAccessorsLocal;
 
   let year = accessors.getFullYear(date),
@@ -1506,20 +1506,20 @@ export function dateAxisLabelFormatter(
     secs = accessors.getSeconds(date),
     millis = accessors.getMilliseconds(date);
 
-  if (granularity >= ZgraphTickers.Granularity.DECADAL) {
-    return '' + year;
-  } else if (granularity >= ZgraphTickers.Granularity.MONTHLY) {
-    return SHORT_MONTH_NAMES_[month] + '\u00a0' + year;
+  if (granularity >= ZpgraphTickers.Granularity.DECADAL) {
+    return "" + year;
+  } else if (granularity >= ZpgraphTickers.Granularity.MONTHLY) {
+    return SHORT_MONTH_NAMES_[month] + "\u00a0" + year;
   } else {
     let frac = hours * 3600 + mins * 60 + secs + 1e-3 * millis;
-    if (frac === 0 || granularity >= ZgraphTickers.Granularity.DAILY) {
+    if (frac === 0 || granularity >= ZpgraphTickers.Granularity.DAILY) {
       // e.g. '21 Jan' (%d%b)
-      return zeropad(day) + '\u00a0' + SHORT_MONTH_NAMES_[month];
-    } else if (granularity < ZgraphTickers.Granularity.SECONDLY) {
+      return zeropad(day) + "\u00a0" + SHORT_MONTH_NAMES_[month];
+    } else if (granularity < ZpgraphTickers.Granularity.SECONDLY) {
       // e.g. 40.310 (meaning 40 seconds and 310 milliseconds)
-      let str = '' + millis;
-      return zeropad(secs) + '.' + ('000' + str).substring(str.length);
-    } else if (granularity > ZgraphTickers.Granularity.MINUTELY) {
+      let str = "" + millis;
+      return zeropad(secs) + "." + ("000" + str).substring(str.length);
+    } else if (granularity > ZpgraphTickers.Granularity.MINUTELY) {
       return hmsString_(hours, mins, secs, 0);
     } else {
       return hmsString_(hours, mins, secs, millis);
@@ -1535,7 +1535,7 @@ export function dateAxisLabelFormatter(
  * @private
  */
 export function dateValueFormatter(d: number, opts: OptionsGetter) {
-  return dateString_(d, opts('labelsUTC') as boolean);
+  return dateString_(d, opts("labelsUTC") as boolean);
 }
 
 // stuff for simple onDOMready implementation
@@ -1549,7 +1549,7 @@ let deferDOM_handlerCalled = false;
  * @return whether the DOM is currently ready
  */
 function deferDOM_ready(cb: () => void): boolean {
-  if (typeof cb === 'function') cb();
+  if (typeof cb === "function") cb();
   return true;
 }
 
@@ -1562,7 +1562,7 @@ export function setupDOMready_(self: {
   onDOMready?: (cb: () => void) => boolean;
 }) {
   // only attach if there’s a DOM
-  if (typeof document !== 'undefined') {
+  if (typeof document !== "undefined") {
     // called by browser
     const handler = function deferDOM_handler() {
       /* execute only once */
@@ -1571,8 +1571,8 @@ export function setupDOMready_(self: {
       /* subsequent calls must not enqueue */
       self.onDOMready = deferDOM_ready;
       /* clear event handlers */
-      document.removeEventListener('DOMContentLoaded', handler, false);
-      window.removeEventListener('load', handler, false);
+      document.removeEventListener("DOMContentLoaded", handler, false);
+      window.removeEventListener("load", handler, false);
       /* run user callbacks */
       for (let i = 0; i < deferDOM_callbacks!.length; ++i) {
         deferDOM_callbacks![i]?.();
@@ -1583,23 +1583,23 @@ export function setupDOMready_(self: {
     // make callable (mutating, do not copy)
     self.onDOMready = function deferDOM_initial(cb: () => void) {
       /* if possible, skip all that */
-      if (document.readyState === 'complete') {
+      if (document.readyState === "complete") {
         self.onDOMready = deferDOM_ready;
         return deferDOM_ready(cb);
       }
       // onDOMready, after setup, before DOM is ready
       const enqfn = function deferDOM_enqueue(cb: () => void) {
-        if (typeof cb === 'function') deferDOM_callbacks!.push(cb);
+        if (typeof cb === "function") deferDOM_callbacks!.push(cb);
         return false;
       };
       /* subsequent calls will enqueue */
       self.onDOMready = enqfn;
       /* set up handler */
-      document.addEventListener('DOMContentLoaded', handler, false);
+      document.addEventListener("DOMContentLoaded", handler, false);
       /* last resort: always works, but later than possible */
-      window.addEventListener('load', handler, false);
+      window.addEventListener("load", handler, false);
       /* except if DOM got ready in the meantime */
-      if ((document.readyState as string) === 'complete') {
+      if ((document.readyState as string) === "complete") {
         /* undo all that attaching */
         handler();
         /* goto finish */

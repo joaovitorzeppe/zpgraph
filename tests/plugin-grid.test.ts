@@ -1,11 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Zgraph } from '../src/index';
-import GridPlugin from '../src/plugins/grid';
-import type { ZgraphOptions } from '../src/types';
-import { mockCanvas, mountDiv, sampleData } from './helpers';
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Zpgraph } from "../src/index";
+import GridPlugin from "../src/plugins/grid";
+import type { ZpgraphOptions } from "../src/types";
+import { mockCanvas, mountDiv, sampleData } from "./helpers";
 
-const base: ZgraphOptions = {
-  labels: ['x', 'A', 'B'],
+const base: ZpgraphOptions = {
+  labels: ["x", "A", "B"],
   width: 480,
   height: 320,
 };
@@ -15,14 +15,14 @@ type Mock = ReturnType<typeof vi.fn>;
 // The canvas methods the grid actually calls are named so they are not
 // `Mock | undefined` on every access.
 type RecordingCtx = Record<string, Mock> &
-  Record<'moveTo' | 'lineTo' | 'stroke' | 'setLineDash', Mock>;
+  Record<"moveTo" | "lineTo" | "stroke" | "setLineDash", Mock>;
 
 const freshCtx = () =>
-  document.createElement('canvas').getContext('2d') as unknown as RecordingCtx;
+  document.createElement("canvas").getContext("2d") as unknown as RecordingCtx;
 
-const makeChart = (options: ZgraphOptions = {}) => {
+const makeChart = (options: ZpgraphOptions = {}) => {
   const el = mountDiv();
-  return new Zgraph(el, sampleData, { ...base, ...options });
+  return new Zpgraph(el, sampleData, { ...base, ...options });
 };
 
 /**
@@ -30,14 +30,12 @@ const makeChart = (options: ZgraphOptions = {}) => {
  * recorded calls are the grid's alone (the axes plugin and the plotters draw
  * into the chart's own hidden context).
  */
-const drawGrid = (g: Zgraph) => {
+const drawGrid = (g: Zpgraph) => {
   const ctx = freshCtx();
-  const plugin = new (
-    GridPlugin as unknown as new () => {
-      willDrawChart: (e: unknown) => void;
-    }
-  )();
-  plugin.willDrawChart({ zgraph: g, drawingContext: ctx });
+  const plugin = new (GridPlugin as unknown as new () => {
+    willDrawChart: (e: unknown) => void;
+  })();
+  plugin.willDrawChart({ zpgraph: g, drawingContext: ctx });
   return ctx;
 };
 
@@ -48,13 +46,13 @@ const segments = (ctx: RecordingCtx) =>
     to: ctx.lineTo.mock.calls[i] as [number, number],
   }));
 
-describe('Grid plugin', () => {
+describe("Grid plugin", () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.innerHTML = "";
     mockCanvas();
   });
 
-  it('strokes one horizontal line per y tick and one vertical line per x tick', () => {
+  it("strokes one horizontal line per y tick and one vertical line per x tick", () => {
     const g = makeChart();
     const ctx = drawGrid(g);
 
@@ -75,7 +73,7 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('spans the plot area width horizontally and its height vertically', () => {
+  it("spans the plot area width horizontally and its height vertically", () => {
     const g = makeChart();
     const area = g.getArea();
     const ctx = drawGrid(g);
@@ -89,7 +87,7 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('draws nothing when drawGrid is off for every axis', () => {
+  it("draws nothing when drawGrid is off for every axis", () => {
     const g = makeChart({
       axes: { x: { drawGrid: false }, y: { drawGrid: false } },
     });
@@ -102,7 +100,7 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('keeps only the vertical lines when the y grid is off', () => {
+  it("keeps only the vertical lines when the y grid is off", () => {
     const g = makeChart({ axes: { y: { drawGrid: false } } });
     const ctx = drawGrid(g);
 
@@ -112,7 +110,7 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('keeps only the horizontal lines when the x grid is off', () => {
+  it("keeps only the horizontal lines when the x grid is off", () => {
     const g = makeChart({ axes: { x: { drawGrid: false } } });
     const ctx = drawGrid(g);
 
@@ -122,7 +120,7 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('applies gridLinePattern on the x axis and clears it afterwards', () => {
+  it("applies gridLinePattern on the x axis and clears it afterwards", () => {
     const g = makeChart({ axes: { x: { gridLinePattern: [5, 5] } } });
     const ctx = drawGrid(g);
 
@@ -133,7 +131,7 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('applies gridLinePattern to the y axis', () => {
+  it("applies gridLinePattern to the y axis", () => {
     const g = makeChart({
       axes: { x: { drawGrid: false }, y: { gridLinePattern: [2, 3] } },
     });
@@ -151,7 +149,7 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('leaves the pattern untouched when a single-element pattern is given', () => {
+  it("leaves the pattern untouched when a single-element pattern is given", () => {
     const g = makeChart({
       axes: { x: { gridLinePattern: [5] }, y: { drawGrid: false } },
     });
@@ -163,31 +161,31 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('honours gridLineColor and gridLineWidth per axis', () => {
+  it("honours gridLineColor and gridLineWidth per axis", () => {
     const g = makeChart({
       axes: {
         x: { drawGrid: false },
-        y: { gridLineColor: 'rgb(1, 2, 3)', gridLineWidth: 2 },
+        y: { gridLineColor: "rgb(1, 2, 3)", gridLineWidth: 2 },
       },
     });
     const ctx = drawGrid(g) as unknown as Record<string, unknown>;
 
-    expect(ctx.strokeStyle).toBe('rgb(1, 2, 3)');
+    expect(ctx.strokeStyle).toBe("rgb(1, 2, 3)");
     expect(ctx.lineWidth).toBe(2);
 
     g.destroy();
   });
 
-  it('adds the y2 grid only once it is explicitly enabled', () => {
+  it("adds the y2 grid only once it is explicitly enabled", () => {
     const withoutY2 = makeChart({
-      series: { B: { axis: 'y2' } },
+      series: { B: { axis: "y2" } },
       axes: { x: { drawGrid: false } },
     });
     const before = segments(drawGrid(withoutY2)).length;
     withoutY2.destroy();
 
     const withY2 = makeChart({
-      series: { B: { axis: 'y2' } },
+      series: { B: { axis: "y2" } },
       axes: { x: { drawGrid: false }, y2: { drawGrid: true } },
     });
     const after = segments(drawGrid(withY2)).length;
@@ -197,9 +195,9 @@ describe('Grid plugin', () => {
     expect(after).toBeGreaterThan(before);
   });
 
-  it('keeps the y2 grid when the y grid is off', () => {
+  it("keeps the y2 grid when the y grid is off", () => {
     const g = makeChart({
-      series: { B: { axis: 'y2' } },
+      series: { B: { axis: "y2" } },
       axes: {
         x: { drawGrid: false },
         y: { drawGrid: false },
@@ -213,7 +211,7 @@ describe('Grid plugin', () => {
     g.destroy();
   });
 
-  it('runs as part of a real redraw, drawing into the chart hidden context', () => {
+  it("runs as part of a real redraw, drawing into the chart hidden context", () => {
     const g = makeChart({ axes: { x: { gridLinePattern: [4, 4] } } });
     const hiddenCtx = (g as unknown as { hidden_ctx_: RecordingCtx })
       .hidden_ctx_;

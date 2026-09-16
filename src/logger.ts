@@ -5,7 +5,7 @@
  */
 
 /**
- * Where Zgraph writes its diagnostics. Defaults to the console; swap it out
+ * Where Zpgraph writes its diagnostics. Defaults to the console; swap it out
  * with `setLogger` to route warnings into your own reporting, or silence them.
  */
 export interface Logger {
