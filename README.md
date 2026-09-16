@@ -16,8 +16,8 @@
   <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/basic.png" alt="Basic timeseries demo" width="920" />
 </p>
 
-The chart class is still named **`Zgraph`**. The npm package is **`zpgraph`**
-(the name `zgraph` was already taken on the registry).
+The chart class is still named **`Zpgraph`**. The npm package is **`zpgraph`**
+(the name `zpgraph` was already taken on the registry).
 
 ---
 
@@ -48,10 +48,10 @@ npm install zpgraph
 ```
 
 ```ts
-import Zgraph from "zpgraph";
+import Zpgraph from "zpgraph";
 import "zpgraph/style.css";
 
-const g = new Zgraph("chart", data, {
+const g = new Zpgraph("chart", data, {
   labels: ["Date", "Alpha", "Beta"],
   legend: "always",
   animatedZooms: true,
@@ -64,7 +64,7 @@ entry would break plain Node and SSR.
 Browser IIFE (CSS injected by the script):
 
 ```html
-<script src="node_modules/zpgraph/dist/zgraph.min.global.js"></script>
+<script src="node_modules/zpgraph/dist/zpgraph.min.global.js"></script>
 ```
 
 ---
@@ -72,7 +72,7 @@ Browser IIFE (CSS injected by the script):
 ## Gallery
 
 Screenshots from the live demos. Run them yourself with
-`npm run build && npx serve .` → open [`/demos/`](https://github.com/joaovitorzeppe/zgraph/tree/main/core/demos).
+`npm run build && npx serve .` → open [`/demos/`](https://github.com/joaovitorzeppe/zpgraph/tree/main/core/demos).
 
 <table>
   <tr>
@@ -126,7 +126,7 @@ Screenshots from the live demos. Run them yourself with
 
 ### More demos
 
-The [`demos/`](https://github.com/joaovitorzeppe/zgraph/tree/main/core/demos) folder also includes:
+The [`demos/`](https://github.com/joaovitorzeppe/zpgraph/tree/main/core/demos) folder also includes:
 
 - Live **dynamic update** (append a point every second)
 - **Error bars** (`[value, stddev]`)
@@ -141,18 +141,18 @@ zpgraph ships with declaration files. Options are a closed interface — no
 `[key: string]: any` escape hatch — so editors catch mistakes early:
 
 ```ts
-import Zgraph, { type ZgraphOptions } from "zpgraph";
+import Zpgraph, { type ZgraphOptions } from "zpgraph";
 
 const opts = {
   labels: ["x", "A"],
   legend: "always",
   underlayCallback: (ctx, area, g) => {
-    // `g` is typed as Zgraph
+    // `g` is typed as Zpgraph
     const y = g.toDomYCoord(20);
   },
 } satisfies ZgraphOptions;
 
-new Zgraph(el, data, opts);
+new Zpgraph(el, data, opts);
 ```
 
 `typescript/no-explicit-any` is enforced on library sources. You get IntelliSense
@@ -185,7 +185,7 @@ for series options, axes, plugins and the public chart API.
 `utils` is a documented subset (stroke patterns, shapes, default formatters).
 Internals such as `toRGB_` are not part of the public surface.
 
-DOM class prefix remains `zgraph-*` (API/event field `e.zgraph`) so existing
+DOM class prefix remains `zpgraph-*` (API/event field `e.zpgraph`) so existing
 CSS and mental models stay stable.
 
 ---
@@ -207,10 +207,10 @@ page.
 | dygraphs                   | zpgraph                   |
 | -------------------------- | ------------------------- |
 | `import … from 'dygraphs'` | `import … from 'zpgraph'` |
-| `new Dygraph(...)`         | `new Zgraph(...)`        |
+| `new Dygraph(...)`         | `new Zpgraph(...)`        |
 | `dygraph.css`              | `zpgraph/style.css`       |
-| Classes `dygraph-*`        | `zgraph-*`               |
-| Event prop `e.dygraph`     | `e.zgraph`               |
+| Classes `dygraph-*`        | `zpgraph-*`               |
+| Event prop `e.dygraph`     | `e.zpgraph`               |
 
 API shape is familiar; **compatibility is not guaranteed**. Prefer
 `ZgraphOptions` and re-test interactions after migrate.
