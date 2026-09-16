@@ -16,9 +16,6 @@
   <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/basic.png" alt="Basic timeseries demo" width="920" />
 </p>
 
-The chart class is still named **`Zpgraph`**. The npm package is **`zpgraph`**
-(the name `zpgraph` was already taken on the registry).
-
 ---
 
 ## Why zpgraph?
