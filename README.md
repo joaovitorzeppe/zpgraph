@@ -26,7 +26,7 @@ The chart class is still named **`Zpgraph`**. The npm package is **`zpgraph`**
 Dygraphs proved that a lean canvas chart can feel instant on dense data.
 zpgraph keeps that interaction model and rebuilds the stack for today:
 
-- **TypeScript end-to-end** — `ZgraphOptions`, `Point`, plugins and callbacks are
+- **TypeScript end-to-end** — `ZpgraphOptions`, `Point`, plugins and callbacks are
   typed. A typo in an option name is a compile error, not a silent noop.
 - **Modern package surface** — ESM + CJS + browser IIFE, separate CSS import,
   optional extras under `zpgraph/extras/*`.
@@ -141,7 +141,7 @@ zpgraph ships with declaration files. Options are a closed interface — no
 `[key: string]: any` escape hatch — so editors catch mistakes early:
 
 ```ts
-import Zpgraph, { type ZgraphOptions } from "zpgraph";
+import Zpgraph, { type ZpgraphOptions } from "zpgraph";
 
 const opts = {
   labels: ["x", "A"],
@@ -150,7 +150,7 @@ const opts = {
     // `g` is typed as Zpgraph
     const y = g.toDomYCoord(20);
   },
-} satisfies ZgraphOptions;
+} satisfies ZpgraphOptions;
 
 new Zpgraph(el, data, opts);
 ```
@@ -213,7 +213,7 @@ page.
 | Event prop `e.dygraph`     | `e.zpgraph`               |
 
 API shape is familiar; **compatibility is not guaranteed**. Prefer
-`ZgraphOptions` and re-test interactions after migrate.
+`ZpgraphOptions` and re-test interactions after migrate.
 
 ---
 
