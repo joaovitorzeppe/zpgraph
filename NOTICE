@@ -1,0 +1,20 @@
+Zgraph
+======
+
+Copyright (c) 2026 João Vitor Zeppe and Zgraph contributors.
+
+Zgraph is a spiritual successor to the dygraphs charting library
+(https://github.com/danvk/dygraphs), originally created by Dan Vanderkam.
+
+Substantial portions of this codebase are derived from dygraphs, which is
+MIT-licensed. The full MIT license text is in LICENSE. Original copyright
+notices and contributors include:
+
+  Copyright (c) 2006, 2009, 2011, 2012, 2013, 2017 Dan Vanderkam
+  Copyright (c) 2011 Paul Felix
+  Copyright (c) 2011, 2013 Robert Konigsberg
+  Copyright (c) 2013 David Eberlein
+  Copyright (c) 2013 Google, Inc.
+  Copyright (c) 2015 Petr Shevtsov
+  Copyright (c) 2014, 2022, 2023, 2025, 2026 mirabilos
+  and numerous contributors (see dygraphs git history)

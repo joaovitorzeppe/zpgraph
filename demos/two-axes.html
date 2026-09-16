@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Two y-axes · Zgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Two y-axes</h1>
+  <p class="lede">
+    Low-range series on the left axis, high-range series on the right
+    (<code>labelsKMB</code>).
+  </p>
+  <div class="toolbar">
+    <label class="chk">
+      <input type="checkbox" id="fill" />
+      Fill graph
+    </label>
+  </div>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zgraph from 'zpgraph';
+    import { makeDualAxisData } from './helpers.js';
+
+    const g = new Zgraph(document.getElementById('chart'), makeDualAxisData(), {
+      labels: ['Date', 'Y1', 'Y2', 'Y3', 'Y4'],
+      legend: 'always',
+      ylabel: 'Primary',
+      y2label: 'Secondary',
+      colors: ['#1b6b93', '#2a9d8f', '#c45c26', '#e9c46a'],
+      series: {
+        Y3: { axis: 'y2' },
+        Y4: { axis: 'y2' },
+      },
+      axes: {
+        y: { axisLabelWidth: 48 },
+        y2: { labelsKMB: true, axisLabelWidth: 56 },
+      },
+      animatedZooms: true,
+    });
+
+    document.getElementById('fill').addEventListener('change', (e) => {
+      g.updateOptions({ fillGraph: e.target.checked });
+    });
+  </script>
+</body>
+
+</html>

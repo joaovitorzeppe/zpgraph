@@ -1,0 +1,168 @@
+:root {
+  --bg: #e8eef2;
+  --ink: #0d1b2a;
+  --muted: #4a5a6a;
+  --accent: #1b6b93;
+  --accent-2: #c45c26;
+  --panel: rgba(255, 255, 255, 0.72);
+  --line: rgba(13, 27, 42, 0.1);
+  --font: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --display: "IBM Plex Serif", Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 12% 0%, #c5d8e4 0%, transparent 48%),
+    radial-gradient(ellipse at 88% 8%, #d4cfc4 0%, transparent 42%),
+    var(--bg);
+  min-height: 100vh;
+  padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 3rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+h1 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  letter-spacing: -0.02em;
+  margin: 0 0 0.35rem;
+}
+
+h1 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.lede {
+  margin: 0 0 1.25rem;
+  max-width: 40rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+nav.crumb {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+nav.crumb a {
+  text-decoration: none;
+}
+
+nav.crumb a:hover {
+  text-decoration: underline;
+}
+
+.chart {
+  width: min(960px, 100%);
+  height: 400px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.chart.sm {
+  height: 280px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0 0 1rem;
+}
+
+button,
+.btn {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 0.45rem 0.85rem;
+  border-radius: 2px;
+}
+
+button:hover,
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.primary:hover {
+  filter: brightness(1.05);
+}
+
+.gallery {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+  max-width: 960px;
+}
+
+.gallery a {
+  display: block;
+  padding: 0.9rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.gallery a:hover {
+  border-color: var(--accent);
+}
+
+.gallery strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.gallery span {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+label.chk {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.note {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  max-width: 40rem;
+}

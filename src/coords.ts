@@ -1,0 +1,301 @@
+/**
+ * @license
+ * Copyright (c) 2026 João Vitor Zeppe (zeppejoaovitor@gmail.com)
+ * MIT-licensed: https://opensource.org/license/MIT
+ *
+ * Portions derived from dygraphs — see NOTICE for upstream attribution.
+ */
+
+/**
+ * The visible ranges and the conversions between the three coordinate systems
+ * the chart deals with: data values, pixels in the page, and 0..1 fractions of
+ * the plot area.
+ */
+
+import { computeYAxisRanges, gatherDatasets } from './render';
+import * as utils from './utils';
+import type Zgraph from './zgraph';
+
+/**
+ * Returns the currently-visible x-range. This can be affected by zooming,
+ * panning or a call to updateOptions.
+ * Returns a two-element array: [left, right].
+ * If the Zgraph has dates on the x-axis, these will be millis since epoch.
+ */
+export const xAxisRange = (g: Zgraph): [number, number] => {
+  return g.dateWindow_ ? g.dateWindow_ : xAxisExtremes(g);
+};
+
+/**
+ * Returns the lower- and upper-bound x-axis values of the data set.
+ */
+export const xAxisExtremes = (g: Zgraph): [number, number] => {
+  let pad = g.getNumericOption('xRangePad') / g.plotter_.area.w;
+  if (g.numRows() === 0) {
+    return [0 - pad, 1 + pad];
+  }
+  let left = g.rawData_[0]![0] as number;
+  let right = g.rawData_[g.rawData_.length - 1]![0] as number;
+  if (pad) {
+    // Must keep this in sync with layout _evaluateLimits()
+    let range = right - left;
+    left -= range * pad;
+    right += range * pad;
+  }
+  return [left, right];
+};
+
+/**
+ * Returns the lower- and upper-bound y-axis values for each axis. These are
+ * the ranges you'll get if you double-click to zoom out or call resetZoom().
+ * The return value is an array of [low, high] tuples, one for each y-axis.
+ */
+export const yAxisExtremes = (g: Zgraph) => {
+  const packed = gatherDatasets(g, g.rolledSeries_, null);
+  const { extremes } = packed;
+  const saveAxes = g.axes_;
+  computeYAxisRanges(g, extremes);
+  const newAxes = g.axes_;
+  g.axes_ = saveAxes;
+  return newAxes.map((axis) => axis.extremeRange!);
+};
+
+/**
+ * Returns the currently-visible y-range for an axis. This can be affected by
+ * zooming, panning or a call to updateOptions. Axis indices are zero-based. If
+ * called with no arguments, returns the range of the first axis.
+ * Returns a two-element array: [bottom, top].
+ */
+export const yAxisRange = (
+  g: Zgraph,
+  idx?: number,
+): [number, number] | null => {
+  if (typeof idx == 'undefined') idx = 0;
+  if (idx < 0 || idx >= g.axes_.length) {
+    return null;
+  }
+  const axis = g.axes_[idx]!;
+  const range = axis.computedValueRange!;
+  return [range[0]!, range[1]!];
+};
+
+/**
+ * Returns the currently-visible y-ranges for each axis. This can be affected by
+ * zooming, panning, calls to updateOptions, etc.
+ * Returns an array of [bottom, top] pairs, one for each y-axis.
+ */
+export const yAxisRanges = (g: Zgraph) => {
+  const ret: Array<[number, number] | null> = [];
+  for (let i = 0; i < g.axes_.length; i++) {
+    ret.push(yAxisRange(g, i));
+  }
+  return ret;
+};
+
+/**
+ * Convert from data coordinates to canvas/div X/Y coordinates.
+ * If specified, do this conversion for the coordinate system of a particular
+ * axis. Uses the first axis by default.
+ * Returns a two-element array: [X, Y]
+ *
+ * Note: use toDomXCoord instead of toDomCoords(x, null) and use toDomYCoord
+ * instead of toDomCoords(null, y, axis).
+ */
+export const toDomCoords = (
+  g: Zgraph,
+  x: number | null,
+  y: number | null,
+  axis?: number,
+) => {
+  return [toDomXCoord(g, x), toDomYCoord(g, y, axis)];
+};
+
+/**
+ * Convert from data x coordinates to canvas/div X coordinate.
+ * If specified, do this conversion for the coordinate system of a particular
+ * axis.
+ * Returns a single value or null if x is null.
+ */
+export const toDomXCoord = (g: Zgraph, x: number | null) => {
+  if (x === null) {
+    return null;
+  }
+
+  let area = g.plotter_.area;
+  let xRange = xAxisRange(g);
+  return area.x + ((x - xRange[0]) / (xRange[1] - xRange[0])) * area.w;
+};
+
+/**
+ * Convert from data x coordinates to canvas/div Y coordinate and optional
+ * axis. Uses the first axis by default.
+ *
+ * returns a single value or null if y is null.
+ */
+export const toDomYCoord = (g: Zgraph, y: number | null, axis?: number) => {
+  let pct = g.toPercentYCoord(y, axis);
+
+  if (pct === null) {
+    return null;
+  }
+  let area = g.plotter_.area;
+  return area.y + pct * area.h;
+};
+
+/**
+ * Convert from canvas/div coords to data coordinates.
+ * If specified, do this conversion for the coordinate system of a particular
+ * axis. Uses the first axis by default.
+ * Returns a two-element array: [X, Y].
+ *
+ * Note: use toDataXCoord instead of toDataCoords(x, null) and use toDataYCoord
+ * instead of toDataCoords(null, y, axis).
+ */
+export const toDataCoords = (
+  g: Zgraph,
+  x: number | null,
+  y: number | null,
+  axis?: number,
+) => {
+  return [toDataXCoord(g, x), toDataYCoord(g, y, axis)];
+};
+
+/**
+ * Convert from canvas/div x coordinate to data coordinate.
+ *
+ * If x is null, this returns null.
+ */
+export const toDataXCoord = (g: Zgraph, x: number | null) => {
+  if (x === null) {
+    return null;
+  }
+
+  let area = g.plotter_.area;
+  let xRange = xAxisRange(g);
+
+  if (!g.attributes_.getForAxis('logscale', 'x')) {
+    return xRange[0] + ((x - area.x) / area.w) * (xRange[1] - xRange[0]);
+  } else {
+    let pct = (x - area.x) / area.w;
+    return utils.logRangeFraction(xRange[0], xRange[1], pct);
+  }
+};
+
+/**
+ * Convert from canvas/div y coord to value.
+ *
+ * If y is null, this returns null.
+ * if axis is null, this uses the first axis.
+ */
+export const toDataYCoord = (g: Zgraph, y: number | null, axis?: number) => {
+  if (y === null) {
+    return null;
+  }
+
+  let area = g.plotter_.area;
+  if (typeof axis == 'undefined') axis = 0;
+  const yRange = yAxisRange(g, axis)!;
+  const y0 = yRange[0]!;
+  const y1 = yRange[1]!;
+
+  if (!g.attributes_.getForAxis('logscale', axis)) {
+    return y0 + ((area.y + area.h - y) / area.h) * (y1 - y0);
+  } else {
+    // Computing the inverse of toDomCoord.
+    let pct = (y - area.y) / area.h;
+    // Note reversed yRange, y1 is on top with pct==0.
+    return utils.logRangeFraction(y1, y0, pct);
+  }
+};
+
+/**
+ * Converts a y for an axis to a percentage from the top to the
+ * bottom of the drawing area.
+ *
+ * If the coordinate represents a value visible on the canvas, then
+ * the value will be between 0 and 1, where 0 is the top of the canvas.
+ * However, this method will return values outside the range, as
+ * values can fall outside the canvas.
+ *
+ * If y is null, this returns null.
+ * if axis is null, this uses the first axis.
+ *
+ * @param y The data y-coordinate.
+ * @param [axis] The axis number on which the data coordinate lives.
+ * @return A fraction in [0, 1] where 0 = the top edge.
+ */
+export const toPercentYCoord = (g: Zgraph, y: number | null, axis?: number) => {
+  if (y === null) {
+    return null;
+  }
+  if (typeof axis == 'undefined') axis = 0;
+
+  const yRange = yAxisRange(g, axis)!;
+  const y0 = yRange[0]!;
+  const y1 = yRange[1]!;
+
+  let pct;
+  let logscale = g.attributes_.getForAxis('logscale', axis);
+  if (logscale) {
+    let logr0 = utils.log10(y0);
+    let logr1 = utils.log10(y1);
+    pct = (logr1 - utils.log10(y)) / (logr1 - logr0);
+  } else {
+    // yRange[1] - y is unit distance from the bottom.
+    // yRange[1] - yRange[0] is the scale of the range.
+    // (yRange[1] - y) / (yRange[1] - yRange[0]) is the % from the bottom.
+    pct = (y1 - y) / (y1 - y0);
+  }
+  return pct;
+};
+
+/**
+ * Converts an x value to a percentage from the left to the right of
+ * the drawing area.
+ *
+ * If the coordinate represents a value visible on the canvas, then
+ * the value will be between 0 and 1, where 0 is the left of the canvas.
+ * However, this method will return values outside the range, as
+ * values can fall outside the canvas.
+ *
+ * If x is null, this returns null.
+ * @param x The data x-coordinate.
+ * @return A fraction in [0, 1] where 0 = the left edge.
+ */
+export const toPercentXCoord = (g: Zgraph, x: number | null) => {
+  if (x === null) {
+    return null;
+  }
+
+  let xRange = xAxisRange(g);
+  let pct;
+  let logscale = g.attributes_.getForAxis('logscale', 'x');
+  if (logscale === true) {
+    // logscale can be null so we test for true explicitly.
+    let logr0 = utils.log10(xRange[0]);
+    let logr1 = utils.log10(xRange[1]);
+    pct = (utils.log10(x) - logr0) / (logr1 - logr0);
+  } else {
+    // x - xRange[0] is unit distance from the left.
+    // xRange[1] - xRange[0] is the scale of the range.
+    // The full expression below is the % from the left.
+    pct = (x - xRange[0]) / (xRange[1] - xRange[0]);
+  }
+  return pct;
+};
+
+/**
+ * Convert a mouse event to DOM coordinates relative to the graph origin.
+ *
+ * Returns a two-element array: [X, Y].
+ */
+export const eventToDomCoords = (g: Zgraph, event: MouseEvent) => {
+  if (event.offsetX && event.offsetY) {
+    return [event.offsetX, event.offsetY];
+  } else {
+    let eventElementPos = utils.findPos(g.mouseEventElement_);
+    let canvasx = utils.pageX(event) - eventElementPos.x;
+    let canvasy = utils.pageY(event) - eventElementPos.y;
+    return [canvasx, canvasy];
+  }
+};

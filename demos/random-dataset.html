@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Random dataset · Zgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Random dataset swap</h1>
+  <p class="lede">
+    Each click builds a new file (length, series count, seed) and replaces the
+    chart data via <code>updateOptions({ file })</code>.
+  </p>
+  <div class="toolbar">
+    <button type="button" class="primary" id="shuffle">Shuffle dataset</button>
+    <span id="meta" class="note" style="margin: 0"></span>
+  </div>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zgraph from 'zpgraph';
+    import { randomDataset } from './helpers.js';
+
+    const el = document.getElementById('chart');
+    const meta = document.getElementById('meta');
+    let g = null;
+
+    const apply = () => {
+      const next = randomDataset();
+      meta.textContent = next.title;
+      if (!g) {
+        g = new Zgraph(el, next.data, {
+          labels: next.labels,
+          colors: next.colors,
+          legend: 'always',
+          title: next.title,
+          animatedZooms: true,
+          ylabel: 'Value',
+        });
+        return;
+      }
+      g.updateOptions({
+        file: next.data,
+        labels: next.labels,
+        colors: next.colors,
+        title: next.title,
+      });
+    };
+
+    document.getElementById('shuffle').addEventListener('click', apply);
+    apply();
+  </script>
+</body>
+
+</html>

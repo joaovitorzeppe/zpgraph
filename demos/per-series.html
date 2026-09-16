@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Per-series · Zgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Per-series styles</h1>
+  <p class="lede">Stroke width, points, and fill configured independently.</p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zgraph from 'zpgraph';
+    import { makeSeries } from './helpers.js';
+
+    new Zgraph(document.getElementById('chart'), makeSeries({ points: 70, series: 3, seed: 5 }), {
+      labels: ['Date', 'Thick', 'Points', 'Fill'],
+      legend: 'always',
+      colors: ['#1b6b93', '#c45c26', '#2a9d8f'],
+      series: {
+        Thick: { strokeWidth: 3 },
+        Points: { drawPoints: true, pointSize: 3, strokeWidth: 1 },
+        Fill: { fillGraph: true, strokeWidth: 1.5 },
+      },
+      animatedZooms: true,
+    });
+  </script>
+</body>
+
+</html>

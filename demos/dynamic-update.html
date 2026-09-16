@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dynamic update · Zgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Dynamic update</h1>
+  <p class="lede">
+    New points arrive once per second. Zoom toward the right edge to watch
+    them appear.
+  </p>
+  <div class="toolbar">
+    <button type="button" id="pause">Pause</button>
+  </div>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zgraph from 'zpgraph';
+
+    const data = [];
+    const now = Date.now();
+    for (let i = 20; i >= 0; i--) {
+      data.push([new Date(now - i * 1000), Math.random()]);
+    }
+
+    const g = new Zgraph(document.getElementById('chart'), data, {
+      labels: ['Time', 'Random'],
+      drawPoints: true,
+      pointSize: 2.5,
+      valueRange: [0, 1.15],
+      legend: 'always',
+      animatedZooms: true,
+      colors: ['#1b6b93'],
+    });
+
+    let timer = setInterval(() => {
+      data.push([new Date(), Math.random()]);
+      if (data.length > 120) data.shift();
+      g.updateOptions({ file: data });
+    }, 1000);
+
+    const btn = document.getElementById('pause');
+    btn.addEventListener('click', () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+        btn.textContent = 'Resume';
+      } else {
+        timer = setInterval(() => {
+          data.push([new Date(), Math.random()]);
+          if (data.length > 120) data.shift();
+          g.updateOptions({ file: data });
+        }, 1000);
+        btn.textContent = 'Pause';
+      }
+    });
+  </script>
+</body>
+
+</html>

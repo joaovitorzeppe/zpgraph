@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Underlay · Zgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Underlay bands</h1>
+  <p class="lede">
+    <code>underlayCallback</code> paints a target band behind the series using
+    canvas coordinates from <code>toDomYCoord</code>.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zgraph from 'zpgraph';
+    import { makeSeries } from './helpers.js';
+
+    const lo = 16;
+    const hi = 24;
+
+    new Zgraph(document.getElementById('chart'), makeSeries({ points: 80, series: 1, seed: 2 }), {
+      labels: ['Date', 'Temp'],
+      legend: 'always',
+      ylabel: '°C',
+      colors: ['#c45c26'],
+      animatedZooms: true,
+      underlayCallback: (ctx, area, g) => {
+        const yTop = g.toDomYCoord(hi);
+        const yBot = g.toDomYCoord(lo);
+        if (yTop == null || yBot == null) return;
+        ctx.save();
+        ctx.fillStyle = 'rgba(27, 107, 147, 0.14)';
+        ctx.fillRect(area.x, yTop, area.w, yBot - yTop);
+        ctx.strokeStyle = 'rgba(27, 107, 147, 0.45)';
+        ctx.beginPath();
+        ctx.moveTo(area.x, yTop);
+        ctx.lineTo(area.x + area.w, yTop);
+        ctx.moveTo(area.x, yBot);
+        ctx.lineTo(area.x + area.w, yBot);
+        ctx.stroke();
+        ctx.restore();
+      },
+    });
+  </script>
+</body>
+
+</html>

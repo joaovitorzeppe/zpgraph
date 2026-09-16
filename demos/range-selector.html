@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Range selector · Zgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Range selector</h1>
+  <p class="lede">
+    Custom bars (low / mid / high) with a minimap. Drag the handles or the
+    window to pan the main view.
+  </p>
+  <div id="chart" class="chart" style="height: 460px"></div>
+  <script type="module">
+    import Zgraph from 'zpgraph';
+    import { makeCustomBars } from './helpers.js';
+
+    new Zgraph(document.getElementById('chart'), makeCustomBars(90), {
+      labels: ['Date', 'New York', 'San Francisco'],
+      customBars: true,
+      legend: 'always',
+      title: 'Daily temperatures (custom bars)',
+      ylabel: '°F',
+      showRangeSelector: true,
+      rangeSelectorHeight: 36,
+      rangeSelectorPlotStrokeColor: '#1b6b93',
+      rangeSelectorPlotFillColor: 'rgba(27, 107, 147, 0.18)',
+      colors: ['#1b6b93', '#c45c26'],
+      animatedZooms: true,
+    });
+  </script>
+</body>
+
+</html>

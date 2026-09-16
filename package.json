@@ -1,0 +1,94 @@
+{
+  "name": "zpgraph",
+  "version": "0.1.0",
+  "description": "Fast, flexible TypeScript charting library — spiritual successor to dygraphs",
+  "keywords": [
+    "canvas",
+    "chart",
+    "graph",
+    "timeseries",
+    "visualization",
+    "zgraph",
+    "dygraphs",
+    "zpgraph"
+  ],
+  "license": "MIT",
+  "author": "João Vitor Zeppe <zeppejoaovitor@gmail.com>",
+  "homepage": "https://github.com/joaovitorzeppe/zgraph#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joaovitorzeppe/zgraph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/joaovitorzeppe/zgraph/issues"
+  },
+  "type": "module",
+  "sideEffects": [
+    "**/*.css",
+    "./dist/zgraph.min.global.js"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "style": "./dist/style.css",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./extras/*": {
+      "types": "./dist/extras/*.d.ts",
+      "import": "./dist/extras/*.js",
+      "require": "./dist/extras/*.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "CHANGES.md",
+    "demos/screenshots"
+  ],
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json && node scripts/copy-css.mjs",
+    "smoke": "node scripts/smoke-node.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "dev": "vitest",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build && npm run smoke"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "@vitest/coverage-v8": "^5.0.1",
+    "jsdom": "^30.0.1",
+    "oxlint": "^1.83.0",
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
+  "browserslist": [
+    "defaults",
+    "supports es6-module",
+    "not dead",
+    "not ie 11"
+  ],
+  "overrides": {
+    "esbuild": "^0.28.2"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "fsevents": true
+  }
+}

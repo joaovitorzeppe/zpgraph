@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["dist", "coverage", "node_modules", "typings"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true
+  },
+  "globals": {
+    "$": "readonly"
+  },
+  "rules": {
+    "no-var": "error",
+    "eqeqeq": ["error", "smart"],
+    "no-unused-vars": [
+      "warn",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+
+    "typescript/no-explicit-any": "error",
+    "no-underscore-dangle": "off",
+
+    "typescript/no-this-alias": "warn",
+    "unicorn/no-new-array": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/prefer-add-event-listener": "off",
+    "unicorn/no-instanceof-builtins": "off",
+    "no-shadow": "off",
+    "no-prototype-builtins": "error",
+    "no-empty": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["tests/**/*.ts"],
+      "env": { "jest": true },
+      "rules": {
+        "typescript/no-explicit-any": "off"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1125 @@
+'use strict';
+
+/**
+ * @license
+ * Copyright (c) 2026 João Vitor Zeppe (zeppejoaovitor@gmail.com)
+ * MIT-licensed: https://opensource.org/license/MIT
+ *
+ * Portions derived from dygraphs — see NOTICE for upstream attribution.
+ */
+
+/*
+  Usage:
+   <div id="graphdiv" style="width:800px; height:500px;"></div>
+   <script type="module">
+     new Zgraph(document.getElementById("graphdiv"),
+                 "datafile.csv",  // CSV file with headers
+                 { }); // options
+   </script>
+
+ The CSV file is of the form
+
+   Date,SeriesA,SeriesB,SeriesC
+   YYYY-MM-DD,A1,B1,C1
+   YYYY-MM-DD,A2,B2,C2
+
+ If the 'errorBars' option is set in the constructor, the input should be of
+ the form
+   Date,SeriesA,SeriesB,...
+   YYYY-MM-DD,A1,sigmaA1,B1,sigmaB1,...
+   YYYY-MM-DD,A2,sigmaA2,B2,sigmaB2,...
+
+ If the 'fractions' option is set, the input should be of the form:
+
+   Date,SeriesA,SeriesB,...
+   YYYY-MM-DD,A1/B1,A2/B2,...
+   YYYY-MM-DD,A1/B1,A2/B2,...
+
+ And high/low bands will be calculated automatically using a binomial distribution.
+
+ For further documentation and examples, see https://github.com/joaovitorzeppe/zgraph/
+ */
+
+import ZgraphLayout from './layout';
+import { log } from './logger';
+import type {
+  Annotation,
+  AxisName,
+  Data,
+  InteractionModel,
+  Plugin,
+  Point,
+  Ticker,
+  ZgraphElement,
+  ZgraphOptions,
+} from './types';
+import type {
+  AxisProperties,
+  ChartInteractionHandler,
+  DataHandlerLike,
+  OptionsGetter,
+  RawData,
+  UnifiedSeries,
+} from './internal-types';
+import ZgraphCanvasRenderer from './canvas';
+import OptionsManager from './options';
+import * as utils from './utils';
+import OPTIONS_REFERENCE_ from './options-reference';
+import DEFAULT_ATTRS from './default-attrs';
+import * as ZgraphTickers from './tickers';
+import {
+  eventToDomCoords,
+  toDataCoords,
+  toDataXCoord,
+  toDataYCoord,
+  toDomCoords,
+  toDomXCoord,
+  toDomYCoord,
+  toPercentXCoord,
+  toPercentYCoord,
+  xAxisExtremes,
+  xAxisRange,
+  yAxisExtremes,
+  yAxisRange,
+  yAxisRanges,
+} from './coords';
+import { resizeElements } from './dom';
+import {
+  clearSelection,
+  findClosestPoint,
+  findClosestRow,
+  findStackedPoint,
+  getSelection,
+  mouseMove,
+  mouseOut,
+  setSelection,
+  updateSelection,
+} from './selection';
+import {
+  clearZoomRect,
+  doAnimatedZoom,
+  doZoomX,
+  doZoomXDates,
+  doZoomY,
+  drawZoomRect,
+  resetZoom,
+} from './zoom';
+import { drawGraph, predraw } from './render';
+import {
+  addXTicks_,
+  cascadeEvents_ as cascadeEventsFn_,
+  destroy,
+  getHandlerClass_,
+  init as init_,
+  loadedEvent_,
+  removeTrackedEvents_,
+  setColors_,
+  setVisibility,
+  start as start_,
+  updateOptions as updateOptionsFn_,
+  visibility,
+} from './lifecycle';
+import { registerZgraphStatics } from './register';
+
+const OPTIONS_REFERENCE: Record<string, unknown> | null = OPTIONS_REFERENCE_;
+
+interface PluginDict {
+  plugin: Plugin;
+  events: Record<string, (...args: unknown[]) => unknown>;
+  options: Record<string, unknown>;
+  pluginOptions: Record<string, unknown>;
+}
+
+type TrackedEvent = {
+  elem: EventTarget;
+  type: string;
+  fn: EventListener;
+};
+
+/**
+ * @class Creates an interactive, zoomable chart.
+ * @name Zgraph
+ *
+ * @constructor
+ * @param div A div or the id of a div into which to construct
+ * the chart. Must not have any padding.
+ * @param file A file containing CSV data or a function
+ * that returns this data. The most basic expected format for each line is:
+ * "YYYY/MM/DD,val1,val2,..."
+ *
+ * @param attrs Various other attributes, e.g. errorBars determines
+ * whether the input data contains error ranges.
+ */
+
+export default class Zgraph {
+  is_initial_draw_!: boolean;
+  readyFns_!: Array<(g: Zgraph) => void>;
+  maindiv_!: HTMLElement;
+  file_!: Data | string | (() => Data);
+  rollPeriod_!: number;
+  previousVerticalX_!: number;
+  fractions_!: boolean;
+  dateWindow_!: [number, number] | null;
+  annotations_!: Annotation[];
+  width_!: number;
+  height_!: number;
+  user_attrs_!: ZgraphOptions;
+  attrs_!: ZgraphOptions;
+  boundaryIds_!: Array<[number, number]>;
+  setIndexByName_!: Record<string, number>;
+  datasetIndex_!: number[];
+  registeredEvents_!: TrackedEvent[];
+  eventListeners_!: Record<
+    string,
+    Array<[Plugin, (...args: unknown[]) => unknown]>
+  >;
+  attributes_!: OptionsManager;
+  plugins_!: PluginDict[];
+  graphDiv!: HTMLDivElement;
+  canvas_!: HTMLCanvasElement;
+  hidden_!: HTMLCanvasElement;
+  plotter_!: ZgraphCanvasRenderer;
+  mouseMoveHandler_?: utils.Coalesced;
+  keyDownHandler_?: (e: KeyboardEvent) => void;
+  /** Row the keyboard last moved to, undefined before the first key. */
+  keyboardRow_: number | undefined;
+  /** Frame-coalesced handlers, cancelled on destroy. */
+  coalesced_: utils.Coalesced[] = [];
+  mouseOutHandler_?: (e: MouseEvent) => void;
+  resizeHandler_?: utils.Coalesced | null;
+  resizeObserver_?: ResizeObserver | null;
+  fileLoadAbort_: AbortController | null = null;
+  rawData_!: RawData;
+  layout_!: ZgraphLayout;
+  colors_!: string[];
+  colorsMap_!: Record<string, string>;
+  axes_!: AxisProperties[];
+  selPoints_!: Point[];
+  highlightSet_!: string | null;
+  lockedSet_!: boolean;
+  lastx_!: number | null;
+  lastRow_!: number;
+  fadeLevel!: number;
+  animateId!: number;
+  roller_: HTMLInputElement | null | undefined;
+  rolledSeries_!: Array<UnifiedSeries | null>;
+  drawingTimeMs_!: number;
+  readyFired_!: boolean;
+  resize_lock!: boolean;
+  currentZoomRectArgs_: unknown | null;
+  canvas_ctx_!: CanvasRenderingContext2D;
+  hidden_ctx_!: CanvasRenderingContext2D;
+  mouseEventElement_!: HTMLElement;
+  dataHandler_!: DataHandlerLike;
+
+  static NAME: string;
+  static VERSION: string;
+  static DEFAULT_ROLL_PERIOD: number;
+  static DEFAULT_WIDTH: number;
+  static DEFAULT_HEIGHT: number;
+  static Plotters: typeof ZgraphCanvasRenderer._Plotters;
+  static addedAnnotationCSS: boolean;
+  static PLUGINS: Array<(new () => Plugin) | Plugin>;
+  static DOTTED_LINE: number[];
+  static DASHED_LINE: number[];
+  static DOT_DASH_LINE: number[];
+  static dateAxisLabelFormatter: typeof utils.dateAxisLabelFormatter;
+  static findPos: typeof utils.findPos;
+  static pageX: typeof utils.pageX;
+  static pageY: typeof utils.pageY;
+  static defaultInteractionModel: InteractionModel;
+  static nonInteractiveModel: InteractionModel;
+  static Circles: typeof utils.Circles;
+  // `never[]` = constructible with zero args; extras may take optional opts.
+  static Plugins: Record<string, new (...args: never[]) => Plugin>;
+  static DataHandlers: Record<
+    string,
+    new (...args: never[]) => DataHandlerLike
+  >;
+  static startPan: ChartInteractionHandler;
+  static startZoom: ChartInteractionHandler;
+  static movePan: ChartInteractionHandler;
+  static moveZoom: ChartInteractionHandler;
+  static endPan: ChartInteractionHandler;
+  static endZoom: ChartInteractionHandler;
+  static numericLinearTicks: Ticker;
+  static numericTicks: Ticker;
+  static integerTicks: Ticker;
+  static dateTicker: Ticker;
+  static Granularity: Record<string, number>;
+  static pickDateTickGranularity: typeof ZgraphTickers.pickDateTickGranularity;
+  static getDateAxis: typeof ZgraphTickers.getDateAxis;
+  static floatFormat: typeof utils.floatFormat;
+  static DEFAULT_ATTRS: typeof DEFAULT_ATTRS;
+  static FORCE_FAST_PROXY: boolean;
+
+  /**
+   * @param div A div or the id of a div into which to construct
+   * the chart. Must not have any padding.
+   * @param file A file containing CSV data or a function
+   * that returns this data.
+   * @param attrs Various other attributes, e.g. errorBars determines
+   * whether the input data contains error ranges.
+   */
+  constructor(div: ZgraphElement, data: Data, opts?: Partial<ZgraphOptions>) {
+    this.__init__(div, data, opts);
+  }
+
+  /**
+   * Initializes the Zgraph. This creates a new DIV and constructs the hidden
+   * and context &lt;canvas&gt; inside of it. See the constructor for details.
+   * on the parameters.
+   * @param div the Element to render the graph into.
+   * @param file Source data
+   * @param attrs Miscellaneous other options
+   * @private
+   */
+  __init__(div: ZgraphElement, file: Data, attrs?: Partial<ZgraphOptions>) {
+    init_(this, div, file, attrs);
+  }
+
+  /**
+   * Triggers a cascade of events to the various plugins which are interested in them.
+   * Returns true if the "default behavior" should be prevented, i.e. if one
+   * of the event listeners called event.preventDefault().
+   * @private
+   */
+  cascadeEvents_(name: string, extra_props?: Record<string, unknown>) {
+    return cascadeEventsFn_(this, name, extra_props);
+  }
+
+  /**
+   * Fetch a plugin instance of a particular class. Only for testing.
+   * @private
+   * @param type The type of the plugin.
+   * @return Instance of the plugin, or null if there is none.
+   */
+  getPluginInstance_<T extends Plugin>(type: new () => T): T | null {
+    for (let i = 0; i < this.plugins_.length; i++) {
+      const p = this.plugins_[i]!;
+      if (p.plugin instanceof type) {
+        return p.plugin as T;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Returns the zoomed status of the chart for one or both axes.
+   *
+   * Axis is an optional parameter. Can be set to 'x' or 'y'.
+   *
+   * The zoomed status for an axis is set whenever a user zooms using the mouse
+   * or when the dateWindow or valueRange are updated. Double-clicking or calling
+   * resetZoom() resets the zoom status for the chart.
+   */
+  isZoomed(axis?: 'x' | 'y' | null) {
+    const isZoomedX = !!this.dateWindow_;
+    if (axis === 'x') return isZoomedX;
+
+    const isZoomedY =
+      this.axes_.map((ax) => !!ax.valueRange).indexOf(true) >= 0;
+    if (axis === null || axis === undefined) {
+      return isZoomedX || isZoomedY;
+    }
+    if (axis === 'y') return isZoomedY;
+
+    throw new Error(`axis parameter is [${axis}] must be null, 'x' or 'y'.`);
+  }
+
+  /**
+   * Returns information about the Zgraph object, including its containing ID.
+   */
+  toString() {
+    let maindiv = this.maindiv_;
+    let id = maindiv && maindiv.id ? maindiv.id : maindiv;
+    return '[Zgraph ' + id + ']';
+  }
+
+  /**
+   * @private
+   * Returns the value of an option. This may be set by the user (either in the
+   * constructor or by calling updateOptions) or by zgraph, and may be set to a
+   * per-series value.
+   * @param name The name of the option, e.g. 'rollPeriod'.
+   * @param [seriesName] The name of the series to which the option
+   * will be applied. If no per-series value of this option is available, then
+   * the global value is returned. This is optional.
+   * @return The value of the option.
+   */
+  attr_(name: string, seriesName?: string) {
+    // OPTIONS_REFERENCE is tree-shaken out of production bundles.
+    if (OPTIONS_REFERENCE && !Object.hasOwn(OPTIONS_REFERENCE, name)) {
+      log.error(
+        'Zgraph is using property ' +
+          name +
+          ', which has no ' +
+          'entry in the Zgraph.OPTIONS_REFERENCE listing.',
+      );
+        // Only log this error once.
+        OPTIONS_REFERENCE[name] = true;
+      }
+    return seriesName
+      ? this.attributes_.getForSeries(name, seriesName)
+      : this.attributes_.get(name);
+  }
+
+  /**
+   * Returns the current value for an option, as set in the constructor or via
+   * updateOptions. You may pass in an (optional) series name to get per-series
+   * values for the option.
+   *
+   * All values returned by this method should be considered immutable. If you
+   * modify them, there is no guarantee that the changes will be honored or that
+   * zgraph will remain in a consistent state. If you want to modify an option,
+   * use updateOptions() instead.
+   *
+   * @param name The name of the option (e.g. 'strokeWidth')
+   * @param opt_seriesName Series name to get per-series values.
+   * @return The value of the option.
+   */
+  getOption(name: string, opt_seriesName?: string): unknown {
+    return this.attr_(name, opt_seriesName);
+  }
+
+  /**
+   * Like getOption(), but specifically returns a number.
+   * This is a convenience function for working with the Closure Compiler.
+   * @param name The name of the option (e.g. 'strokeWidth')
+   * @param opt_seriesName Series name to get per-series values.
+   * @return The value of the option.
+   * @private
+   */
+  getNumericOption(name: string, opt_seriesName?: string): number {
+    return this.getOption(name, opt_seriesName) as number;
+  }
+
+  /**
+   * Like getOption(), but specifically returns a string.
+   * This is a convenience function for working with the Closure Compiler.
+   * @param name The name of the option (e.g. 'strokeWidth')
+   * @param opt_seriesName Series name to get per-series values.
+   * @return The value of the option.
+   * @private
+   */
+  getStringOption(name: string, opt_seriesName?: string): string {
+    return this.getOption(name, opt_seriesName) as string;
+  }
+
+  /**
+   * Like getOption(), but specifically returns a boolean.
+   * This is a convenience function for working with the Closure Compiler.
+   * @param name The name of the option (e.g. 'strokeWidth')
+   * @param opt_seriesName Series name to get per-series values.
+   * @return The value of the option.
+   * @private
+   */
+  getBooleanOption(name: string, opt_seriesName?: string): boolean {
+    return this.getOption(name, opt_seriesName) as boolean;
+  }
+
+  /**
+   * Like getOption(), but specifically returns a function.
+   * This is a convenience function for working with the Closure Compiler.
+   * @param name The name of the option (e.g. 'strokeWidth')
+   * @param opt_seriesName Series name to get per-series values.
+   * @return The value of the option.
+   * @private
+   */
+  getFunctionOption(
+    name: string,
+    opt_seriesName?: string,
+  ): (...args: unknown[]) => unknown {
+    return this.getOption(name, opt_seriesName) as (
+      ...args: unknown[]
+    ) => unknown;
+  }
+
+  getOptionForAxis(name: string, axis: string | number) {
+    return this.attributes_.getForAxis(name, axis);
+  }
+
+  /**
+   * @private
+   * @param axis The name of the axis (i.e. 'x', 'y' or 'y2')
+   * @return A function mapping string -> option value
+   */
+  optionsViewForAxis_(axis: AxisName | string): OptionsGetter {
+    const axisName = axis as AxisName;
+    const readAxisOpt = (
+      axes: ZgraphOptions['axes'],
+      opt: string,
+    ): unknown | undefined => {
+      const bucket = axes?.[axisName] as Record<string, unknown> | undefined;
+      if (bucket && Object.hasOwn(bucket, opt)) return bucket[opt];
+      return undefined;
+    };
+    const userAttrs = this.user_attrs_ as Record<string, unknown>;
+
+    return (opt: string) => {
+      const userAxisOpt = readAxisOpt(this.user_attrs_.axes, opt);
+      if (userAxisOpt !== undefined) return userAxisOpt;
+
+      // I don't like that this is in a second spot.
+      if (axis === 'x' && opt === 'logscale') {
+        // return the default value.
+        return false;
+      }
+
+      // user-specified attributes always trump defaults, even if they're less
+      // specific.
+      if (typeof userAttrs[opt] != 'undefined') {
+        return userAttrs[opt];
+      }
+
+      const attrsAxisOpt = readAxisOpt(this.attrs_.axes, opt);
+      if (attrsAxisOpt !== undefined) return attrsAxisOpt;
+
+      // check old-style axis options
+      if (axis === 'y') {
+        const y0 = this.axes_?.[0];
+        if (y0 && Object.hasOwn(y0, opt)) return y0[opt];
+      } else if (axis === 'y2') {
+        const y1 = this.axes_?.[1];
+        if (y1 && Object.hasOwn(y1, opt)) return y1[opt];
+      }
+      return this.attr_(opt);
+    };
+  }
+
+  /**
+   * Returns the current rolling period, as set by the user or an option.
+   * @return The number of points in the rolling window
+   */
+  rollPeriod() {
+    return this.rollPeriod_;
+  }
+
+  /**
+   * Ranges and coordinate conversions. The bodies live in coords.ts.
+   */
+  xAxisRange(): [number, number] {
+    return xAxisRange(this);
+  }
+
+  xAxisExtremes(): [number, number] {
+    return xAxisExtremes(this);
+  }
+
+  yAxisExtremes() {
+    return yAxisExtremes(this);
+  }
+
+  yAxisRange(idx?: number) {
+    return yAxisRange(this, idx);
+  }
+
+  yAxisRanges() {
+    return yAxisRanges(this);
+  }
+
+  toDomCoords(x: number, y: number, axis?: number) {
+    return toDomCoords(this, x, y, axis);
+  }
+
+  toDomXCoord(x: number | null | undefined) {
+    return toDomXCoord(this, x ?? null);
+  }
+
+  toDomYCoord(y: number | null | undefined, axis?: number) {
+    return toDomYCoord(this, y ?? null, axis);
+  }
+
+  toDataCoords(x: number, y: number, axis?: number) {
+    return toDataCoords(this, x, y, axis);
+  }
+
+  toDataXCoord(x: number | null | undefined) {
+    return toDataXCoord(this, x ?? null);
+  }
+
+  toDataYCoord(y: number | null | undefined, axis?: number) {
+    return toDataYCoord(this, y ?? null, axis);
+  }
+
+  toPercentYCoord(y: number | null | undefined, axis?: number) {
+    return toPercentYCoord(this, y ?? null, axis);
+  }
+
+  toPercentXCoord(x: number | null | undefined) {
+    return toPercentXCoord(this, x ?? null);
+  }
+
+  eventToDomCoords(event: MouseEvent) {
+    return eventToDomCoords(this, event);
+  }
+
+  /**
+   * Returns the number of columns (including the independent variable).
+   * @return The number of columns.
+   */
+  numColumns() {
+    if (!this.rawData_) return 0;
+    if (this.rawData_[0]) return this.rawData_[0].length;
+    const labels = this.attr_('labels');
+    return Array.isArray(labels) ? labels.length : 0;
+  }
+
+  /**
+   * Returns the number of rows (excluding any header/label row).
+   * @return The number of rows, less any header.
+   */
+  numRows() {
+    if (!this.rawData_) return 0;
+    return this.rawData_.length;
+  }
+
+  /**
+   * Returns the value in the given row and column. If the row and column exceed
+   * the bounds on the data, returns null. Also returns null if the value is
+   * missing.
+   * @param row The row number of the data (0-based). Row 0 is the
+   *     first row of data, not a header row.
+   * @param col The column number of the data (0-based)
+   * @return The value in the specified cell or null if the row/col
+   *     were out of range.
+   */
+  getValue(row: number, col: number) {
+    if (row < 0 || row >= this.rawData_.length) return null;
+    const dataRow = this.rawData_[row]!;
+    if (col < 0 || col >= dataRow.length) return null;
+
+    return dataRow[col];
+  }
+
+  /**
+   * Detach DOM elements in the zgraph and null out all data references.
+   * Calling this when you're done with a zgraph can dramatically reduce memory
+   * usage. See, e.g., the tests/perf.html example.
+   */
+  destroy() {
+    destroy(this);
+  }
+
+  /**
+   * Generate a set of distinct colors for the data series. This is done with a
+   * color wheel. Saturation/Value are customizable, and the hue is
+   * equally-spaced around the color wheel. If a custom set of colors is
+   * specified, that is used instead.
+   * @private
+   */
+  setColors_() {
+    setColors_(this);
+  }
+
+  /**
+   * Return the list of colors. This is either the list of colors passed in the
+   * attributes or the autogenerated list of rgb(r,g,b) strings.
+   * This does not return colors for invisible series.
+   * @return The list of colors.
+   */
+  getColors() {
+    return this.colors_;
+  }
+
+  /**
+   * Returns a few attributes of a series, i.e. its color, its visibility, which
+   * axis it's assigned to, and its column in the original data.
+   * Returns null if the series does not exist.
+   * Otherwise, returns an object with column, visibility, color and axis properties.
+   * The "axis" property will be set to 1 for y1 and 2 for y2.
+   * The "column" property can be fed back into getValue(row, column) to get
+   * values for this series.
+   */
+  getPropertiesForSeries(series_name: string) {
+    let idx = -1;
+    let labels = this.getLabels();
+    if (!labels) return null;
+    for (let i = 1; i < labels.length; i++) {
+      if (labels[i] === series_name) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) return null;
+
+    return {
+      name: series_name,
+      column: idx,
+      visible: this.visibility()[idx - 1],
+      color: this.colorsMap_[series_name],
+      axis: 1 + this.attributes_.axisForSeries(series_name),
+    };
+  }
+
+  /**
+   * Zoom. The bodies live in zoom.ts; these are the names the interaction
+   * model, the range selector and users call.
+   */
+  drawZoomRect_(
+    direction: number,
+    startX: number,
+    endX: number,
+    startY: number,
+    endY: number,
+    prevDirection?: number,
+    prevEndX?: number,
+    prevEndY?: number,
+  ) {
+    drawZoomRect(
+      this,
+      direction,
+      startX,
+      endX,
+      startY,
+      endY,
+      prevDirection,
+      prevEndX,
+      prevEndY,
+    );
+  }
+
+  clearZoomRect_() {
+    clearZoomRect(this);
+  }
+
+  doZoomX_(lowX: number, highX: number) {
+    doZoomX(this, lowX, highX);
+  }
+
+  doZoomXDates_(minDate: number, maxDate: number) {
+    doZoomXDates(this, minDate, maxDate);
+  }
+
+  doZoomY_(lowY: number, highY: number) {
+    doZoomY(this, lowY, highY);
+  }
+
+  /** Reset the zoom to the original view, animating there if asked to. */
+  resetZoom() {
+    resetZoom(this);
+  }
+
+  doAnimatedZoom(
+    oldXRange: [number, number] | null,
+    newXRange: [number, number] | null,
+    oldYRanges: Array<[number, number]> | null,
+    newYRanges: Array<[number, number]> | null,
+    callback: () => void,
+  ) {
+    doAnimatedZoom(
+      this,
+      oldXRange,
+      newXRange,
+      oldYRanges,
+      newYRanges,
+      callback,
+    );
+  }
+
+  /**
+   * Get the current graph's area object.
+   *
+   * Returns: {x, y, w, h}
+   */
+  getArea() {
+    return this.plotter_.area;
+  }
+
+  /**
+   * Selection. The bodies live in selection.ts; these are the names users,
+   * plugins and the event handlers call.
+   */
+  findClosestRow(domX: number) {
+    return findClosestRow(this, domX);
+  }
+
+  findClosestPoint(domX: number, domY?: number) {
+    return findClosestPoint(this, domX, domY);
+  }
+
+  findStackedPoint(domX: number, domY: number) {
+    return findStackedPoint(this, domX, domY);
+  }
+
+  mouseMove_(event: MouseEvent) {
+    mouseMove(this, event);
+  }
+
+  mouseOut_(event: MouseEvent) {
+    mouseOut(this, event);
+  }
+
+  updateSelection_(opt_animFraction?: number) {
+    updateSelection(this, opt_animFraction);
+  }
+
+  /**
+   * Manually set the selected points and display information about them in the
+   * legend. The selection can be cleared using clearSelection() and queried
+   * using getSelection().
+   */
+  setSelection(
+    row: number | number[],
+    opt_seriesName?: string | null,
+    opt_locked?: boolean,
+    opt_trigger_highlight_callback?: boolean,
+  ) {
+    return setSelection(
+      this,
+      row,
+      opt_seriesName,
+      opt_locked,
+      opt_trigger_highlight_callback,
+    );
+  }
+
+  /** Clears the current selection (i.e. points that were highlighted). */
+  clearSelection() {
+    clearSelection(this);
+  }
+
+  /**
+   * Returns the number of the currently selected row. To get data for this row,
+   * you can use the getValue method.
+   * Returns: row number, or -1 if nothing is selected
+   */
+  getSelection() {
+    return getSelection(this);
+  }
+
+  /**
+   * Returns the name of the currently-highlighted series.
+   * Only available when the highlightSeriesOpts option is in use.
+   */
+  getHighlightSeries() {
+    return this.highlightSet_;
+  }
+
+  /**
+   * Returns true if the currently-highlighted series was locked
+   * via setSelection(..., seriesName, true).
+   */
+  isSeriesLocked() {
+    return this.lockedSet_;
+  }
+
+  /**
+   * Fires when there's data available to be graphed.
+   * @param data Raw CSV data to be plotted
+   * @private
+   */
+  loadedEvent_(data: string) {
+    loadedEvent_(this, data);
+  }
+
+  /** @private */
+  addXTicks_() {
+    addXTicks_(this);
+  }
+
+  /** @private */
+  getHandlerClass_() {
+    return getHandlerClass_(this);
+  }
+
+  /**
+   * Redraws the chart for the current viewport. See render.ts.
+   * @private
+   */
+  drawGraph_() {
+    drawGraph(this);
+  }
+
+  /**
+   * Returns the number of y-axes on the chart.
+   * @return the number of axes.
+   */
+  numAxes() {
+    return this.attributes_.numAxes();
+  }
+
+  /**
+   * @private
+   * Returns axis properties for the given series.
+   * @param setName The name of the series for which to get axis
+   * properties, e.g. 'Y1'.
+   * @return The axis properties.
+   */
+  axisPropertiesForSeries(series: string): AxisProperties {
+    return this.axes_[this.attributes_.axisForSeries(series)]!;
+  }
+
+  /**
+   * Signals to plugins that the chart data has updated.
+   * This happens after the data has updated but before the chart has redrawn.
+   * @private
+   */
+  cascadeDataDidUpdateEvent_() {
+    // Do not call xAxisRange()/toDomCoords from handlers of this event.
+    // The visible range should be set when the chart is drawn, not derived from the data.
+    this.cascadeEvents_('dataDidUpdate', {});
+  }
+
+  /**
+   * Get the CSV data. If it's in a function, call that function. If it's in a
+   * file, fetch it.
+   * @private
+   */
+  start_() {
+    start_(this);
+  }
+
+  /**
+   * Changes various properties of the graph. These can include:
+   * <ul>
+   * <li>file: changes the source data for the graph</li>
+   * <li>errorBars: changes whether the data contains stddev</li>
+   * </ul>
+   *
+   * There's a huge variety of options that can be passed to this method. For a
+   * full list, see the options reference in the README.
+   *
+   * @param input_attrs The new properties and values
+   * @param block_redraw Usually the chart is redrawn after every
+   *     call to updateOptions(). If you know better, you can pass true to
+   *     explicitly block the redraw. This can be useful for chaining
+   *     updateOptions() calls, avoiding the occasional infinite loop and
+   *     preventing redraws when it's not necessary (e.g. when updating a
+   *     callback).
+   */
+  updateOptions(input_attrs: Partial<ZgraphOptions>, block_redraw?: boolean) {
+    updateOptionsFn_(this, input_attrs, block_redraw);
+  }
+
+  /**
+   * Make a copy of input attributes, removing file as a convenience.
+   * @private
+   */
+  static copyUserAttrs_(attrs: Partial<ZgraphOptions>) {
+    const src = attrs as Record<string, unknown>;
+    const my_attrs: Record<string, unknown> = {};
+    for (let k in src) {
+      if (!Object.hasOwn(src, k)) continue;
+      if (k === 'file') continue;
+      my_attrs[k] = src[k];
+    }
+    return my_attrs as Partial<ZgraphOptions>;
+  }
+
+  /**
+   * Resizes the zgraph. If no parameters are specified, resizes to fill the
+   * containing div (which has presumably changed size since the zgraph was
+   * instantiated). If the width/height are specified, the div will be resized.
+   *
+   * This is far more efficient than destroying and re-instantiating a
+   * Zgraph, since it doesn't have to reparse the underlying data.
+   *
+   * @param width Width (in pixels)
+   * @param height Height (in pixels)
+   */
+  resize(width?: number | null, height?: number | null) {
+    if (this.resize_lock) {
+      return;
+    }
+    this.resize_lock = true;
+
+    if ((width === null) !== (height === null)) {
+      log.warn(
+        'Zgraph.resize() should be called with zero parameters or ' +
+          'two non-NULL parameters. Pretending it was zero.',
+      );
+      width = height = null;
+    }
+
+    let old_width = this.width_;
+    let old_height = this.height_;
+
+    if (width != null && height != null) {
+      this.maindiv_.style.width = width + 'px';
+      this.maindiv_.style.height = height + 'px';
+      this.width_ = width;
+      this.height_ = height;
+    } else {
+      this.width_ = this.maindiv_.clientWidth;
+      this.height_ = this.maindiv_.clientHeight;
+    }
+
+    if (old_width !== this.width_ || old_height !== this.height_) {
+      // Resizing a canvas erases it, even when the size doesn't change, so
+      // any resize needs to be followed by a redraw.
+      resizeElements(this);
+      predraw(this);
+    }
+
+    this.resize_lock = false;
+  }
+
+  /**
+   * Adjusts the number of points in the rolling average. Updates the graph to
+   * reflect the new averaging period.
+   * @param length Number of points over which to average the data.
+   */
+  adjustRoll(length: number) {
+    this.rollPeriod_ = length;
+    predraw(this);
+  }
+
+  /**
+   * Returns a boolean array of visibility statuses.
+   */
+  visibility() {
+    return visibility(this);
+  }
+
+  /**
+   * Changes the visibility of one or more series.
+   *
+   * @param num the series index or an array of series indices
+   *                                     or a boolean array of visibility states by index
+   *                                     or an object mapping series numbers, as keys, to
+   *                                     visibility state (boolean values)
+   * @param value the visibility state expressed as a boolean
+   */
+  setVisibility(
+    num: number | number[] | boolean[] | Record<string | number, boolean>,
+    value?: boolean,
+  ) {
+    setVisibility(this, num, value);
+  }
+
+  /**
+   * How large of an area will the zgraph render itself in?
+   * This is used for testing.
+   * @return A {width: w, height: h} object.
+   * @private
+   */
+  size() {
+    return { width: this.width_, height: this.height_ };
+  }
+
+  /**
+   * Update the list of annotations and redraw the chart.
+   * See the annotations section of the README for more info.
+   * @param ann {Array} An array of annotation objects.
+   * @param suppressDraw {Boolean} Set to "true" to block chart redraw (optional).
+   */
+  setAnnotations(ann: Annotation[], suppressDraw?: boolean) {
+    if (!Array.isArray(ann)) {
+      throw new TypeError(
+        'setAnnotations expects an array of annotations, got ' + typeof ann,
+      );
+    }
+    // Only add the annotation CSS rule once we know it will be used.
+    this.annotations_ = ann;
+    if (!this.layout_) {
+      log.warn(
+        'Tried to setAnnotations before zgraph was ready. ' +
+          'Try setting them in a ready() block.',
+      );
+      return;
+    }
+
+    this.layout_.setAnnotations(this.annotations_);
+    if (!suppressDraw) {
+      predraw(this);
+    }
+  }
+
+  /**
+   * Return the list of annotations.
+   */
+  annotations() {
+    return this.annotations_;
+  }
+
+  /**
+   * Get the list of label names for this graph. The first column is the
+   * x-axis, so the data series names start at index 1.
+   *
+   * Returns null when labels have not yet been defined.
+   */
+  getLabels() {
+    const labels = this.attr_('labels');
+    return Array.isArray(labels) ? labels.slice() : null;
+  }
+
+  /**
+   * Get the index of a series (column) given its name. The first column is the
+   * x-axis, so the data series start with index 1.
+   */
+  indexFromSetName(name: string) {
+    return this.setIndexByName_[name];
+  }
+
+  /**
+   * Find the row number corresponding to the given x-value.
+   * Returns null if there is no such x-value in the data.
+   * If there are multiple rows with the same x-value, this will return the
+   * first one.
+   * @param xVal The x-value to look for (e.g. millis since epoch).
+   * @return The row number, which you can pass to getValue(), or null.
+   */
+  getRowForX(xVal: number) {
+    let low = 0,
+        high = this.numRows() - 1;
+
+    while (low <= high) {
+      let idx = (high + low) >> 1;
+      const x = this.getValue(idx, 0) as number;
+      if (x < xVal) {
+        low = idx + 1;
+      } else if (x > xVal) {
+        high = idx - 1;
+      } else if (low !== idx) {
+        // equal, but there may be an earlier match.
+        high = idx;
+      } else {
+        return idx;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Trigger a callback when the zgraph has drawn itself and is ready to be
+   * manipulated. This is primarily useful when zgraph has to do an XHR for the
+   * data (i.e. a URL is passed as the data source) and the chart is drawn
+   * asynchronously. If the chart has already drawn, the callback will fire
+   * immediately.
+   *
+   * This is a good place to call setAnnotation().
+   *
+   * @param callback The callback to trigger when the chart
+   *     is ready.
+   */
+  ready(callback: (g: Zgraph) => void) {
+    if (this.is_initial_draw_) {
+      this.readyFns_.push(callback);
+    } else {
+      callback.call(this, this);
+    }
+  }
+
+  /**
+   * Add an event handler. This event handler is kept until the graph is
+   * destroyed with a call to graph.destroy().
+   *
+   * @param elem The element to add the event to.
+   * @param type The type of the event, e.g. 'click' or 'mousemove'.
+   * @param fn The function to call
+   *     on the event. The function takes one parameter: the event object.
+   * @private
+   */
+  addAndTrackEvent(elem: EventTarget, type: string, fn: EventListener) {
+    utils.addEvent(elem, type, fn);
+    this.registeredEvents_.push({ elem, type, fn });
+  }
+
+  removeTrackedEvents_() {
+    removeTrackedEvents_(this);
+  }
+}
+
+registerZgraphStatics(Zgraph);
