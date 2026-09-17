@@ -51,6 +51,7 @@ export type {
   ThresholdBand,
   Ticker,
   ToolbarOptions,
+  ToolbarStyle,
   ToolbarTool,
   TooltipOptions,
   TooltipPosition,

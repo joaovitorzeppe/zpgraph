@@ -26,6 +26,8 @@ export type ChartClassNames = {
   ylabel?: string;
   y2label?: string;
   toolbar?: string;
+  /** Extra class on each toolbar button. */
+  toolbarBtn?: string;
   noData?: string;
   loading?: string;
 };
@@ -52,6 +54,9 @@ export type ToolbarTool =
   | "downloadCsv"
   | "copyCsv";
 
+/** Inline CSS declarations applied to toolbar chrome. */
+export type ToolbarStyle = Record<string, string>;
+
 export type ToolbarOptions = {
   tools?: ToolbarTool[];
   position?: "top-right" | "top-left";
@@ -66,6 +71,14 @@ export type ToolbarOptions = {
   icons?: Partial<Record<ToolbarTool, string | (() => Node)>>;
   /** `icon` (default) or visible `text` from labels. */
   variant?: "icon" | "text";
+  /** Extra class on the toolbar container (also: `classNames.toolbar`). */
+  className?: string;
+  /** Extra class on every tool button (also: `classNames.toolbarBtn`). */
+  buttonClassName?: string;
+  /** Inline styles on the toolbar container (border, background, radius, …). */
+  style?: ToolbarStyle;
+  /** Inline styles on every tool button. */
+  buttonStyle?: ToolbarStyle;
 };
 
 export type NoDataOptions = {
@@ -83,12 +96,17 @@ export type TooltipOptions = {
   /**
    * Corner for fixed legend modes (`onmouseover` / `always`).
    * Ignored when `legend: "follow"`. Default `top-right`.
-   * Top corners sit above the plot when there is room (avoids covering series).
+   * Top corners sit above the plot (layout reserves space so series stay clear).
    */
   position?: TooltipPosition;
   /** Extra px from the chosen corner (positive = right / down). */
   offsetX?: number;
   offsetY?: number;
+  /**
+   * Extra top chrome (px) reserved so a top tooltip does not cover the plot.
+   * Default 56 when position is top-left/top-right; 0 otherwise.
+   */
+  reserveTop?: number;
 };
 
 export type FillGradient = {

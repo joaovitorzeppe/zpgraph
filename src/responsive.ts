@@ -26,7 +26,8 @@ export const applyResponsiveOptions = (g: Zpgraph): void => {
   }
 
   const key = match ? match.breakpoint : -1;
-  const prev = (g as unknown as { responsiveBreakpoint_: number }).responsiveBreakpoint_;
+  const prev = (g as unknown as { responsiveBreakpoint_: number })
+    .responsiveBreakpoint_;
   if (prev === key) return;
   (g as unknown as { responsiveBreakpoint_: number }).responsiveBreakpoint_ =
     key;

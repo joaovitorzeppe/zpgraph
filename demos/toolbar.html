@@ -76,6 +76,15 @@
     <div id="c-node" class="chart sm"></div>
   </section>
 
+  <section class="panel">
+    <h2>6 · style / buttonStyle + dark</h2>
+    <p class="hint">
+      Inline <code>style</code>/<code>buttonStyle</code>, or CSS vars
+      <code>--zp-toolbar-*</code>. <code>theme: "dark"</code> retints toolbar tokens.
+    </p>
+    <div id="c-style" class="chart sm"></div>
+  </section>
+
   <script type="module">
     import Zpgraph from 'zpgraph';
     import { makeSeries } from './helpers.js';
@@ -168,6 +177,28 @@
           zoomout: makeBadge('−', '#4a5a6a'),
           pan: makeBadge('✥', '#c45c26'),
           reset: makeBadge('↺', '#2a9d8f'),
+        },
+      },
+    });
+
+    new Zpgraph(document.getElementById('c-style'), data, {
+      ...base,
+      theme: 'dark',
+      toolbar: {
+        tools: ['zoomin', 'zoomout', 'pan', 'reset'],
+        style: {
+          background: 'transparent',
+          border: 'none',
+          borderRadius: '0',
+          padding: '0',
+          gap: '6px',
+        },
+        buttonStyle: {
+          background: 'rgba(56,189,248,0.15)',
+          border: 'none',
+          borderRadius: '999px',
+          color: '#38bdf8',
+          padding: '6px 10px',
         },
       },
     });

@@ -20,7 +20,11 @@ Current bits of jankiness:
 
 /*global Zpgraph:false */
 
-import type { OptionsGetter, ZpgraphInstance } from "../internal-types";
+import type {
+  OptionsGetter,
+  LayoutPluginEvent,
+  ZpgraphInstance,
+} from "../internal-types";
 import type {
   Point,
   TooltipOptions,
@@ -81,22 +85,26 @@ type LegendFormatterFn = (
 ) => string | DocumentFragment | Node;
 
 const ABOVE_PLOT_GAP = 4;
+/** Default top chrome when tooltip.position is top-* (keeps tip off the series). */
+const DEFAULT_TOOLTIP_RESERVE_TOP = 0;
+
+const isTopTooltip = (position: TooltipPosition) =>
+  position === "top-left" || position === "top-right";
 
 /**
  * Place generated legend for fixed modes (onmouseover / always).
- * Top corners prefer sitting above the plot so series stay visible.
+ * Top corners with an explicit tooltip.position sit above the plot.
  */
-const placeFixedLegend = (
-  g: ZpgraphInstance,
-  div: HTMLElement,
-): void => {
+const placeFixedLegend = (g: ZpgraphInstance, div: HTMLElement): void => {
   const area = g.plotter_.area;
   const tip = g.getOption("tooltip") as TooltipOptions | undefined;
-  const position: TooltipPosition = tip?.position ?? "top-right";
+  const explicit = tip?.position;
+  const position: TooltipPosition = explicit ?? "top-right";
   const ox = tip?.offsetX ?? 0;
   const oy = tip?.offsetY ?? 0;
   const w = div.offsetWidth;
   const h = div.offsetHeight;
+  const abovePlot = !!explicit && isTopTooltip(explicit);
 
   let left = area.x;
   let top = area.y;
@@ -104,11 +112,15 @@ const placeFixedLegend = (
   switch (position) {
     case "top-left":
       left = area.x + ox;
-      top = Math.max(0, area.y - h - ABOVE_PLOT_GAP) + oy;
+      top = abovePlot
+        ? Math.max(0, area.y - h - ABOVE_PLOT_GAP) + oy
+        : area.y + oy;
       break;
     case "top-right":
       left = area.x + area.w - w - 1 + ox;
-      top = Math.max(0, area.y - h - ABOVE_PLOT_GAP) + oy;
+      top = abovePlot
+        ? Math.max(0, area.y - h - ABOVE_PLOT_GAP) + oy
+        : area.y + oy;
       break;
     case "bottom-left":
       left = area.x + ox;
@@ -122,6 +134,13 @@ const placeFixedLegend = (
 
   div.style.left = `${left}px`;
   div.style.top = `${top}px`;
+};
+
+const tooltipReserveTop = (g: ZpgraphInstance): number => {
+  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
+  if (!tip?.position || !isTopTooltip(tip.position)) return 0;
+  if (tip.reserveTop != null) return Math.max(0, tip.reserveTop);
+  return DEFAULT_TOOLTIP_RESERVE_TOP;
 };
 
 /**
@@ -170,11 +189,20 @@ class Legend {
     this.one_em_width_ = 10; // just a guess, will be updated.
 
     return {
+      layout: this.layout,
       select: this.select,
       deselect: this.deselect,
       predraw: this.predraw,
       didDrawChart: this.didDrawChart,
     };
+  }
+
+  layout(e: LayoutPluginEvent) {
+    const g = e.zpgraph;
+    const legendMode = g.getOption("legend");
+    if (legendMode === "never" || legendMode === "follow") return;
+    const px = tooltipReserveTop(g);
+    if (px > 0) e.reserveSpaceTop(px);
   }
 
   select(e: LegendPluginEvent) {

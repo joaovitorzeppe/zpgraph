@@ -1074,7 +1074,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Interactive Elements"],
         type: "boolean or Object",
         description:
-          "Built-in toolbar. Object: tools, position, labels, titles, icons, variant (icon|text).",
+          "Built-in toolbar. Object: tools, position, labels, titles, icons, variant, className, buttonClassName, style, buttonStyle. CSS vars: --zp-toolbar-* / --zp-toolbar-btn-*. Dark theme updates toolbar tokens via data-theme.",
       },
       noData: {
         default: "{ text: 'No data' }",
@@ -1094,7 +1094,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Legend"],
         type: "Object",
         description:
-          "Tooltip hints: theme, position (top-left|top-right|bottom-left|bottom-right), offsetX/offsetY. Fixed legend modes use position; top corners sit above the plot when room allows.",
+          "Tooltip hints: theme, position (top-left|top-right|bottom-left|bottom-right), offsetX/offsetY, reserveTop. Fixed legend modes use position; top corners reserve chrome above the plot.",
       },
       responsive: {
         default: "null",
