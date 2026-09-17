@@ -33,6 +33,9 @@ zpgraph keeps that interaction model and rebuilds the stack for today:
   APIs still index the full raw data.
 - **CSP-aware defaults** — built-in UI styles via CSSOM; prefer
   `DocumentFragment` formatters under strict CSP.
+- **Label style** — DOM labels take `LabelStyle` (`className` / `style`),
+  chart-level `classNames.*`, and CSS vars (`--zp-*`). React can
+  override with `render*Label` ReactNodes.
 - **Familiar if you know dygraphs** — `updateOptions`, `xAxisRange`,
   `resetZoom`, annotations, dual axes… renamed, not reinvented.
 
@@ -137,7 +140,7 @@ new Zpgraph(el, data, opts);
 | Axes          | Dual y-axes, log scales, tickers, formatters                        |
 | Interaction   | Zoom, pan, range selector, touch, keyboard, synchronized charts     |
 | Overlay       | Annotations, underlay/draw callbacks, hairlines / super-annotations |
-| Accessibility | `role="img"`, live legend, focusable chart, Shift+arrows pan/zoom   |
+| Accessibility | `role="img"`, live legend, focusable chart, Shift+arrows pan/zoom; optional `keyboard` extra for plain arrows / +/- |
 | Packaging     | ESM / CJS / IIFE, tree-shakeable extras, injectable `setLogger`     |
 
 ---
@@ -147,7 +150,29 @@ new Zpgraph(el, data, opts);
 | Export             | Purpose                                         |
 | ------------------ | ----------------------------------------------- |
 | `zpgraph`          | Chart class, plugins, types, `utils`, `tickers` |
-| `zpgraph/extras/*` | Optional plugins (crosshair, synchronizer, …)   |
+| `zpgraph/extras/*` | Optional plugins/plotters (see list below)      |
+
+### Extras (`zpgraph/extras/<name>`)
+
+| Extra | Role |
+| --- | --- |
+| `crosshair` | Crosshair on selection |
+| `hairlines` | Clickable vertical markers |
+| `super-annotations` | Draggable annotation cards |
+| `synchronizer` | Linked zoom/selection |
+| `unzoom` | Hover reset button |
+| `rebase` | Percent change from first point |
+| `shapes` | Extra point markers |
+| `smooth-plotter` | Bezier series |
+| `locale` | Locale packs pt/en/es + `applyLocale` |
+| `zoom-limits` | Min/max x-span + clamp to data |
+| `measure` | Two-click Δx/Δy ruler |
+| `keyboard` | Arrows pan / +/- zoom / Esc (focus chart; zoom first to pan) |
+| `brush-select` | Drag range → callback |
+| `url-sync` | `dateWindow` ↔ URL params |
+| `moving-average` | Overlay MA plotter |
+| `fill-between` | Fill band between two series |
+| `span-bands` | X-axis status strips + canvas labels |
 
 `utils` is a documented subset (stroke patterns, shapes, default formatters).
 Internals such as `toRGB_` are not part of the public surface.
@@ -156,6 +181,30 @@ DOM class prefix remains `zpgraph-*` (API/event field `e.zpgraph`) so existing
 CSS and mental models stay stable.
 
 ---
+
+## DOM chrome tokens
+
+Override on `.zpgraph` (or a parent). Canvas paint (series, grid, axis lines)
+stays on options / `theme` — not CSS vars.
+
+| Group | Tokens |
+| --- | --- |
+| Legend / tooltip | `--zp-legend-bg`, `-fg`, `-shadow`, `-padding`, `-radius`, `-font-size` |
+| Axis ticks | `--zp-axis-label`, `-font-size`, `-opacity`, `-y-padding-end` |
+| Title / chart labels | `--zp-title-fg`, `-font-weight`, `--zp-chart-label-fg`, `-opacity` |
+| Annotations | `--zp-annotation-bg`, `-border`, `-fg`, `-padding`, `-font-size` |
+| Status (noData / loading) | `--zp-status-fg`, `-bg`, `-font-size` |
+| Toolbar | `--zp-toolbar-*`, `--zp-toolbar-btn-*` |
+| Focus | `--zp-focus-ring` |
+| Threshold / span / measure | `--zp-threshold-*`, `--zp-span-band-label-*`, `--zp-measure-label-*` |
+
+Dark preset: `theme: "dark"` or `[data-theme="dark"]` on an ancestor.
+Example: [`demos/theme-custom.html`](demos/theme-custom.html).
+
+Option groups (flat API — no nesting): **canvas chrome** (`axisLineColor`,
+`gridLineColor`, `theme`, …), **series paint** (`colors`, `strokeWidth`, …),
+**DOM chrome** (`classNames`, CSS vars, `LabelStyle`), **interaction**
+(`toolbar`, `tooltip`, extras).
 
 ## Content Security Policy
 

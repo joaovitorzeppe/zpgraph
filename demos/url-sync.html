@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>URL sync · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>URL sync</h1>
+  <p class="lede">
+    Zoom writes <code>?from=&amp;to=</code> into the URL (and restores on load).
+    Extra: <code>zpgraph/extras/url-sync</code>.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import UrlSync from '../dist/extras/url-sync.js';
+    import { makeSeries } from './helpers.js';
+
+    new Zpgraph(document.getElementById('chart'), makeSeries({ points: 100, series: 2 }), {
+      labels: ['Date', 'A', 'B'],
+      tooltip: { show: 'always' },
+      colors: ['#1b6b93', '#c45c26'],
+      animatedZooms: true,
+      plugins: [new UrlSync()],
+    });
+  </script>
+</body>
+
+</html>

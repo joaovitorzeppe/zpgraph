@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Keyboard · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Keyboard</h1>
+  <p class="lede">
+    Click the chart to focus. Arrows pan (when zoomed in),
+    <kbd>+</kbd>/<kbd>-</kbd> zoom, <kbd>Esc</kbd> reset.
+    Home/End still walk points. Shift+arrows = core a11y pan/zoom.
+    Extra: <code>zpgraph/extras/keyboard</code>.
+  </p>
+  <div id="chart" class="chart" tabindex="0"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import ZoomLimits from '../dist/extras/zoom-limits.js';
+    import Keyboard from '../dist/extras/keyboard.js';
+    import { makeSeries } from './helpers.js';
+
+    const data = makeSeries({ points: 100, series: 2 });
+    const g = new Zpgraph(document.getElementById('chart'), data, {
+      labels: ['Date', 'A', 'B'],
+      tooltip: { show: 'always' },
+      colors: ['#1b6b93', '#c45c26'],
+      animatedZooms: true,
+      plugins: [
+        new ZoomLimits({ minSpanMs: 3 * 86400000 }),
+        new Keyboard(),
+      ],
+    });
+    const [x0, x1] = g.xAxisExtremes();
+    const mid = (x0 + x1) / 2;
+    const half = (x1 - x0) * 0.2;
+    g.updateOptions({ dateWindow: [mid - half, mid + half] });
+    g.graphDiv.focus();
+  </script>
+</body>
+
+</html>

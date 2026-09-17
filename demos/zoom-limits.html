@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zoom limits · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Zoom limits</h1>
+  <p class="lede">
+    Min span 7 days; clamp to data. Extra:
+    <code>zpgraph/extras/zoom-limits</code>.
+  </p>
+  <p>
+    <button type="button" id="zin">Zoom in</button>
+    <button type="button" id="zout">Zoom out</button>
+    <span id="status"></span>
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import ZoomLimits, { zoomBy } from '../dist/extras/zoom-limits.js';
+    import { makeSeries } from './helpers.js';
+
+    const status = document.getElementById('status');
+    const g = new Zpgraph(
+      document.getElementById('chart'),
+      makeSeries({ points: 120, series: 2 }),
+      {
+        labels: ['Date', 'A', 'B'],
+        tooltip: { show: 'always' },
+        colors: ['#1b6b93', '#c45c26'],
+        animatedZooms: true,
+        plugins: [new ZoomLimits({ minSpanMs: 7 * 86400000 })],
+      },
+    );
+
+    document.getElementById('zin').onclick = () => {
+      status.textContent = zoomBy(g, 0.8) ? '' : 'hit min span';
+    };
+    document.getElementById('zout').onclick = () => {
+      status.textContent = zoomBy(g, 1.25) ? '' : 'hit data extremes';
+    };
+  </script>
+</body>
+
+</html>
