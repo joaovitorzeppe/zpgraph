@@ -1,5 +1,10 @@
 # Changes
 
+## 1.0.0
+
+- Enforcing oxlint rules for better code quality
+- Formatting
+
 ## 0.3.0
 
 - Fix various bugs
