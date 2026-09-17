@@ -31,6 +31,7 @@ export type {
   Data,
   DataArray,
   DataLabelsOptions,
+  LabelStyle,
   DrawPointCallback,
   EventMarker,
   FillGradient,
@@ -73,6 +74,7 @@ export type { ToPngOptions, ToCsvOptions } from "./export-chart";
 export {
   safeCssClasses,
   withClassNames,
+  applyLabelStyle,
   applyRootClassNames,
 } from "./class-names";
 

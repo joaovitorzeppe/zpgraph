@@ -4,10 +4,16 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
+import {
+  applyLabelStyle,
+  getChartClassNames,
+} from "../class-names";
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 import type { ThresholdBand } from "../types";
 
 class thresholds {
+  labelEls_: HTMLElement[] = [];
+
   toString() {
     return "Thresholds Plugin";
   }
@@ -15,18 +21,29 @@ class thresholds {
   activate(_g: ZpgraphInstance) {
     return {
       willDrawChart: this.willDrawChart,
+      clearChart: this.clearChart,
     };
   }
 
-  willDrawChart(e: ChartDrawPluginEvent) {
+  clearChart = () => {
+    for (const el of this.labelEls_) {
+      el.remove();
+    }
+    this.labelEls_ = [];
+  };
+
+  willDrawChart = (e: ChartDrawPluginEvent) => {
     const g = e.zpgraph;
     const list = g.getOption("thresholds") as ThresholdBand[] | undefined;
     if (!list || !list.length) {
+      this.clearChart();
       return;
     }
 
     const ctx = e.drawingContext;
     const area = g.plotter_.area;
+    const chartClasses = getChartClassNames(g);
+    let labelIdx = 0;
 
     for (const band of list) {
       const axisIdx = band.axis === "y2" ? 1 : 0;
@@ -53,7 +70,6 @@ class thresholds {
         const h = Math.abs(domHi - domLo);
         ctx.fillStyle =
           band.fillColor ?? "var(--zp-threshold-fill, rgba(27,107,147,0.14))";
-        // Canvas cannot resolve CSS vars — use fallback rgba when var-like.
         if (String(ctx.fillStyle).startsWith("var(")) {
           ctx.fillStyle = "rgba(27,107,147,0.14)";
         }
@@ -76,20 +92,51 @@ class thresholds {
         ctx.lineTo(area.x + area.w, domLo);
       }
       ctx.stroke();
+      ctx.restore();
 
       if (band.label && (domHi != null || domLo != null)) {
         const yLabel = domHi ?? domLo!;
-        ctx.fillStyle = stroke;
-        ctx.font = "12px sans-serif";
-        ctx.textBaseline = "bottom";
-        const xLabel =
-          band.labelPosition === "right" ? area.x + area.w - 4 : area.x + 4;
-        ctx.textAlign = band.labelPosition === "right" ? "right" : "left";
-        ctx.fillText(band.label, xLabel, yLabel - 2);
+        let el = this.labelEls_[labelIdx];
+        if (!el) {
+          el = document.createElement("div");
+          el.dataset.zpLabel = "threshold";
+          g.graphDiv.appendChild(el);
+          this.labelEls_[labelIdx] = el;
+        }
+        applyLabelStyle(
+          el,
+          "zpgraph-threshold-label",
+          band.labelStyle,
+          chartClasses.thresholdLabel,
+        );
+        el.dataset.zpIndex = String(labelIdx);
+        if (!el.querySelector(".zpgraph-react-host")) {
+          el.textContent = band.label;
+        }
+        const left =
+          band.labelPosition === "right"
+            ? area.x + area.w - 4
+            : area.x + 4;
+        el.style.position = "absolute";
+        el.style.top = `${yLabel - 2}px`;
+        el.style.zIndex = "11";
+        el.style.pointerEvents = "none";
+        el.style.transform =
+          band.labelPosition === "right"
+            ? "translate(-100%, -100%)"
+            : "translateY(-100%)";
+        el.style.left = `${left}px`;
+        if (!band.labelStyle?.style?.color) {
+          el.style.color = stroke;
+        }
+        labelIdx++;
       }
-      ctx.restore();
     }
-  }
+
+    while (this.labelEls_.length > labelIdx) {
+      this.labelEls_.pop()?.remove();
+    }
+  };
 }
 
 export default thresholds;

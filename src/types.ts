@@ -30,6 +30,22 @@ export type ChartClassNames = {
   toolbarBtn?: string;
   noData?: string;
   loading?: string;
+  /** Measure Δ overlay (extras/measure). */
+  measureLabel?: string;
+  /** Span-band chip labels (extras/span-bands). */
+  spanBandLabel?: string;
+  /** Threshold band labels. */
+  thresholdLabel?: string;
+};
+
+/**
+ * Shared styling for DOM labels/controls (`className` + inline `style`).
+ * Prefer with chart-level `classNames.*` and CSS vars.
+ */
+export type LabelStyle = {
+  className?: string;
+  /** Inline CSS properties (`background`, `font-size`, …). */
+  style?: Record<string, string>;
 };
 
 /** Horizontal or filled threshold band drawn behind series. */
@@ -43,6 +59,8 @@ export type ThresholdBand = {
   strokeWidth?: number;
   label?: string;
   labelPosition?: "left" | "right";
+  /** Styling for the DOM label chip. */
+  labelStyle?: LabelStyle;
 };
 
 export type ToolbarTool =

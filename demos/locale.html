@@ -16,19 +16,19 @@
   <nav class="crumb"><a href="index.html">← Demos</a></nav>
   <h1>Locale</h1>
   <p class="lede">
-    <code>applyLocale</code> stores a locale pack on the chart (months,
-    weekdays, decimal point). Extra: <code>zpgraph/extras/locale</code>.
+    Named packs <code>packs.pt</code> / <code>en</code> / <code>es</code> plus
+    toolbar labels. Extra: <code>zpgraph/extras/locale</code>.
+  </p>
+  <p>
+    <button type="button" data-pack="pt">pt</button>
+    <button type="button" data-pack="en">en</button>
+    <button type="button" data-pack="es">es</button>
   </p>
   <div id="chart" class="chart"></div>
   <script type="module">
     import Zpgraph from 'zpgraph';
-    import { applyLocale } from '../dist/extras/locale.js';
+    import { applyLocale, packs } from '../dist/extras/locale.js';
     import { makeSeries } from './helpers.js';
-
-    const months = [
-      'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-      'jul', 'ago', 'set', 'out', 'nov', 'dez',
-    ];
 
     const g = new Zpgraph(
       document.getElementById('chart'),
@@ -38,30 +38,34 @@
         tooltip: { show: 'always' },
         colors: ['#1b6b93'],
         animatedZooms: true,
+        toolbar: true,
         axes: {
           x: {
             axisLabelFormatter: (d) => {
+              const locale = g.locale_ || packs.pt;
               const dt = d instanceof Date ? d : new Date(d);
-              return `${dt.getUTCDate()} ${months[dt.getUTCMonth()]}`;
-            },
-            valueFormatter: (ms) => {
-              const dt = new Date(ms);
-              return `${dt.getUTCDate()} ${months[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+              const m = locale.months?.[dt.getUTCMonth()] ?? dt.getUTCMonth();
+              return `${dt.getUTCDate()} ${m}`;
             },
           },
           y: {
-            valueFormatter: (y) =>
-              String(Math.round(y * 100) / 100).replace('.', ','),
+            valueFormatter: (y) => {
+              const locale = g.locale_ || packs.pt;
+              const s = String(Math.round(y * 100) / 100);
+              return locale.decimalPoint === ',' ? s.replace('.', ',') : s;
+            },
           },
         },
       },
     );
 
-    applyLocale(g, {
-      months,
-      weekdays: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'],
-      decimalPoint: ',',
-      labelsUTC: true,
+    applyLocale(g, packs.pt);
+
+    document.querySelectorAll('[data-pack]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        applyLocale(g, packs[btn.dataset.pack]);
+        g.updateOptions({});
+      });
     });
   </script>
 </body>

@@ -1,5 +1,12 @@
 # Changes
 
+## 1.1.0
+
+- New Extras
+- More customization (DOM CSS tokens)
+- Removed `fullscreen` extra
+- Fixed `keyboard` extra (arrows no longer fight core selection)
+
 ## 1.0.0
 
 - Enforcing oxlint rules for better code quality

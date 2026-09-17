@@ -27,6 +27,24 @@ export const withClassNames = (base: string, extra?: string): string => {
   return safe.length ? base + " " + safe.join(" ") : base;
 };
 
+/** Apply base class + optional LabelStyle + chart-level classNames slot. */
+export const applyLabelStyle = (
+  el: HTMLElement,
+  baseClass: string,
+  labelStyle?: { className?: string; style?: Record<string, string> },
+  chartSlotClass?: string,
+): void => {
+  el.className = withClassNames(
+    withClassNames(baseClass, labelStyle?.className),
+    chartSlotClass,
+  );
+  if (labelStyle?.style) {
+    for (const [name, value] of Object.entries(labelStyle.style)) {
+      el.style.setProperty(name, value);
+    }
+  }
+};
+
 export const getChartClassNames = (
   g: Pick<Zpgraph, "getOption">,
 ): ChartClassNames => {

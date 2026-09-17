@@ -5,31 +5,136 @@
  */
 
 /**
- * Locale helpers for axis tick formatting.
+ * Locale helpers and named packs for axis / toolbar labels.
  *
- *   import { applyLocale } from "zpgraph/extras/locale";
- *   applyLocale(g, { months: [...], weekdays: [...], decimalPoint: "," });
+ *   import { applyLocale, packs } from "zpgraph/extras/locale";
+ *   applyLocale(g, packs.pt);
  */
 
 import type { ZpgraphInstance } from "../internal-types";
-import type { ZpgraphOptions } from "../types";
+import type { ToolbarOptions, ZpgraphOptions } from "../types";
 
 export type LocalePack = {
   months?: string[];
   weekdays?: string[];
   decimalPoint?: string;
   labelsUTC?: boolean;
+  /** Toolbar button labels (i18n). */
+  toolbar?: NonNullable<ToolbarOptions["labels"]>;
 };
+
+export const packs = {
+  pt: {
+    months: [
+      "jan",
+      "fev",
+      "mar",
+      "abr",
+      "mai",
+      "jun",
+      "jul",
+      "ago",
+      "set",
+      "out",
+      "nov",
+      "dez",
+    ],
+    weekdays: ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"],
+    decimalPoint: ",",
+    labelsUTC: true,
+    toolbar: {
+      zoomin: "Aproximar",
+      zoomout: "Afastar",
+      pan: "Panorâmica",
+      reset: "Redefinir",
+      downloadPng: "PNG",
+      downloadCsv: "CSV",
+      copyCsv: "Copiar CSV",
+    },
+  } satisfies LocalePack,
+  en: {
+    months: [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ],
+    weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    decimalPoint: ".",
+    labelsUTC: true,
+    toolbar: {
+      zoomin: "Zoom in",
+      zoomout: "Zoom out",
+      pan: "Pan",
+      reset: "Reset",
+      downloadPng: "PNG",
+      downloadCsv: "CSV",
+      copyCsv: "Copy CSV",
+    },
+  } satisfies LocalePack,
+  es: {
+    months: [
+      "ene",
+      "feb",
+      "mar",
+      "abr",
+      "may",
+      "jun",
+      "jul",
+      "ago",
+      "sep",
+      "oct",
+      "nov",
+      "dic",
+    ],
+    weekdays: ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"],
+    decimalPoint: ",",
+    labelsUTC: true,
+    toolbar: {
+      zoomin: "Acercar",
+      zoomout: "Alejar",
+      pan: "Desplazar",
+      reset: "Restablecer",
+      downloadPng: "PNG",
+      downloadCsv: "CSV",
+      copyCsv: "Copiar CSV",
+    },
+  } satisfies LocalePack,
+} as const;
 
 export const applyLocale = (g: ZpgraphInstance, locale: LocalePack): void => {
   const opts: Partial<ZpgraphOptions> = {};
   if (locale.labelsUTC != null) {
     opts.labelsUTC = locale.labelsUTC;
   }
-  // Decimal formatting is handled by digitsAfterDecimal / floatFormat;
-  // expose pack on the instance for custom tickers.
+  if (locale.toolbar) {
+    const prev =
+      (g.getOption("toolbar") as ToolbarOptions | boolean | undefined) || {};
+    const base =
+      typeof prev === "object" && prev
+        ? prev
+        : prev === true
+          ? ({} as ToolbarOptions)
+          : null;
+    if (base) {
+      opts.toolbar = {
+        ...base,
+        labels: { ...base.labels, ...locale.toolbar },
+      };
+    } else if (prev === true || prev == null) {
+      opts.toolbar = { labels: { ...locale.toolbar } };
+    }
+  }
   (g as { locale_?: LocalePack }).locale_ = locale;
   g.updateOptions(opts);
 };
 
-export default { applyLocale };
+export default { applyLocale, packs };

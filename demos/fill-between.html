@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fill between · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Fill between</h1>
+  <p class="lede">
+    Band between series A and B. Extra:
+    <code>zpgraph/extras/fill-between</code>.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import createFillBetweenPlotter from '../dist/extras/fill-between.js';
+    import { makeSeries } from './helpers.js';
+
+    new Zpgraph(document.getElementById('chart'), makeSeries({ points: 80, series: 2 }), {
+      labels: ['Date', 'A', 'B'],
+      tooltip: { show: 'always' },
+      colors: ['#1b6b93', '#c45c26'],
+      animatedZooms: true,
+      plotter: [
+        createFillBetweenPlotter({
+          seriesA: 'A',
+          seriesB: 'B',
+          fillColor: 'rgba(27,107,147,0.25)',
+        }),
+        Zpgraph.Plotters.linePlotter,
+      ],
+    });
+  </script>
+</body>
+
+</html>

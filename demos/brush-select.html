@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brush select · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Brush select</h1>
+  <p class="lede">
+    Toggle brush mode — drag selects a range (no zoom). Extra:
+    <code>zpgraph/extras/brush-select</code>.
+  </p>
+  <p>
+    <button type="button" id="toggle">Enable brush</button>
+    <span id="out"></span>
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import BrushSelect from '../dist/extras/brush-select.js';
+    import { makeSeries } from './helpers.js';
+
+    const out = document.getElementById('out');
+    const brush = new BrushSelect({
+      onSelect: ({ xRange }) => {
+        out.textContent = `selected ${new Date(xRange[0]).toISOString().slice(0, 10)} → ${new Date(xRange[1]).toISOString().slice(0, 10)}`;
+      },
+    });
+
+    new Zpgraph(document.getElementById('chart'), makeSeries({ points: 90, series: 2 }), {
+      labels: ['Date', 'A', 'B'],
+      tooltip: { show: 'always' },
+      colors: ['#1b6b93', '#c45c26'],
+      animatedZooms: true,
+      plugins: [brush],
+    });
+
+    const btn = document.getElementById('toggle');
+    btn.onclick = () => {
+      const next = !brush.isActive();
+      brush.setActive(next);
+      btn.textContent = next ? 'Disable brush' : 'Enable brush';
+    };
+  </script>
+</body>
+
+</html>

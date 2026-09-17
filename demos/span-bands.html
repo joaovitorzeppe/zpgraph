@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Span bands · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Span bands + thresholds</h1>
+  <p class="lede">
+    Y bands via core <code>thresholds</code>; X mode strips via
+    <code>zpgraph/extras/span-bands</code>.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import SpanBands from '../dist/extras/span-bands.js';
+    import { makeSeries, utcDay, dayMs } from './helpers.js';
+
+    const data = makeSeries({ points: 60, series: 1, seed: 2 });
+    const t0 = utcDay(2024, 0, 1);
+
+    new Zpgraph(document.getElementById('chart'), data, {
+      labels: ['Date', 'Temp'],
+      tooltip: { show: 'always' },
+      ylabel: '°C',
+      colors: ['#c45c26'],
+      animatedZooms: true,
+      fillGraph: true,
+      thresholds: [
+        {
+          y: 16,
+          y2: 24,
+          fillColor: 'rgba(0,173,58,0.25)',
+          color: '#00ad3a',
+          label: 'Ideal',
+        },
+      ],
+      plugins: [
+        new SpanBands({
+          bands: [
+            {
+              x0: t0,
+              x1: t0 + 15 * dayMs,
+              color: 'rgba(255,69,96,0.7)',
+              label: 'Off',
+              labelStyle: { className: 'demo-band-chip' },
+            },
+            {
+              x0: t0 + 15 * dayMs,
+              x1: t0 + 40 * dayMs,
+              color: 'rgba(0,143,251,0.7)',
+              label: 'Auto',
+            },
+            {
+              x0: t0 + 40 * dayMs,
+              x1: t0 + 60 * dayMs,
+              color: 'rgba(0,227,150,0.7)',
+              label: 'Cont',
+            },
+          ],
+          labelStyle: {
+            style: { 'font-weight': '600' },
+          },
+        }),
+      ],
+    });
+  </script>
+</body>
+
+</html>

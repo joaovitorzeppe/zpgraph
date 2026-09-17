@@ -10,23 +10,67 @@
  * Default styles for the zpgraphs charting library.
  * Chrome colors/layout use CSS variables on `.zpgraph` so apps can theme
  * via `[data-theme="dark"]` on an ancestor or on `.zpgraph` itself, or
- * override individual tokens.
+ * override individual tokens. See README “DOM chrome tokens”.
  */
 
 .zpgraph {
+  /* legend (tooltip chrome) */
   --zp-legend-bg: #ffffff;
   --zp-legend-fg: #000000;
   --zp-legend-shadow: none;
   --zp-legend-padding: 0;
   --zp-legend-radius: 0;
   --zp-legend-font-size: 14px;
+  /* axis tick labels */
   --zp-axis-label: #000000;
   --zp-axis-label-font-size: inherit;
   --zp-axis-label-opacity: 1;
   --zp-axis-label-y-padding-end: 0;
+  /* chart title / x / y labels */
+  --zp-title-fg: inherit;
+  --zp-title-font-weight: bold;
+  --zp-chart-label-fg: inherit;
+  --zp-chart-label-opacity: 1;
+  /* annotations */
   --zp-annotation-bg: #ffffff;
   --zp-annotation-border: #000000;
+  --zp-annotation-fg: inherit;
+  --zp-annotation-padding: 2px 4px;
+  --zp-annotation-font-size: inherit;
+  /* focus */
   --zp-focus-ring: #1a1a1a;
+  /* empty / loading overlay */
+  --zp-status-fg: #666666;
+  --zp-status-bg: rgba(255, 255, 255, 0.55);
+  --zp-status-font-size: 14px;
+  /* toolbar */
+  --zp-toolbar-bg: rgba(255, 255, 255, 0.92);
+  --zp-toolbar-fg: inherit;
+  --zp-toolbar-border: rgba(0, 0, 0, 0.12);
+  --zp-toolbar-border-width: 1px;
+  --zp-toolbar-radius: 4px;
+  --zp-toolbar-padding: 4px;
+  --zp-toolbar-gap: 4px;
+  --zp-toolbar-btn-bg: var(--zp-toolbar-bg);
+  --zp-toolbar-btn-fg: var(--zp-toolbar-fg);
+  --zp-toolbar-btn-border: var(--zp-toolbar-border);
+  --zp-toolbar-btn-border-width: 1px;
+  --zp-toolbar-btn-radius: 3px;
+  --zp-toolbar-btn-padding: 4px 8px;
+  --zp-toolbar-btn-font-size: 12px;
+  /* thresholds / extras labels */
+  --zp-threshold-fill: rgba(27, 107, 147, 0.14);
+  --zp-threshold-label-fg: #1b6b93;
+  --zp-threshold-label-font-size: 12px;
+  --zp-span-band-label-fg: #ffffff;
+  --zp-span-band-label-font-size: 11px;
+  --zp-span-band-label-padding: 2px 8px;
+  --zp-span-band-label-radius: 4px;
+  --zp-measure-label-bg: rgba(13, 27, 42, 0.85);
+  --zp-measure-label-fg: #ffffff;
+  --zp-measure-label-font-size: 12px;
+  --zp-measure-label-padding: 4px 8px;
+  --zp-measure-label-radius: 4px;
 }
 
 [data-theme="dark"] .zpgraph,
@@ -35,9 +79,19 @@
   --zp-legend-fg: #ffffff;
   --zp-legend-shadow: rgba(255, 255, 255, 0.4) 0 0 10px 1px;
   --zp-axis-label: #e8e8e8;
+  --zp-title-fg: #e8e8e8;
+  --zp-chart-label-fg: #e8e8e8;
   --zp-annotation-bg: #141414;
   --zp-annotation-border: #434343;
+  --zp-annotation-fg: #e8e8e8;
   --zp-focus-ring: #e8e8e8;
+  --zp-status-fg: #b0b0b0;
+  --zp-status-bg: rgba(0, 0, 0, 0.45);
+  --zp-toolbar-bg: rgba(20, 20, 20, 0.92);
+  --zp-toolbar-fg: #e8e8e8;
+  --zp-toolbar-border: rgba(255, 255, 255, 0.16);
+  --zp-threshold-label-fg: #7ec8e3;
+  --zp-measure-label-bg: rgba(0, 0, 0, 0.85);
 }
 
 .zpgraph:focus {
@@ -109,6 +163,8 @@
   position: absolute;
   z-index: 10;
   overflow: hidden;
+  color: var(--zp-annotation-fg);
+  font-size: var(--zp-annotation-font-size);
 }
 
 /* This class only applies to annotations without icons */
@@ -116,6 +172,7 @@
 .zpgraph-default-annotation {
   border: 1px solid var(--zp-annotation-border);
   background-color: var(--zp-annotation-bg);
+  padding: var(--zp-annotation-padding);
   text-align: center;
 }
 
@@ -134,10 +191,18 @@
 }
 
 .zpgraph-title {
-  font-weight: bold;
+  font-weight: var(--zp-title-font-weight);
+  color: var(--zp-title-fg);
   z-index: 10;
   text-align: center;
   /* font-size: based on titleHeight option */
+}
+
+.zpgraph-xlabel,
+.zpgraph-ylabel,
+.zpgraph-y2label {
+  color: var(--zp-chart-label-fg);
+  opacity: var(--zp-chart-label-opacity);
 }
 
 .zpgraph-xlabel {
@@ -155,32 +220,6 @@
 .zpgraph-label-rotate-right {
   text-align: center;
   transform: rotate(-90deg);
-}
-
-.zpgraph {
-  --zp-threshold-fill: rgba(27, 107, 147, 0.14);
-  --zp-toolbar-bg: rgba(255, 255, 255, 0.92);
-  --zp-toolbar-fg: inherit;
-  --zp-toolbar-border: rgba(0, 0, 0, 0.12);
-  --zp-toolbar-border-width: 1px;
-  --zp-toolbar-radius: 4px;
-  --zp-toolbar-padding: 4px;
-  --zp-toolbar-gap: 4px;
-  --zp-toolbar-btn-bg: var(--zp-toolbar-bg);
-  --zp-toolbar-btn-fg: var(--zp-toolbar-fg);
-  --zp-toolbar-btn-border: var(--zp-toolbar-border);
-  --zp-toolbar-btn-border-width: 1px;
-  --zp-toolbar-btn-radius: 3px;
-  --zp-toolbar-btn-padding: 4px 8px;
-  --zp-status-fg: #666666;
-}
-
-[data-theme="dark"] .zpgraph,
-.zpgraph[data-theme="dark"] {
-  --zp-toolbar-bg: rgba(20, 20, 20, 0.92);
-  --zp-toolbar-fg: #e8e8e8;
-  --zp-toolbar-border: rgba(255, 255, 255, 0.16);
-  --zp-status-fg: #b0b0b0;
 }
 
 .zpgraph-toolbar {
@@ -216,7 +255,7 @@
   justify-content: center;
   gap: 4px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--zp-toolbar-btn-font-size);
   line-height: 1.2;
   padding: var(--zp-toolbar-btn-padding);
   margin: 0;
@@ -258,12 +297,34 @@
   align-items: center;
   justify-content: center;
   color: var(--zp-status-fg);
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--zp-status-bg);
   pointer-events: none;
-  font-size: 14px;
+  font-size: var(--zp-status-font-size);
 }
 
-[data-theme="dark"] .zpgraph-status,
-.zpgraph[data-theme="dark"] .zpgraph-status {
-  background: rgba(0, 0, 0, 0.45);
+.zpgraph-threshold-label {
+  color: var(--zp-threshold-label-fg);
+  font-size: var(--zp-threshold-label-font-size);
+  font-family: inherit;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.zpgraph-span-band-label {
+  color: var(--zp-span-band-label-fg);
+  font-size: var(--zp-span-band-label-font-size);
+  font-family: inherit;
+  line-height: 1.2;
+  padding: var(--zp-span-band-label-padding);
+  border-radius: var(--zp-span-band-label-radius);
+  white-space: nowrap;
+}
+
+.zpgraph-measure-label {
+  background: var(--zp-measure-label-bg);
+  color: var(--zp-measure-label-fg);
+  font-size: var(--zp-measure-label-font-size);
+  font-family: inherit;
+  padding: var(--zp-measure-label-padding);
+  border-radius: var(--zp-measure-label-radius);
 }

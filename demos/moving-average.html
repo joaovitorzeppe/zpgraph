@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moving average · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Moving average</h1>
+  <p class="lede">
+    Overlay MA (period 9) on raw series. Extra:
+    <code>zpgraph/extras/moving-average</code>.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import { createMovingAveragePlotter } from '../dist/extras/moving-average.js';
+    import { makeSeries } from './helpers.js';
+
+    new Zpgraph(document.getElementById('chart'), makeSeries({ points: 100, series: 1, seed: 3 }), {
+      labels: ['Date', 'Temp'],
+      tooltip: { show: 'always' },
+      colors: ['#1b6b93'],
+      animatedZooms: true,
+      plotter: [
+        Zpgraph.Plotters.fillPlotter,
+        Zpgraph.Plotters.errorPlotter,
+        Zpgraph.Plotters.linePlotter,
+        createMovingAveragePlotter({ period: 9, color: '#c45c26' }),
+      ],
+    });
+  </script>
+</body>
+
+</html>

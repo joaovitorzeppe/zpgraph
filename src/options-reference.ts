@@ -768,7 +768,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Overall display"],
         type: "object",
         description:
-          "Extra CSS classes on chart DOM nodes (root, legend, axisLabel, annotation, title, xlabel, ylabel, y2label). Concatenated after the built-in zpgraph-* classes. Tailwind utilities are allowed.",
+          "Extra CSS classes on chart DOM nodes (root, legend, axisLabel, annotation, title, xlabel, ylabel, y2label, toolbar, toolbarBtn, noData, loading, measureLabel, spanBandLabel, thresholdLabel). Concatenated after the built-in zpgraph-* classes. Tailwind utilities are allowed. Prefer with LabelStyle / CSS vars for per-label styling.",
       },
       title: {
         labels: ["Chart labels"],
