@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Super-annotations · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+  <style>
+    .zpgraph-annotation-line {
+      pointer-events: none;
+    }
+
+    #annotation-template {
+      display: none;
+    }
+
+    .ann-card {
+      position: absolute;
+      z-index: 12;
+      background: #fff;
+      border: 1px solid rgba(13, 27, 42, 0.2);
+      border-radius: 4px;
+      padding: 0.4rem 0.55rem;
+      font-size: 12px;
+      max-width: 180px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      cursor: grab;
+    }
+
+    .ann-card .annotation-kill-button {
+      float: right;
+      margin-left: 0.5rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.6;
+    }
+
+    .ann-card .annotation-kill-button:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Super-annotations</h1>
+  <p class="lede">
+    Click a point to add a draggable annotation card. Extra:
+    <code>zpgraph/extras/super-annotations</code>. Uses
+    <code>#annotation-template</code> with <code>{{text}}</code> slots.
+  </p>
+  <div id="chart" class="chart"></div>
+
+  <div id="annotation-template" class="ann-card">
+    <button type="button" class="annotation-kill-button" title="Remove">×</button>
+    <div class="annotation-text">{{text}}</div>
+  </div>
+
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import SuperAnnotations from '../dist/extras/super-annotations.js';
+    import { makeSeries } from './helpers.js';
+
+    const data = makeSeries({ points: 80, series: 1, seed: 8 });
+    const annotations = new SuperAnnotations({
+      defaultAnnotationProperties: { text: 'Note' },
+    });
+
+    const g = new Zpgraph(document.getElementById('chart'), data, {
+      labels: ['Date', 'Alpha'],
+      legend: 'always',
+      colors: ['#1b6b93'],
+      animatedZooms: true,
+      drawPoints: true,
+      pointSize: 3,
+      plugins: [annotations],
+    });
+
+    const x0 = data[20][0].getTime();
+    annotations.set([{ xval: x0, series: 'Alpha', text: 'Peak region' }]);
+
+    annotations.addEventListener('annotationCreated', (e) => {
+      console.log('annotationCreated', e.detail);
+    });
+  </script>
+</body>
+
+</html>

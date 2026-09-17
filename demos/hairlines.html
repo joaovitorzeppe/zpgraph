@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hairlines · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+  <style>
+    .zpgraph-hairline {
+      pointer-events: auto;
+    }
+
+    #hairline-template {
+      display: none;
+    }
+
+    .hairline-card {
+      position: absolute;
+      z-index: 11;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(13, 27, 42, 0.15);
+      padding: 0.35rem 0.5rem;
+      font-size: 12px;
+      max-width: 180px;
+      border-radius: 3px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .hairline-card.selected {
+      border-color: #1b6b93;
+    }
+
+    .hairline-kill-button {
+      float: right;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0.55;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Hairlines</h1>
+  <p class="lede">
+    Click the chart to drop a vertical hairline. Drag to move. Extra:
+    <code>zpgraph/extras/hairlines</code>.
+  </p>
+  <div class="toolbar">
+    <button type="button" id="add">Add at mid</button>
+    <button type="button" id="clear">Clear</button>
+  </div>
+  <div id="chart" class="chart"></div>
+
+  <div id="hairline-template" class="hairline-card">
+    <button type="button" class="hairline-kill-button" title="Remove">×</button>
+    <div class="hairline-legend"></div>
+  </div>
+
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import Hairlines from '../dist/extras/hairlines.js';
+    import { makeSeries } from './helpers.js';
+
+    const data = makeSeries({ points: 90, series: 2, seed: 5 });
+    const hairlines = new Hairlines();
+
+    const g = new Zpgraph(document.getElementById('chart'), data, {
+      labels: ['Date', 'A', 'B'],
+      legend: 'always',
+      colors: ['#1b6b93', '#c45c26'],
+      animatedZooms: true,
+      plugins: [hairlines],
+    });
+
+    const mid = data[Math.floor(data.length / 2)][0].getTime();
+    hairlines.set([{ xval: mid, interpolated: true, selected: false }]);
+
+    document.getElementById('add').onclick = () => {
+      const list = hairlines.get();
+      list.push({
+        xval: data[Math.floor(Math.random() * data.length)][0].getTime(),
+        interpolated: true,
+        selected: false,
+      });
+      hairlines.set(list);
+    };
+    document.getElementById('clear').onclick = () => hairlines.set([]);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shapes · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Shapes</h1>
+  <p class="lede">
+    Extra point shapes on <code>Zpgraph.Circles</code> (star, square, triangle,
+    …). Import <code>zpgraph/extras/shapes</code> then pass
+    <code>drawPointCallback</code>.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import '../dist/extras/shapes.js';
+    import { makeSeries } from './helpers.js';
+
+    const shapes = [
+      Zpgraph.Circles.STAR,
+      Zpgraph.Circles.SQUARE,
+      Zpgraph.Circles.TRIANGLE,
+    ];
+
+    new Zpgraph(
+      document.getElementById('chart'),
+      makeSeries({ points: 40, series: 3, seed: 3 }),
+      {
+        labels: ['Date', 'Star', 'Square', 'Triangle'],
+        legend: 'always',
+        colors: ['#1b6b93', '#c45c26', '#2a9d8f'],
+        drawPoints: true,
+        strokeWidth: 1,
+        pointSize: 5,
+        animatedZooms: true,
+        series: {
+          Star: { drawPointCallback: shapes[0] },
+          Square: { drawPointCallback: shapes[1] },
+          Triangle: { drawPointCallback: shapes[2] },
+        },
+      },
+    );
+  </script>
+</body>
+
+</html>

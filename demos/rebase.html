@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rebase · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Rebase</h1>
+  <p class="lede">
+    Series rebased to percent change from the first point. Extra:
+    <code>zpgraph/extras/rebase</code> (<code>new Rebase("percent")</code>).
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import Rebase from '../dist/extras/rebase.js';
+    import { makeSeries } from './helpers.js';
+
+    new Zpgraph(
+      document.getElementById('chart'),
+      makeSeries({ points: 90, series: 2, seed: 12 }),
+      {
+        labels: ['Date', 'A', 'B'],
+        legend: 'always',
+        ylabel: '% from start',
+        colors: ['#1b6b93', '#c45c26'],
+        animatedZooms: true,
+        plugins: [new Rebase('percent')],
+      },
+    );
+  </script>
+</body>
+
+</html>

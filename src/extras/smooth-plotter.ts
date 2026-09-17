@@ -105,14 +105,18 @@ function smoothPlotter(e: PlotterEvent) {
   let ctx = e.drawingContext,
     points = e.points;
 
+  let start = 0;
+  while (start < points.length && !isOK(points[start]?.canvasy)) start++;
+  if (start >= points.length) return;
+
   ctx.beginPath();
-  ctx.moveTo(points[0]!.canvasx!, points[0]!.canvasy!);
+  ctx.moveTo(points[start]!.canvasx!, points[start]!.canvasy!);
 
   // right control point for previous point
-  let lastRightX: number | null = points[0]!.canvasx ?? null;
-  let lastRightY: number | null = points[0]!.canvasy ?? null;
+  let lastRightX: number | null = points[start]!.canvasx ?? null;
+  let lastRightY: number | null = points[start]!.canvasy ?? null;
 
-  for (let i = 1; i < points.length; i++) {
+  for (let i = start + 1; i < points.length; i++) {
     let p0 = points[i - 1];
     let p1 = points[i];
     let p2 = points[i + 1];

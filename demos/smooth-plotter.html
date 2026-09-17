@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smooth plotter · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+  <style>
+    .smoother {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .smoother input[type="range"] {
+      width: min(320px, 50vw);
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Smooth plotter</h1>
+  <p class="lede">
+    Same sparse series twice: straight default plotter (gray) vs bezier
+    <code>smoothPlotter</code> (accent). Extra:
+    <code>zpgraph/extras/smooth-plotter</code>.
+  </p>
+  <div class="smoother">
+    <label for="smoothing">Smoothing</label>
+    <input id="smoothing" type="range" min="0" max="0.7" step="0.01" value="0.33" />
+    <span id="smoothing-val">0.33</span>
+  </div>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import smoothPlotter from '../dist/extras/smooth-plotter.js';
+
+    // Sparse, high-contrast samples (same idea as dygraphs smooth-plots demo).
+    const vs = [10, 20, 40, 0, 30, 15, 25, 60, 35, 45];
+    const data = vs.map((v, i) => [i, v, v]);
+
+    let g;
+    const draw = () => {
+      if (g) g.destroy();
+      g = new Zpgraph(document.getElementById('chart'), data, {
+        labels: ['Index', 'Straight', 'Smoothed'],
+        legend: 'always',
+        animatedZooms: true,
+        gridLineColor: 'rgba(13, 27, 42, 0.12)',
+        series: {
+          Straight: {
+            color: 'rgba(13, 27, 42, 0.35)',
+            strokeWidth: 2,
+            drawPoints: true,
+            pointSize: 3,
+          },
+          Smoothed: {
+            plotter: smoothPlotter,
+            color: '#c45c26',
+            strokeWidth: 2.5,
+          },
+        },
+      });
+    };
+
+    draw();
+
+    const range = document.getElementById('smoothing');
+    const label = document.getElementById('smoothing-val');
+    range.addEventListener('input', () => {
+      const v = Number(range.value);
+      smoothPlotter.smoothing = v;
+      label.textContent = v.toFixed(2);
+      draw();
+    });
+  </script>
+</body>
+
+</html>

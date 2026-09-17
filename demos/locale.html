@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Locale · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Locale</h1>
+  <p class="lede">
+    <code>applyLocale</code> stores a locale pack on the chart (months,
+    weekdays, decimal point). Extra: <code>zpgraph/extras/locale</code>.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import { applyLocale } from '../dist/extras/locale.js';
+    import { makeSeries } from './helpers.js';
+
+    const months = [
+      'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
+      'jul', 'ago', 'set', 'out', 'nov', 'dez',
+    ];
+
+    const g = new Zpgraph(
+      document.getElementById('chart'),
+      makeSeries({ points: 120, series: 1, seed: 2 }),
+      {
+        labels: ['Data', 'Valor'],
+        legend: 'always',
+        colors: ['#1b6b93'],
+        animatedZooms: true,
+        axes: {
+          x: {
+            axisLabelFormatter: (d) => {
+              const dt = d instanceof Date ? d : new Date(d);
+              return `${dt.getUTCDate()} ${months[dt.getUTCMonth()]}`;
+            },
+            valueFormatter: (ms) => {
+              const dt = new Date(ms);
+              return `${dt.getUTCDate()} ${months[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+            },
+          },
+          y: {
+            valueFormatter: (y) =>
+              String(Math.round(y * 100) / 100).replace('.', ','),
+          },
+        },
+      },
+    );
+
+    applyLocale(g, {
+      months,
+      weekdays: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'],
+      decimalPoint: ',',
+      labelsUTC: true,
+    });
+  </script>
+</body>
+
+</html>

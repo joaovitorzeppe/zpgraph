@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unzoom · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Unzoom</h1>
+  <p class="lede">
+    Drag to zoom, then hover the chart — a <strong>Reset Zoom</strong> button
+    appears. Extra: <code>zpgraph/extras/unzoom</code>.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import Unzoom from '../dist/extras/unzoom.js';
+    import { makeSeries } from './helpers.js';
+
+    new Zpgraph(document.getElementById('chart'), makeSeries({ points: 100, series: 2 }), {
+      labels: ['Date', 'A', 'B'],
+      legend: 'always',
+      colors: ['#1b6b93', '#c45c26'],
+      animatedZooms: true,
+      plugins: [new Unzoom()],
+    });
+  </script>
+</body>
+
+</html>
