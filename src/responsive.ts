@@ -16,7 +16,7 @@ export const applyResponsiveOptions = (g: Zpgraph): void => {
   if (!rules?.length) return;
 
   const width = g.width_ || g.maindiv_?.clientWidth || 0;
-  const sorted = [...rules].sort((a, b) => a.breakpoint - b.breakpoint);
+  const sorted = [...rules].toSorted((a, b) => a.breakpoint - b.breakpoint);
   let match: ResponsiveRule | undefined;
   for (const rule of sorted) {
     if (width <= rule.breakpoint) {
