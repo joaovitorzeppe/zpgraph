@@ -13,7 +13,7 @@ declare namespace NodeJS {
 }
 declare const process: { env: NodeJS.ProcessEnv };
 
-declare module '*.css' {
+declare module "*.css" {
   const cssText: string;
   export default cssText;
 }

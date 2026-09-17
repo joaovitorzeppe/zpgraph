@@ -163,7 +163,12 @@ describe("Legend plugin", () => {
 
   it("honors tooltip.position for fixed modes", () => {
     const { g, legend } = makeChart({
-      tooltip: { show: "onmouseover", position: "top-left", offsetX: 8, offsetY: 2 },
+      tooltip: {
+        show: "onmouseover",
+        position: "top-left",
+        offsetX: 8,
+        offsetY: 2,
+      },
     });
     stubLayoutMetrics(legend, { width: 80, height: 24 });
     g.setSelection(1);

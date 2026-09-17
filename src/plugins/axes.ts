@@ -137,7 +137,7 @@ class axes {
 
     let label, x, y;
 
-    const makeLabelStyle = (axis: "x" | "y" | "y2")  => {
+    const makeLabelStyle = (axis: "x" | "y" | "y2") => {
       return {
         position: "absolute",
         fontSize: axisNum(g, axis, "axisLabelFontSize") + "px",
@@ -167,7 +167,7 @@ class axes {
       txt: string,
       axis: string,
       prec_axis?: string | null,
-    )  => {
+    ) => {
       let div = labels[idx];
       let inner_div: HTMLElement;
       if (div) {
@@ -222,7 +222,9 @@ class axes {
         const num_axes = g.numAxes();
         const getOptions = [makeOptionGetter("y"), makeOptionGetter("y2")];
         layout.yticks!.forEach((tick) => {
-          if (tick.label === undefined) {return;} // this tick only has a grid line.
+          if (tick.label === undefined) {
+            return;
+          } // this tick only has a grid line.
           x = area.x;
           let prec_axis = "y1";
           let getAxisOption = getOptions[0]!;
@@ -232,7 +234,9 @@ class axes {
             prec_axis = "y2";
             getAxisOption = getOptions[1]!;
           }
-          if (!getAxisOption("drawAxis")) {return;}
+          if (!getAxisOption("drawAxis")) {
+            return;
+          }
           const fontSize = getAxisOption("axisLabelFontSize");
           y = area.y + tick.pos * area.h;
 
@@ -252,7 +256,9 @@ class axes {
             num_axes === 2 ? prec_axis : null,
           );
           let top = y - fontSize / 2;
-          if (top < 0) {top = 0;}
+          if (top < 0) {
+            top = 0;
+          }
 
           if (top + fontSize + 3 > canvasHeight) {
             label.style.bottom = "0";
@@ -282,7 +288,9 @@ class axes {
       let axisX;
       if (g.getOption("drawAxesAtZero")) {
         let r = g.toPercentXCoord(0) ?? 0;
-        if (r > 1 || r < 0 || isNaN(r)) {r = 0;}
+        if (r > 1 || r < 0 || isNaN(r)) {
+          r = 0;
+        }
         axisX = halfUp(area.x + r * area.w);
       } else {
         axisX = halfUp(area.x);
@@ -313,7 +321,9 @@ class axes {
       if (layout.xticks) {
         const getAxisOption = makeOptionGetter("x");
         layout.xticks!.forEach((tick) => {
-          if (tick.label === undefined) {return;} // this tick only has a grid line.
+          if (tick.label === undefined) {
+            return;
+          } // this tick only has a grid line.
           x = area.x + tick.pos * area.w;
           y = area.y + area.h;
 
@@ -350,7 +360,9 @@ class axes {
       let axisY;
       if (g.getOption("drawAxesAtZero")) {
         let r = g.toPercentYCoord(0, 0) ?? 1;
-        if (r > 1 || r < 0) {r = 1;}
+        if (r > 1 || r < 0) {
+          r = 1;
+        }
         axisY = halfDown(area.y + r * area.h);
       } else {
         axisY = halfDown(area.y + area.h);

@@ -4,7 +4,7 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import type { Point } from './types';
+import type { Point } from "./types";
 
 export const DECIMATION_THRESHOLD = 4;
 
@@ -40,10 +40,14 @@ export const decimatePointsByX = (
   let gap: Point | null = null;
 
   const flush = () => {
-    if (first === null && gap === null) {return;}
+    if (first === null && gap === null) {
+      return;
+    }
     const chosen: Point[] = [];
     const push = (p: Point | null) => {
-      if (p && !chosen.includes(p)) {chosen.push(p);}
+      if (p && !chosen.includes(p)) {
+        chosen.push(p);
+      }
     };
     push(first);
     push(lowest);
@@ -51,18 +55,25 @@ export const decimatePointsByX = (
     push(last);
     push(gap);
     chosen.sort((a, b) => (a.xval ?? 0) - (b.xval ?? 0));
-    for (const p of chosen) {out.push(p);}
+    for (const p of chosen) {
+      out.push(p);
+    }
     first = last = lowest = highest = gap = null;
   };
 
   for (let i = 0; i < points.length; i++) {
     const point = points[i]!;
     const xval = point.xval;
-    if (xval === null || xval === undefined || xval !== xval) {continue;}
+    if (xval === null || xval === undefined || xval !== xval) {
+      continue;
+    }
 
     let col = Math.floor(((xval - xMin) / span) * pixelWidth);
-    if (col < 0) {col = 0;}
-    else if (col >= pixelWidth) {col = pixelWidth - 1;}
+    if (col < 0) {
+      col = 0;
+    } else if (col >= pixelWidth) {
+      col = pixelWidth - 1;
+    }
 
     if (col !== column) {
       flush();
@@ -71,14 +82,22 @@ export const decimatePointsByX = (
 
     const y = point.yval;
     if (y === null || y === undefined || y !== y) {
-      if (gap === null) {gap = point;}
+      if (gap === null) {
+        gap = point;
+      }
       continue;
     }
 
-    if (first === null) {first = point;}
+    if (first === null) {
+      first = point;
+    }
     last = point;
-    if (lowest === null || y < lowest.yval!) {lowest = point;}
-    if (highest === null || y > highest.yval!) {highest = point;}
+    if (lowest === null || y < lowest.yval!) {
+      lowest = point;
+    }
+    if (highest === null || y > highest.yval!) {
+      highest = point;
+    }
   }
   flush();
 

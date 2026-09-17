@@ -34,7 +34,10 @@ class status_overlay {
   didDrawChart(e: ChartDrawPluginEvent) {
     const g = e.zpgraph as unknown as Zpgraph;
     const loading = !!g.getOption("loading");
-    const noDataOpt = g.getOption("noData") as NoDataOptions | false | undefined;
+    const noDataOpt = g.getOption("noData") as
+      | NoDataOptions
+      | false
+      | undefined;
     const empty = g.numRows() === 0;
 
     if (loading) {
@@ -86,11 +89,15 @@ class status_overlay {
   }
 
   hideLoading_() {
-    if (this.loadingEl_) {this.loadingEl_.hidden = true;}
+    if (this.loadingEl_) {
+      this.loadingEl_.hidden = true;
+    }
   }
 
   hideNoData_() {
-    if (this.noDataEl_) {this.noDataEl_.hidden = true;}
+    if (this.noDataEl_) {
+      this.noDataEl_.hidden = true;
+    }
   }
 
   detach_() {

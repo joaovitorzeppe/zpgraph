@@ -10,9 +10,17 @@
 
 /*global Zpgraph:false */
 
-import type { AnnotatedPoint, ChartDrawPluginEvent,ZpgraphInstance } from "../internal-types";
+import type {
+  AnnotatedPoint,
+  ChartDrawPluginEvent,
+  ZpgraphInstance,
+} from "../internal-types";
 import type { Annotation, AnnotationHandler } from "../types";
-import { getChartClassNames, safeCssClasses, withClassNames } from "../class-names";
+import {
+  getChartClassNames,
+  safeCssClasses,
+  withClassNames,
+} from "../class-names";
 
 /**
 Current bits of jankiness:
@@ -55,7 +63,9 @@ class annotations {
 
     // Early out in the (common) case of zero annotations.
     const points = g.layout_.annotated_points as AnnotatedPoint[] | undefined;
-    if (!points || points.length === 0) {return;}
+    if (!points || points.length === 0) {
+      return;
+    }
 
     const containerDiv = e.canvas.parentNode as HTMLElement;
 
@@ -73,7 +83,7 @@ class annotations {
         | "annotationMouseOutHandler"
         | "annotationDblClickHandler",
       pt: AnnotatedPoint,
-    )  => {
+    ) => {
       return function (annotation_event: Event) {
         const mouseEvent = annotation_event as MouseEvent;
         const a = pt.annotation;
@@ -128,7 +138,9 @@ class annotations {
       className = withClassNames(className, getChartClassNames(g).annotation);
       if (Object.hasOwn(a, "cssClass")) {
         const extra = safeCssClasses(a.cssClass);
-        if (extra.length) {className += " " + extra.join(" ");}
+        if (extra.length) {
+          className += " " + extra.join(" ");
+        }
       }
       div.className = className;
 
@@ -226,7 +238,7 @@ class annotations {
 const SAFE_ICON_URL = /^(https?:\/\/|\/|\.\/|\.\.\/|data:image\/)/i;
 
 /** @private */
-const isSafeIconUrl = (url: unknown): boolean  => {
+const isSafeIconUrl = (url: unknown): boolean => {
   return typeof url === "string" && SAFE_ICON_URL.test(url.trim());
 };
 

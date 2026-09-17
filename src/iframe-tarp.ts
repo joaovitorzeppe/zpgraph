@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -31,24 +31,24 @@
  *   window.addEventListener('mouseup', mouseUpHandler);
  * });
  */
-import * as utils from './utils';
+import * as utils from "./utils";
 
 export default class IFrameTarp {
   tarps: HTMLDivElement[] = [];
 
   /** Cover all document iframes with high z-index transparent divs. */
   cover() {
-    const iframes = document.getElementsByTagName('iframe');
+    const iframes = document.getElementsByTagName("iframe");
     for (let i = 0; i < iframes.length; i++) {
       const iframe = iframes[i]!;
       const pos = utils.findPos(iframe);
-      const div = document.createElement('div');
-      div.style.position = 'absolute';
-      div.style.left = pos.x + 'px';
-      div.style.top = pos.y + 'px';
-      div.style.width = iframe.offsetWidth + 'px';
-      div.style.height = iframe.offsetHeight + 'px';
-      div.style.zIndex = '999';
+      const div = document.createElement("div");
+      div.style.position = "absolute";
+      div.style.left = pos.x + "px";
+      div.style.top = pos.y + "px";
+      div.style.width = iframe.offsetWidth + "px";
+      div.style.height = iframe.offsetHeight + "px";
+      div.style.zIndex = "999";
       document.body.appendChild(div);
       this.tarps.push(div);
     }

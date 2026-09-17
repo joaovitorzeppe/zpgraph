@@ -66,11 +66,17 @@ type ZpgraphExtrasHost = typeof ZpgraphImport & {
 const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
 
 const arraysAreEqual = <T>(a: T[] | unknown, b: T[] | unknown): boolean => {
-  if (!Array.isArray(a) || !Array.isArray(b)) {return false;}
+  if (!Array.isArray(a) || !Array.isArray(b)) {
+    return false;
+  }
   let i = a.length;
-  if (i !== b.length) {return false;}
+  if (i !== b.length) {
+    return false;
+  }
   while (i--) {
-    if (a[i] !== b[i]) {return false;}
+    if (a[i] !== b[i]) {
+      return false;
+    }
   }
   return true;
 };
@@ -84,10 +90,7 @@ const attachZoomHandlers = (
   gs.forEach((g) => {
     g.updateOptions(
       {
-        drawCallback(
-          me: unknown,
-          initial: boolean,
-        ) {
+        drawCallback(me: unknown, initial: boolean) {
           const chart = me as ZpgraphInstance;
           if (state.block || initial) {
             // call the user’s drawCallback even if we are blocked
@@ -105,7 +108,9 @@ const attachZoomHandlers = (
           const opts: Partial<ZpgraphOptions> = {
             dateWindow: chart.xAxisRange(),
           };
-          if (syncOpts.range) {opts.valueRange = chart.yAxisRange();}
+          if (syncOpts.range) {
+            opts.valueRange = chart.yAxisRange();
+          }
 
           for (let j = 0; j < gs.length; j++) {
             if (gs[j] === chart) {
@@ -128,13 +133,17 @@ const attachZoomHandlers = (
                   | [number | null, number | null]
                   | null,
               )
-            )
-              {update = true;}
+            ) {
+              update = true;
+            }
             // If about to update, but not syncing Y-zoom, pass current value
-            if (update && !syncOpts.range)
-              {opts.valueRange = gs[j]!.yAxisRange();}
+            if (update && !syncOpts.range) {
+              opts.valueRange = gs[j]!.yAxisRange();
+            }
 
-            if (update) {gs[j]!.updateOptions(opts);}
+            if (update) {
+              gs[j]!.updateOptions(opts);
+            }
           }
           state.block = false;
         },
@@ -159,7 +168,9 @@ const attachSelectionHandlers = (
           row: number,
           seriesName: string,
         ) => {
-          if (state.block) {return;}
+          if (state.block) {
+            return;
+          }
           state.block = true;
           for (let j = 0; j < gs.length; j++) {
             if (j === i) {
@@ -180,7 +191,9 @@ const attachSelectionHandlers = (
           state.block = false;
         },
         unhighlightCallback: (event: MouseEvent) => {
-          if (state.block) {return;}
+          if (state.block) {
+            return;
+          }
           state.block = true;
           for (let j = 0; j < gs.length; j++) {
             if (j === i) {
@@ -281,15 +294,20 @@ const synchronize = (...args: unknown[]) => {
             callbacks![j] = {};
           }
           const savedDraw = charts[j]!.getFunctionOption("drawCallback");
-          if (savedDraw) {callbacks![j]!.drawCallback = savedDraw;}
+          if (savedDraw) {
+            callbacks![j]!.drawCallback = savedDraw;
+          }
           const savedHighlight =
             charts[j]!.getFunctionOption("highlightCallback");
-          if (savedHighlight) {callbacks![j]!.highlightCallback = savedHighlight;}
+          if (savedHighlight) {
+            callbacks![j]!.highlightCallback = savedHighlight;
+          }
           const savedUnhighlight = charts[j]!.getFunctionOption(
             "unhighlightCallback",
           );
-          if (savedUnhighlight)
-            {callbacks![j]!.unhighlightCallback = savedUnhighlight;}
+          if (savedUnhighlight) {
+            callbacks![j]!.unhighlightCallback = savedUnhighlight;
+          }
         }
 
         // Listen for draw, highlight, unhighlight callbacks.

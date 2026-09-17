@@ -28,7 +28,9 @@ export const findClosestRow = (g: Zpgraph, domX: number) => {
 
   const consider = (points: Point[], j: number) => {
     const point = points[j]!;
-    if (!utils.isValidPoint(point, true)) {return false;}
+    if (!utils.isValidPoint(point, true)) {
+      return false;
+    }
     const dist = Math.abs(point.canvasx! - domX);
     if (dist < minDistX) {
       minDistX = dist;
@@ -40,7 +42,9 @@ export const findClosestRow = (g: Zpgraph, domX: number) => {
   for (let i = 0; i < sets.length; i++) {
     const points = sets[i]!;
     const len = points.length;
-    if (!len) {continue;}
+    if (!len) {
+      continue;
+    }
 
     // Points within a set are ordered by canvasx, so the nearest one sits
     // beside the insertion point of domX rather than anywhere in the set.
@@ -49,14 +53,25 @@ export const findClosestRow = (g: Zpgraph, domX: number) => {
     let hi = len;
     while (lo < hi) {
       const mid = (lo + hi) >>> 1;
-      if (points[mid]!.canvasx! < domX) {lo = mid + 1;}
-      else {hi = mid;}
+      if (points[mid]!.canvasx! < domX) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
     }
 
     // Distance grows monotonically away from the insertion point, so the
     // first valid point found in each direction is the best in it.
-    for (let j = lo - 1; j >= 0; j--) {if (consider(points, j)) { break; }}
-    for (let j = lo; j < len; j++) {if (consider(points, j)) { break; }}
+    for (let j = lo - 1; j >= 0; j--) {
+      if (consider(points, j)) {
+        break;
+      }
+    }
+    for (let j = lo; j < len; j++) {
+      if (consider(points, j)) {
+        break;
+      }
+    }
   }
 
   return closestRow;
@@ -86,7 +101,9 @@ export const findClosestPoint = (g: Zpgraph, domX: number, domY = 0) => {
     const points = g.layout_.points[setIdx]!;
     for (let i = 0; i < points.length; ++i) {
       const point = points[i]!;
-      if (!utils.isValidPoint(point)) {continue;}
+      if (!utils.isValidPoint(point)) {
+        continue;
+      }
       dx = point.canvasx! - domX;
       dy = point.canvasy! - domY;
       dist = dx * dx + dy * dy;
@@ -126,9 +143,13 @@ export const findStackedPoint = (g: Zpgraph, domX: number, domY: number) => {
     const boundary = getLeftBoundary(g, setIdx);
     const rowIdx = row - boundary;
     const points = g.layout_.points[setIdx]!;
-    if (rowIdx >= points.length) {continue;}
+    if (rowIdx >= points.length) {
+      continue;
+    }
     const p1 = points[rowIdx]!;
-    if (!utils.isValidPoint(p1)) {continue;}
+    if (!utils.isValidPoint(p1)) {
+      continue;
+    }
     let py = p1.canvasy!;
     if (domX > p1.canvasx! && rowIdx + 1 < points.length) {
       // interpolate series Y value using next point
@@ -175,7 +196,9 @@ export const findStackedPoint = (g: Zpgraph, domX: number, domY: number) => {
 export const mouseMove = (g: Zpgraph, event: MouseEvent) => {
   // This prevents JS errors when mousing over the canvas before data loads.
   const points = g.layout_.points;
-  if (points === undefined || points === null) {return;}
+  if (points === undefined || points === null) {
+    return;
+  }
 
   const canvasCoords = g.eventToDomCoords(event);
   const canvasx = canvasCoords[0]!;
@@ -218,20 +241,23 @@ export const getLeftBoundary = (g: Zpgraph, setIdx: number) => {
   if (g.boundaryIds_[setIdx]) {
     return g.boundaryIds_[setIdx]![0];
   }
-    for (const ids of g.boundaryIds_) {
-      if (ids !== undefined) {
-        return ids[0];
-      }
+  for (const ids of g.boundaryIds_) {
+    if (ids !== undefined) {
+      return ids[0];
     }
-    return 0;
-  
+  }
+  return 0;
 };
 
 export const animateSelection = (g: Zpgraph, direction: number) => {
   const totalSteps = 10;
   const millis = 30;
-  if (g.fadeLevel === undefined) {g.fadeLevel = 0;}
-  if (g.animateId === undefined) {g.animateId = 0;}
+  if (g.fadeLevel === undefined) {
+    g.fadeLevel = 0;
+  }
+  if (g.animateId === undefined) {
+    g.animateId = 0;
+  }
   const start = g.fadeLevel;
   const steps = direction < 0 ? start : totalSteps - start;
   if (steps <= 0) {
@@ -245,9 +271,11 @@ export const animateSelection = (g: Zpgraph, direction: number) => {
   const that = g;
 
   utils.repeatAndCleanup(
-    (step: number)  => {
+    (step: number) => {
       // ignore simultaneous animations
-      if (that.animateId !== thisId) {return;}
+      if (that.animateId !== thisId) {
+        return;
+      }
 
       that.fadeLevel = start + (step + 1) * direction;
       if (that.fadeLevel === 0) {
@@ -258,7 +286,7 @@ export const animateSelection = (g: Zpgraph, direction: number) => {
     },
     steps,
     millis,
-    ()  => {},
+    () => {},
   );
 };
 
@@ -319,7 +347,9 @@ export const updateSelection = (g: Zpgraph, opt_animFraction?: number) => {
     const labels = g.attr_("labels") as string[];
     for (i = 1; i < labels.length; i++) {
       const r = g.getNumericOption("highlightCircleSize", labels[i]!);
-      if (r > maxCircleSize) {maxCircleSize = r;}
+      if (r > maxCircleSize) {
+        maxCircleSize = r;
+      }
     }
     const px = g.previousVerticalX_;
     ctx.clearRect(px - maxCircleSize - 1, 0, 2 * maxCircleSize + 2, g.height_);
@@ -331,7 +361,9 @@ export const updateSelection = (g: Zpgraph, opt_animFraction?: number) => {
     ctx.save();
     for (i = 0; i < g.selPoints_.length; i++) {
       const pt = g.selPoints_[i]!;
-      if (isNaN(pt.canvasy!)) {continue;}
+      if (isNaN(pt.canvasy!)) {
+        continue;
+      }
 
       const circleSize = g.getNumericOption("highlightCircleSize", pt.name);
       let callback = g.getFunctionOption(
@@ -394,7 +426,9 @@ export const setSelection = (
   let changed = false;
   if (row !== false && typeof row === "number" && row >= 0) {
     const selectedRow: number = row;
-    if (selectedRow !== g.lastRow_) {changed = true;}
+    if (selectedRow !== g.lastRow_) {
+      changed = true;
+    }
     g.lastRow_ = selectedRow;
     for (let setIdx = 0; setIdx < g.layout_.points.length; ++setIdx) {
       const points = g.layout_.points[setIdx]!;
@@ -408,7 +442,9 @@ export const setSelection = (
         points[pointIndex]!.idx === selectedRow
       ) {
         const point = points[pointIndex]!;
-        if (point.yval !== null) {g.selPoints_.push(point);}
+        if (point.yval !== null) {
+          g.selPoints_.push(point);
+        }
       } else {
         for (let pointIdx = 0; pointIdx < points.length; ++pointIdx) {
           const point = points[pointIdx]!;
@@ -422,7 +458,9 @@ export const setSelection = (
       }
     }
   } else {
-    if (g.lastRow_ >= 0) {changed = true;}
+    if (g.lastRow_ >= 0) {
+      changed = true;
+    }
     g.lastRow_ = -1;
   }
 
@@ -433,7 +471,9 @@ export const setSelection = (
   }
 
   if (opt_seriesName !== undefined) {
-    if (g.highlightSet_ !== opt_seriesName) {changed = true;}
+    if (g.highlightSet_ !== opt_seriesName) {
+      changed = true;
+    }
     g.highlightSet_ = opt_seriesName;
   }
 

@@ -71,12 +71,12 @@ export const createInterface = (g: Zpgraph) => {
 
   // Hovering repaints the highlight and the legend; one repaint per frame
   // is all that can be seen.
-  g.mouseMoveHandler_ = utils.coalesceFrames((e: unknown)  => {
+  g.mouseMoveHandler_ = utils.coalesceFrames((e: unknown) => {
     zpgraph.mouseMove_(e as MouseEvent);
   });
   g.coalesced_.push(g.mouseMoveHandler_);
 
-  g.mouseOutHandler_ = (e: MouseEvent)  => {
+  g.mouseOutHandler_ = (e: MouseEvent) => {
     // The mouse has left the chart if:
     // 1. e.target is inside the chart
     // 2. e.relatedTarget is outside the chart
@@ -122,8 +122,9 @@ export const createInterface = (g: Zpgraph) => {
       resizeMode = "no";
     }
     if (resizeMode !== "no") {
-      if (window.getComputedStyle(enclosing).overflow === "visible")
-        {enclosing.style.overflow = "hidden";}
+      if (window.getComputedStyle(enclosing).overflow === "visible") {
+        enclosing.style.overflow = "hidden";
+      }
       g.resizeObserver_ = new ResizeObserver(g.resizeHandler_);
       g.resizeObserver_.observe(enclosing);
     }
@@ -215,7 +216,9 @@ export const setUpAccessibility = (g: Zpgraph) => {
  * @private
  */
 export const updateAriaLabel = (g: Zpgraph) => {
-  if (!g.canvas_) {return;}
+  if (!g.canvas_) {
+    return;
+  }
 
   const parts = [];
   const title = g.getOption("title");
@@ -247,14 +250,20 @@ export const updateAriaLabel = (g: Zpgraph) => {
  * @private
  */
 export const keyDown = (g: Zpgraph, e: KeyboardEvent) => {
-  if (e.altKey || e.ctrlKey || e.metaKey) {return;}
+  if (e.altKey || e.ctrlKey || e.metaKey) {
+    return;
+  }
 
   const lastRow = g.numRows() - 1;
-  if (lastRow < 0) {return;}
+  if (lastRow < 0) {
+    return;
+  }
 
   if (e.shiftKey) {
     const handled = keyDownShift(g, e.key);
-    if (handled) {e.preventDefault();}
+    if (handled) {
+      e.preventDefault();
+    }
     return;
   }
 
@@ -284,11 +293,15 @@ export const keyDown = (g: Zpgraph, e: KeyboardEvent) => {
     case "Enter":
     case " ": {
       const selRow = g.keyboardRow_ ?? g.getSelection();
-      if (selRow == null || selRow < 0) {return;}
+      if (selRow == null || selRow < 0) {
+        return;
+      }
       let point: (typeof g.layout_.points)[number][number] | undefined;
       for (const pts of g.layout_.points) {
         point = pts.find((p) => p.idx === selRow) ?? pts[selRow];
-        if (point) {break;}
+        if (point) {
+          break;
+        }
       }
       const cb = g.getFunctionOption("pointClickCallback");
       if (point && cb) {
@@ -314,7 +327,9 @@ export const keyDown = (g: Zpgraph, e: KeyboardEvent) => {
 const keyDownShift = (g: Zpgraph, key: string): boolean => {
   const [xMin, xMax] = g.xAxisRange();
   const span = xMax - xMin;
-  if (!(span > 0) || !isFinite(span)) {return false;}
+  if (!(span > 0) || !isFinite(span)) {
+    return false;
+  }
 
   const extremes = g.xAxisExtremes();
   const panStep = span * 0.1;
@@ -394,7 +409,7 @@ export const createRollInterface = (g: Zpgraph) => {
   utils.update(roller.style as unknown as Record<string, unknown>, textAttr);
 
   const that = g;
-  roller.addEventListener("change", ()  => {
+  roller.addEventListener("change", () => {
     return that.adjustRoll(Number(roller.value));
   });
 };
@@ -498,15 +513,19 @@ export const createDragInterface = (g: Zpgraph) => {
   // Resolve handler from the *current* interactionModel on each event.
   // updateOptions({ interactionModel }) must take effect without recreate
   // (toolbar pan, etc.).
-  const bindHandler = (eventName: string)  => {
+  const bindHandler = (eventName: string) => {
     return function (event: Event) {
       const model = g.getOption("interactionModel") as
         | (InteractionModel & Record<string, unknown>)
         | null
         | undefined;
-      if (!model) {return;}
+      if (!model) {
+        return;
+      }
       const handler = model[eventName];
-      if (typeof handler !== "function") {return;}
+      if (typeof handler !== "function") {
+        return;
+      }
       (handler as ChartInteractionHandler)(
         event,
         self as unknown as ZpgraphInstance,
@@ -518,8 +537,12 @@ export const createDragInterface = (g: Zpgraph) => {
   const coalescedMoves: utils.Coalesced[] = [];
 
   for (const eventName in initialModel) {
-    if (!Object.hasOwn(initialModel, eventName)) {continue;}
-    if (typeof initialModel[eventName] !== "function") {continue;}
+    if (!Object.hasOwn(initialModel, eventName)) {
+      continue;
+    }
+    if (typeof initialModel[eventName] !== "function") {
+      continue;
+    }
     let bound: utils.Coalesced | ((event: Event) => void) =
       bindHandler(eventName);
     // A move redraws the whole chart, and a finger or a mouse produces far
@@ -535,8 +558,10 @@ export const createDragInterface = (g: Zpgraph) => {
       // The gesture ends where the last move left it, so that move has to
       // have run before the end handler reads the viewport.
       const end = bound;
-      bound = (event: Event)  => {
-        for (const move of coalescedMoves) {move.flush();}
+      bound = (event: Event) => {
+        for (const move of coalescedMoves) {
+          move.flush();
+        }
         end(event);
       };
     }
@@ -550,7 +575,7 @@ export const createDragInterface = (g: Zpgraph) => {
   // If the user releases the mouse button during a drag, but not over the
   // canvas, then it doesn't count as a zooming action.
   if (!initialModel.willDestroyContextMyself) {
-    const mouseUpHandler = (_event: Event)  => {
+    const mouseUpHandler = (_event: Event) => {
       context.destroy();
     };
 

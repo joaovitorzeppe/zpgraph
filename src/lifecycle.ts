@@ -46,7 +46,9 @@ class PluginCascadeEvent implements PluginEventBase {
   constructor(g: Zpgraph, extra_props?: Record<string, unknown>) {
     // ZpgraphInstance lags a few return types vs the class; cast until aligned.
     this.zpgraph = g as unknown as ZpgraphInstance;
-    if (extra_props) {Object.assign(this, extra_props);}
+    if (extra_props) {
+      Object.assign(this, extra_props);
+    }
   }
 
   preventDefault() {
@@ -76,14 +78,14 @@ export const removeTrackedEvents_ = (g: Zpgraph): void => {
   g.registeredEvents_ = [];
 };
 
-const removeRecursive = (node: Node)  => {
+const removeRecursive = (node: Node) => {
   while (node.firstChild) {
     removeRecursive(node.firstChild);
     node.firstChild.remove();
   }
 };
 
-const nullOut = (obj: Record<string, unknown>)  => {
+const nullOut = (obj: Record<string, unknown>) => {
   for (const n in obj) {
     if (typeof obj[n] === "object") {
       obj[n] = null;
@@ -108,7 +110,9 @@ export const destroy = (g: Zpgraph): void => {
   // Destroy any plugins, in the reverse order that they were registered.
   for (let i = g.plugins_.length - 1; i >= 0; i--) {
     const p = g.plugins_.pop();
-    if (p?.plugin.destroy) {p.plugin.destroy();}
+    if (p?.plugin.destroy) {
+      p.plugin.destroy();
+    }
   }
 
   removeTrackedEvents_(g);
@@ -130,7 +134,9 @@ export const destroy = (g: Zpgraph): void => {
   g.resizeHandler_ = null;
 
   // A frame already requested would otherwise run against a torn-down chart.
-  for (const handler of g.coalesced_) {handler.cancel();}
+  for (const handler of g.coalesced_) {
+    handler.cancel();
+  }
   g.coalesced_ = [];
 
   removeRecursive(g.maindiv_);
@@ -150,7 +156,9 @@ export const destroy = (g: Zpgraph): void => {
  */
 export const setColors_ = (g: Zpgraph): void => {
   const labels = g.getLabels();
-  if (!labels) {return;}
+  if (!labels) {
+    return;
+  }
   const num = labels.length - 1;
   g.colors_ = [];
   g.colorsMap_ = {};
@@ -352,8 +360,9 @@ export const init = (
     resolved.paddingRight !== "0px" ||
     resolved.paddingTop !== "0px" ||
     resolved.paddingBottom !== "0px"
-  )
-    {log.error("Main div contains padding; graph will misbehave");}
+  ) {
+    log.error("Main div contains padding; graph will misbehave");
+  }
 
   // For historical reasons, the 'width' and 'height' options trump all CSS
   // rules _except_ for an explicit 'width' or 'height' on the div.
@@ -444,7 +453,9 @@ export const init = (
       (...args: unknown[]) => unknown
     >;
     for (const eventName in handlers) {
-      if (!Object.hasOwn(handlers, eventName)) {continue;}
+      if (!Object.hasOwn(handlers, eventName)) {
+        continue;
+      }
       pluginDict.events[eventName] = handlers[eventName]!;
     }
 
@@ -456,9 +467,13 @@ export const init = (
   for (let i = 0; i < g.plugins_.length; i++) {
     const plugin_dict = g.plugins_[i]!;
     for (const eventName in plugin_dict.events) {
-      if (!Object.hasOwn(plugin_dict.events, eventName)) {continue;}
+      if (!Object.hasOwn(plugin_dict.events, eventName)) {
+        continue;
+      }
       const callback = plugin_dict.events[eventName];
-      if (!callback) {continue;}
+      if (!callback) {
+        continue;
+      }
 
       const pair: [Plugin, (...args: unknown[]) => unknown] = [
         plugin_dict.plugin,
@@ -488,7 +503,9 @@ export const cascadeEvents_ = (
   name: string,
   extra_props?: Record<string, unknown>,
 ): boolean => {
-  if (!(name in g.eventListeners_)) {return false;}
+  if (!(name in g.eventListeners_)) {
+    return false;
+  }
 
   const e = new PluginCascadeEvent(g, extra_props);
 
@@ -499,7 +516,9 @@ export const cascadeEvents_ = (
       const plugin = pair[0];
       const callback = pair[1];
       callback.call(plugin, e);
-      if (e.propagationStopped) {break;}
+      if (e.propagationStopped) {
+        break;
+      }
     }
   }
   return e.defaultPrevented;
@@ -617,7 +636,9 @@ export const updateOptions = (
         (Array.isArray(input_attrs) ? "an array" : typeof input_attrs),
     );
   }
-  if (typeof block_redraw == "undefined") {block_redraw = false;}
+  if (typeof block_redraw == "undefined") {
+    block_redraw = false;
+  }
 
   // copyUserAttrs_ drops the "file" parameter as a convenience to us.
   const file = input_attrs.file;
@@ -646,11 +667,11 @@ export const updateOptions = (
   utils.updateDeep(g.user_attrs_ as Record<string, unknown>, attrs);
 
   // Sugar: markers / states map onto existing draw/highlight options.
-  const markers = g.user_attrs_.markers as
-    | { size?: number }
-    | undefined;
+  const markers = g.user_attrs_.markers as { size?: number } | undefined;
   if (markers) {
-    if (g.user_attrs_.drawPoints == null) {g.user_attrs_.drawPoints = true;}
+    if (g.user_attrs_.drawPoints == null) {
+      g.user_attrs_.drawPoints = true;
+    }
     if (markers.size != null && g.user_attrs_.pointSize == null) {
       g.user_attrs_.pointSize = markers.size;
     }
@@ -671,13 +692,17 @@ export const updateOptions = (
 
   g.attributes_.reparseSeries();
 
-  if (prevNumAxes < g.attributes_.numAxes()) {g.plotter_.clear();}
+  if (prevNumAxes < g.attributes_.numAxes()) {
+    g.plotter_.clear();
+  }
   if (file) {
     // This event indicates that the data is about to change, but hasn't yet.
     cascadeEvents_(g, "dataWillUpdate", {});
 
     g.file_ = file;
-    if (!block_redraw) {start(g);}
+    if (!block_redraw) {
+      start(g);
+    }
   } else {
     if (!block_redraw) {
       if (requiresNewPoints) {

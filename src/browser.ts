@@ -14,13 +14,17 @@ import Zpgraph from "./zpgraph";
 import cssText from "./style.css";
 
 const injectStylesheet = (css: string) => {
-  if (typeof document === "undefined") {return;}
-  if (document.getElementById("zpgraph-stylesheet")) {return;}
+  if (typeof document === "undefined") {
+    return;
+  }
+  if (document.getElementById("zpgraph-stylesheet")) {
+    return;
+  }
   const style = document.createElement("style");
   style.id = "zpgraph-stylesheet";
   style.textContent = css;
   document.head.appendChild(style);
-}
+};
 
 injectStylesheet(cssText as unknown as string);
 

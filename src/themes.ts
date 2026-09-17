@@ -45,7 +45,9 @@ const THEME_KEYS = Object.keys(themes.light) as Array<
  */
 export const applyTheme = (g: Zpgraph): void => {
   const theme = (g.user_attrs_ as ZpgraphOptions).theme;
-  if (theme !== "light" && theme !== "dark") {return;}
+  if (theme !== "light" && theme !== "dark") {
+    return;
+  }
 
   if (g.graphDiv) {
     g.graphDiv.setAttribute("data-theme", theme);
@@ -56,7 +58,9 @@ export const applyTheme = (g: Zpgraph): void => {
   const attrs = g.attrs_ as Record<string, unknown>;
 
   for (const key of THEME_KEYS) {
-    if (Object.hasOwn(user, key)) {continue;}
+    if (Object.hasOwn(user, key)) {
+      continue;
+    }
     attrs[key] = preset[key];
   }
 };

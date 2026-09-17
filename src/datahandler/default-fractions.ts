@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -12,9 +12,9 @@ import type {
   OptionsManagerLike,
   RawData,
   UnifiedSeries,
-} from '../internal-types';
-import { seriesOption } from './datahandler';
-import DefaultHandler from './default';
+} from "../internal-types";
+import { seriesOption } from "./datahandler";
+import DefaultHandler from "./default";
 
 class DefaultFractionHandler extends DefaultHandler {
   /** @inheritDoc */
@@ -26,7 +26,7 @@ class DefaultFractionHandler extends DefaultHandler {
     const series = Array.from({ length: rawData.length }) as UnifiedSeries;
     let x, y, point, num, den, value;
     const mult = 100.0;
-    const logScale = seriesOption<boolean>(options, i, 'logscale');
+    const logScale = seriesOption<boolean>(options, i, "logscale");
     for (let j = 0; j < rawData.length; j++) {
       x = rawData[j]![0] as number;
       point = rawData[j]![i] as number[] | null;

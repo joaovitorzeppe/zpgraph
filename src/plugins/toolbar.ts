@@ -83,7 +83,9 @@ class toolbar {
 
   layout(e: LayoutPluginEvent) {
     const opt = e.zpgraph.getOption("toolbar");
-    if (!opt) {return;}
+    if (!opt) {
+      return;
+    }
     e.reserveSpaceTop(TOOLBAR_RESERVE_TOP);
   }
 
@@ -170,7 +172,9 @@ class toolbar {
   }
 
   syncPanActive_() {
-    if (!this.el_) {return;}
+    if (!this.el_) {
+      return;
+    }
     for (const btn of this.el_.querySelectorAll<HTMLButtonElement>(
       ".zpgraph-toolbar-btn",
     )) {
@@ -187,12 +191,16 @@ class toolbar {
    */
   ensureInteractionModel_(g: Zpgraph) {
     if (this.panMode_) {
-      if (!this.panModel_) {this.panModel_ = createPanDragModel();}
+      if (!this.panModel_) {
+        this.panModel_ = createPanDragModel();
+      }
       const current = g.getOption("interactionModel") as
         | InteractionModel
         | null
         | undefined;
-      if (current === this.panModel_) {return;}
+      if (current === this.panModel_) {
+        return;
+      }
       if (current != null && current !== this.panModel_) {
         this.savedModel_ = current;
       }
@@ -200,12 +208,16 @@ class toolbar {
       return;
     }
 
-    if (this.savedModel_ === undefined) {return;}
+    if (this.savedModel_ === undefined) {
+      return;
+    }
     const current = g.getOption("interactionModel") as
       | InteractionModel
       | null
       | undefined;
-    if (current === this.savedModel_) {return;}
+    if (current === this.savedModel_) {
+      return;
+    }
     this.panModel_ = null;
     g.updateOptions({ interactionModel: this.savedModel_ ?? null }, true);
   }
@@ -287,12 +299,11 @@ const applyToolbarStyle = (
   el: HTMLElement,
   style: ToolbarStyle | undefined,
 ) => {
-  if (!style) {return;}
+  if (!style) {
+    return;
+  }
   for (const [key, value] of Object.entries(style)) {
-    el.style.setProperty(
-      key.includes("-") ? key : camelToKebab(key),
-      value,
-    );
+    el.style.setProperty(key.includes("-") ? key : camelToKebab(key), value);
   }
 };
 
@@ -311,8 +322,11 @@ const fillButtonContent = (
     return;
   }
   if (typeof custom === "string") {
-    if (custom.trim().startsWith("<")) {btn.innerHTML = custom;}
-    else {btn.textContent = custom;}
+    if (custom.trim().startsWith("<")) {
+      btn.innerHTML = custom;
+    } else {
+      btn.textContent = custom;
+    }
     return;
   }
   if (conf.variant === "text") {
@@ -335,7 +349,9 @@ const createPanDragModel = (): InteractionModel =>
   ({
     mousedown: (event: MouseEvent, g: unknown, context: InteractionContext) => {
       const chart = g as ZpgraphInstance;
-      if (event.button && event.button === 2) {return;}
+      if (event.button && event.button === 2) {
+        return;
+      }
       context.initializeMouseDown(event, g, context);
       ZpgraphInteraction.startPan(event, g, context);
 
@@ -343,14 +359,12 @@ const createPanDragModel = (): InteractionModel =>
         isPanning?: boolean;
         destroy?: () => void;
       };
-      const mousemove = utils.coalesceFrames(
-        ((moveEvent: MouseEvent) => {
-          if (drag.isPanning) {
-            ZpgraphInteraction.movePan(moveEvent, g, context);
-          }
-        }) as (...args: unknown[]) => void,
-      );
-      const mouseup = (upEvent: MouseEvent)  => {
+      const mousemove = utils.coalesceFrames(((moveEvent: MouseEvent) => {
+        if (drag.isPanning) {
+          ZpgraphInteraction.movePan(moveEvent, g, context);
+        }
+      }) as (...args: unknown[]) => void);
+      const mouseup = (upEvent: MouseEvent) => {
         mousemove.flush();
         if (drag.isPanning) {
           ZpgraphInteraction.endPan(upEvent, g, context);

@@ -26,15 +26,19 @@ export const div = (
   className?: string,
   style?: Record<string, string>,
 ): HTMLDivElement => {
-  const el = document.createElement('div');
-  if (className) {el.className = className;}
-  if (style) {setStyle(el, style);}
+  const el = document.createElement("div");
+  if (className) {
+    el.className = className;
+  }
+  if (style) {
+    setStyle(el, style);
+  }
   return el;
 };
 
 /** Show or hide, the way jQuery's toggle(visible) did. */
 export const toggle = (el: HTMLElement, visible: boolean): void => {
-  el.style.display = visible ? '' : 'none';
+  el.style.display = visible ? "" : "none";
 };
 
 export interface Emitter {
@@ -67,7 +71,7 @@ export const makeEmitter = (target: object): void => {
 
 export interface DragOptions {
   /** The extras only ever drag along one axis. */
-  axis: 'x' | 'y';
+  axis: "x" | "y";
   /** Travel limits, in the same space as `style.left` / `style.top`. */
   bounds: () => { min: number; max: number };
   onStart?: () => void;
@@ -81,13 +85,15 @@ export interface DragOptions {
  * the extras used jQuery UI's draggable for. Returns a teardown function.
  */
 export const drag = (el: HTMLElement, opts: DragOptions): (() => void) => {
-  const horizontal = opts.axis === 'x';
+  const horizontal = opts.axis === "x";
   let pointerId = -1;
   let startClient = 0;
   let startPosition = 0;
 
   const move = (e: PointerEvent) => {
-    if (e.pointerId !== pointerId) {return;}
+    if (e.pointerId !== pointerId) {
+      return;
+    }
     const { min, max } = opts.bounds();
     const delta = (horizontal ? e.clientX : e.clientY) - startClient;
     opts.onMove(Math.min(max, Math.max(min, startPosition + delta)));
@@ -95,20 +101,28 @@ export const drag = (el: HTMLElement, opts: DragOptions): (() => void) => {
   };
 
   const end = (e: PointerEvent) => {
-    if (e.pointerId !== pointerId) {return;}
+    if (e.pointerId !== pointerId) {
+      return;
+    }
     pointerId = -1;
-    el.removeEventListener('pointermove', move);
-    el.removeEventListener('pointerup', end);
-    el.removeEventListener('pointercancel', end);
-    if (opts.onEnd) {opts.onEnd();}
+    el.removeEventListener("pointermove", move);
+    el.removeEventListener("pointerup", end);
+    el.removeEventListener("pointercancel", end);
+    if (opts.onEnd) {
+      opts.onEnd();
+    }
   };
 
   const start = (e: PointerEvent) => {
     // Primary button only, and one drag at a time.
-    if (e.button !== 0 || pointerId !== -1) {return;}
+    if (e.button !== 0 || pointerId !== -1) {
+      return;
+    }
     pointerId = e.pointerId;
     startClient = horizontal ? e.clientX : e.clientY;
-    if (opts.onStart) {opts.onStart();}
+    if (opts.onStart) {
+      opts.onStart();
+    }
     // The element may be positioned by its other edge (an annotation sets
     // `bottom`), in which case the laid-out offset is the honest start.
     const styled = parseFloat(horizontal ? el.style.left : el.style.top);
@@ -118,18 +132,20 @@ export const drag = (el: HTMLElement, opts: DragOptions): (() => void) => {
         : el.offsetTop
       : styled;
     // Capture so the drag survives the pointer leaving a thin handle.
-    if (el.setPointerCapture) {el.setPointerCapture(e.pointerId);}
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
+    if (el.setPointerCapture) {
+      el.setPointerCapture(e.pointerId);
+    }
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
     e.preventDefault();
     e.stopPropagation();
   };
 
-  el.addEventListener('pointerdown', start);
+  el.addEventListener("pointerdown", start);
 
   return () => {
-    el.removeEventListener('pointerdown', start);
+    el.removeEventListener("pointerdown", start);
     end({ pointerId } as PointerEvent);
   };
 };
@@ -146,7 +162,7 @@ export const fillTemplate = (
   values: Record<string, unknown>,
 ): HTMLElement => {
   const clone = template.cloneNode(true) as HTMLElement;
-  clone.removeAttribute('id');
+  clone.removeAttribute("id");
 
   const substitute = (text: string) =>
     text.replace(/\{\{(\w+)\}\}/g, (whole, key) =>
@@ -156,12 +172,16 @@ export const fillTemplate = (
   const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = node.nodeValue;
-    if (text && text.includes('{{')) {node.nodeValue = substitute(text);}
+    if (text && text.includes("{{")) {
+      node.nodeValue = substitute(text);
+    }
   }
 
-  for (const field of clone.querySelectorAll('input, textarea')) {
+  for (const field of clone.querySelectorAll("input, textarea")) {
     const input = field as HTMLInputElement;
-    if (input.value.includes('{{')) {input.value = substitute(input.value);}
+    if (input.value.includes("{{")) {
+      input.value = substitute(input.value);
+    }
   }
 
   return clone;

@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -12,9 +12,9 @@ import type {
   OptionsManagerLike,
   RawData,
   UnifiedSeries,
-} from '../internal-types';
-import BarsHandler from './bars';
-import { seriesOption } from './datahandler';
+} from "../internal-types";
+import BarsHandler from "./bars";
+import { seriesOption } from "./datahandler";
 
 class CustomBarsHandler extends BarsHandler {
   /** @inheritDoc */
@@ -25,7 +25,7 @@ class CustomBarsHandler extends BarsHandler {
   ): UnifiedSeries {
     const series = Array.from({ length: rawData.length }) as UnifiedSeries;
     let x, y, point;
-    const logScale = seriesOption<boolean>(options, i, 'logscale');
+    const logScale = seriesOption<boolean>(options, i, "logscale");
     for (let j = 0; j < rawData.length; j++) {
       x = rawData[j]![0] as number;
       point = rawData[j]![i] as number[] | null;

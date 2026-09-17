@@ -37,7 +37,9 @@ class RebaseHandler extends DefaultHandler {
     initial: number | null,
     base: RebaseBase,
   ): number {
-    if (value === null || initial === null) {return NaN;}
+    if (value === null || initial === null) {
+      return NaN;
+    }
     if (base === "percent") {
       return (value / initial - 1) * 100;
     }
@@ -62,7 +64,9 @@ class RebaseHandler extends DefaultHandler {
       } else {
         y = RebaseHandler.rebase(series[j]![1], initial, this.baseOpt);
       }
-      if (y === null || isNaN(y)) {continue;}
+      if (y === null || isNaN(y)) {
+        continue;
+      }
       if (maxY === null || y > maxY) {
         maxY = y;
       }

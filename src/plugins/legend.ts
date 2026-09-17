@@ -164,7 +164,9 @@ const placeFollowLegend = (
   div: HTMLElement,
   points: Point[],
 ): void => {
-  if (points.length === 0) {return;}
+  if (points.length === 0) {
+    return;
+  }
   const tip = g.getOption("tooltip") as TooltipOptions | undefined;
   const area = g.plotter_.area;
   const labelsDivWidth = div.offsetWidth;
@@ -193,8 +195,12 @@ const placeFollowLegend = (
 
 const tooltipReserveTop = (g: ZpgraphInstance): number => {
   const tip = g.getOption("tooltip") as TooltipOptions | undefined;
-  if (!tip?.position || !isTopTooltip(tip.position)) {return 0;}
-  if (tip.reserveTop != null) {return Math.max(0, tip.reserveTop);}
+  if (!tip?.position || !isTopTooltip(tip.position)) {
+    return 0;
+  }
+  if (tip.reserveTop != null) {
+    return Math.max(0, tip.reserveTop);
+  }
   return DEFAULT_TOOLTIP_RESERVE_TOP;
 };
 
@@ -257,15 +263,23 @@ class Legend {
 
   layout(e: LayoutPluginEvent) {
     const g = e.zpgraph;
-    if (resolveTooltipShow(g) === "never") {return;}
-    if (resolveTooltipPosition(g) === "follow") {return;}
+    if (resolveTooltipShow(g) === "never") {
+      return;
+    }
+    if (resolveTooltipPosition(g) === "follow") {
+      return;
+    }
     const px = tooltipReserveTop(g);
-    if (px > 0) {e.reserveSpaceTop(px);}
+    if (px > 0) {
+      e.reserveSpaceTop(px);
+    }
   }
 
   select(e: LegendPluginEvent) {
     const div = this.legend_div_;
-    if (!div) {return;}
+    if (!div) {
+      return;
+    }
 
     const xValue = e.selectedX;
     const points = e.selectedPoints;
@@ -303,7 +317,9 @@ class Legend {
 
   deselect(e: LegendPluginEvent) {
     const div = this.legend_div_;
-    if (!div) {return;}
+    if (!div) {
+      return;
+    }
 
     if (resolveTooltipShow(e.zpgraph) !== "always") {
       // Building the rows would only fill a div nobody can see, and the next
@@ -334,7 +350,9 @@ class Legend {
 
   predraw(e: LegendPluginEvent) {
     const div = this.legend_div_;
-    if (!div) {return;}
+    if (!div) {
+      return;
+    }
 
     // Measuring an em forces a layout, so it happens here — on a data or option
     // change, which is also when the styles behind it can have changed — rather
@@ -342,7 +360,9 @@ class Legend {
     this.one_em_width_ = calculateEmWidthInDiv(div);
 
     // Don't touch a user-specified labelsDiv.
-    if (!this.is_generated_div_) {return;}
+    if (!this.is_generated_div_) {
+      return;
+    }
 
     div.className = withClassNames(
       "zpgraph-legend",
@@ -386,7 +406,9 @@ class Legend {
       for (let i = 1; i < labels.length; i++) {
         const label = labels[i]!;
         const series = g.getPropertiesForSeries(label);
-        if (!series) {continue;}
+        if (!series) {
+          continue;
+        }
         const strokePattern = g.getOption("strokePattern", label) as
           | number[]
           | null
@@ -430,7 +452,9 @@ class Legend {
       for (let i = 0; i < sel_points.length; i++) {
         const pt = sel_points[i]!;
         const seriesData = labelToSeries[pt.name];
-        if (!seriesData) {continue;}
+        if (!seriesData) {
+          continue;
+        }
         seriesData.y = pt.yval ?? null;
 
         if ((pt.yval === 0 && !showZeros) || isNaN(pt.canvasy ?? NaN)) {
@@ -439,7 +463,9 @@ class Legend {
         }
 
         const series = g.getPropertiesForSeries(pt.name);
-        if (!series) {continue;}
+        if (!series) {
+          continue;
+        }
         const yOptView = yOptViews[series.axis - 1]!;
         const fmtFunc = yOptView("valueFormatter") as ValueFormatter;
         const yHTML = fmtFunc(
@@ -468,7 +494,9 @@ class Legend {
     const g = data.zpgraph;
 
     const fragment = document.createDocumentFragment();
-    if (g.getOption("showLabelsOnHighlight") !== true) {return fragment;}
+    if (g.getOption("showLabelsOnHighlight") !== true) {
+      return fragment;
+    }
 
     const sepLines = g.getOption("labelsSeparateLines");
 
@@ -480,7 +508,9 @@ class Legend {
       let first = true;
       for (let i = 0; i < data.series.length; i++) {
         const series = data.series[i]!;
-        if (!series.isVisible) {continue;}
+        if (!series.isVisible) {
+          continue;
+        }
 
         if (!first) {
           fragment.appendChild(
@@ -506,12 +536,20 @@ class Legend {
     fragment.appendChild(document.createTextNode((data.xHTML ?? "") + ":"));
     for (let i = 0; i < data.series.length; i++) {
       const series = data.series[i]!;
-      if (!series.y && !series.yHTML) {continue;}
-      if (!series.isVisible) {continue;}
-      if (sepLines) {fragment.appendChild(document.createElement("br"));}
+      if (!series.y && !series.yHTML) {
+        continue;
+      }
+      if (!series.isVisible) {
+        continue;
+      }
+      if (sepLines) {
+        fragment.appendChild(document.createElement("br"));
+      }
 
       const span = document.createElement("span");
-      if (series.isHighlighted) {span.className = "highlight";}
+      if (series.isHighlighted) {
+        span.className = "highlight";
+      }
 
       const name = document.createElement("span");
       name.style.color = series.color;
@@ -544,7 +582,7 @@ class Legend {
  */
 
 // Needed for dashed lines.
-const calculateEmWidthInDiv = (div: HTMLElement): number  => {
+const calculateEmWidthInDiv = (div: HTMLElement): number => {
   const sizeSpan = document.createElement("span");
   // Through the CSSOM rather than a style attribute, which a strict
   // style-src refuses.
@@ -557,7 +595,7 @@ const calculateEmWidthInDiv = (div: HTMLElement): number  => {
   return oneEmWidth;
 };
 
-const escapeHTML = (str: string): string  => {
+const escapeHTML = (str: string): string => {
   return str
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&#34;")
@@ -572,7 +610,7 @@ const escapeHTML = (str: string): string  => {
 const CSS_COLOR = /^(#[0-9a-f]{3,8}|[a-z]+|(rgb|hsl)a?\([0-9a-z%.,/\s+-]*\))$/i;
 
 /** @private */
-const sanitizeCssColor = (color: unknown): string  => {
+const sanitizeCssColor = (color: unknown): string => {
   return typeof color === "string" && CSS_COLOR.test(color.trim())
     ? color.trim()
     : "inherit";
@@ -692,7 +730,7 @@ const legendDashSegments = (
     }
   }
   return segments;
-}
+};
 
 /**
  * The dash as markup, for a legendFormatter that builds a string.
@@ -711,7 +749,7 @@ const dashSegmentsToHTML = (
         `<div class="zpgraph-legend-dash" style="margin-right: ${s.marginRight}em; padding-left: ${s.paddingLeft}em;"></div>`,
     )
     .join("");
-}
+};
 
 /**
  * The dash as nodes, so the built-in legend never asks the parser to read a
@@ -738,6 +776,6 @@ const dashSegmentsToNodes = (
     fragment.appendChild(dash);
   }
   return fragment;
-}
+};
 
 export default Legend;

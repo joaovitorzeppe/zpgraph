@@ -91,12 +91,12 @@ const getControlPoints = (
   }
 
   return [l1x, l1y, r1x, r1y];
-}
+};
 
 // i.e. is none of (null, undefined, NaN)
 const isOK = (x: number | null | undefined): boolean => {
   return x != null && !isNaN(x);
-}
+};
 
 // A plotter which uses splines to create a smooth curve.
 // See tests/plotters.html for a demo.
@@ -106,8 +106,12 @@ const smoothPlotter = (e: PlotterEvent) => {
     points = e.points;
 
   let start = 0;
-  while (start < points.length && !isOK(points[start]?.canvasy)) {start++;}
-  if (start >= points.length) {return;}
+  while (start < points.length && !isOK(points[start]?.canvasy)) {
+    start++;
+  }
+  if (start >= points.length) {
+    return;
+  }
 
   ctx.beginPath();
   ctx.moveTo(points[start]!.canvasx!, points[start]!.canvasy!);
@@ -157,7 +161,7 @@ const smoothPlotter = (e: PlotterEvent) => {
   }
 
   ctx.stroke();
-}
+};
 smoothPlotter.smoothing = 1 / 3;
 smoothPlotter._getControlPoints = getControlPoints; // for testing
 

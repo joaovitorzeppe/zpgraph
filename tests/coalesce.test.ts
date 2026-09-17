@@ -18,7 +18,9 @@ let nextHandle = 1;
 const runFrame = () => {
   const due = [...frames.values()];
   frames.clear();
-  for (const f of due) {f(0);}
+  for (const f of due) {
+    f(0);
+  }
 };
 
 const mouseEvent = (type: string, pageX: number) => {

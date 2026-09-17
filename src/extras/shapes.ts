@@ -129,7 +129,9 @@ const customCircles: Record<string, DrawPointCallback> = {
 };
 
 for (const k in customCircles) {
-  if (!Object.hasOwn(customCircles, k)) {continue;}
+  if (!Object.hasOwn(customCircles, k)) {
+    continue;
+  }
   Zpgraph.Circles[k] = customCircles[k]!;
 }
 

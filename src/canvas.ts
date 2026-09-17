@@ -68,7 +68,7 @@ interface FastCanvasProxy {
 
 type FillContext = CanvasRenderingContext2D | FastCanvasProxy;
 
-const isNullUndefinedOrNaN = (x: unknown)  => {
+const isNullUndefinedOrNaN = (x: unknown) => {
   return x === null || x === undefined || isNaN(x as number);
 };
 
@@ -210,7 +210,9 @@ export default class ZpgraphCanvasRenderer {
     const ctx = e.drawingContext;
     ctx.save();
     if (stroking) {
-      if (ctx.setLineDash) {ctx.setLineDash(strokePattern!);}
+      if (ctx.setLineDash) {
+        ctx.setLineDash(strokePattern!);
+      }
     }
 
     const decimated = ZpgraphCanvasRenderer._decimateByPixel(
@@ -240,7 +242,9 @@ export default class ZpgraphCanvasRenderer {
     );
 
     if (stroking) {
-      if (ctx.setLineDash) {ctx.setLineDash([]);}
+      if (ctx.setLineDash) {
+        ctx.setLineDash([]);
+      }
     }
 
     ctx.restore();
@@ -292,10 +296,14 @@ export default class ZpgraphCanvasRenderer {
     // Emit in x order so the line is drawn left to right, and never emit the
     // same point twice.
     const flush = () => {
-      if (first === null && gap === null) {return;}
+      if (first === null && gap === null) {
+        return;
+      }
       const chosen: Point[] = [];
       const push = (p: Point | null) => {
-        if (p && !chosen.includes(p)) {chosen.push(p);}
+        if (p && !chosen.includes(p)) {
+          chosen.push(p);
+        }
       };
       push(first);
       push(lowest);
@@ -303,12 +311,16 @@ export default class ZpgraphCanvasRenderer {
       push(last);
       push(gap);
       chosen.sort((a, b) => a.canvasx! - b.canvasx!);
-      for (const p of chosen) {out.push(p);}
+      for (const p of chosen) {
+        out.push(p);
+      }
       first = last = lowest = highest = gap = null;
     };
 
     for (let i = start; i < limit; i++) {
-      if (predicate && !predicate(arr, i)) {continue;}
+      if (predicate && !predicate(arr, i)) {
+        continue;
+      }
       const point: Point = arr[i]!;
       const x = point.canvasx! | 0;
       if (x !== column) {
@@ -320,14 +332,22 @@ export default class ZpgraphCanvasRenderer {
       // A break in the data has to survive decimation, otherwise a gap is
       // drawn as a straight line across it.
       if (y === null || y === undefined || y !== y) {
-        if (gap === null) {gap = point;}
+        if (gap === null) {
+          gap = point;
+        }
         continue;
       }
 
-      if (first === null) {first = point;}
+      if (first === null) {
+        first = point;
+      }
       last = point;
-      if (lowest === null || y < lowest.canvasy!) {lowest = point;}
-      if (highest === null || y > highest.canvasy!) {highest = point;}
+      if (lowest === null || y < lowest.canvasy!) {
+        lowest = point;
+      }
+      if (highest === null || y > highest.canvasy!) {
+        highest = point;
+      }
     }
     flush();
 
@@ -376,7 +396,9 @@ export default class ZpgraphCanvasRenderer {
         while (i < limit && !predicate(arr, i)) {
           i++;
         }
-        if (i === limit) {break;}
+        if (i === limit) {
+          break;
+        }
         point = arr[i]!;
       }
 
@@ -459,7 +481,9 @@ export default class ZpgraphCanvasRenderer {
     const needsIsolation = drawPointCallback !== utils.Circles.DEFAULT;
     for (let idx = 0; idx < pointsOnLine.length; idx++) {
       const cb = pointsOnLine[idx]!;
-      if (needsIsolation) {ctx.save();}
+      if (needsIsolation) {
+        ctx.save();
+      }
       drawPointCallback.call(
         e.zpgraph,
         e.zpgraph,
@@ -471,7 +495,9 @@ export default class ZpgraphCanvasRenderer {
         pointSize,
         cb[2],
       );
-      if (needsIsolation) {ctx.restore();}
+      if (needsIsolation) {
+        ctx.restore();
+      }
     }
   }
 
@@ -538,7 +564,9 @@ export default class ZpgraphCanvasRenderer {
     for (i = 0; i < setNames.length; i++) {
       setName = setNames[i]!;
       const setPlotter = this.zpgraph_.getOption("plotter", setName) as Plotter;
-      if (setPlotter === plotter_attr) {continue;} // not specialized.
+      if (setPlotter === plotter_attr) {
+        continue;
+      } // not specialized.
 
       setPlotters[setName] = setPlotter;
     }
@@ -549,7 +577,9 @@ export default class ZpgraphCanvasRenderer {
 
       for (let j = 0; j < sets.length; j++) {
         setName = setNames[j]!;
-        if (opt_seriesName && setName !== opt_seriesName) {continue;}
+        if (opt_seriesName && setName !== opt_seriesName) {
+          continue;
+        }
 
         const points = sets[j]!;
 
@@ -631,12 +661,12 @@ export default class ZpgraphCanvasRenderer {
       g.getOption("strokeDashArray", setName)) as number[] | null;
     let drawPoints = g.getBooleanOption("drawPoints", setName);
     let pointSize = g.getNumericOption("pointSize", setName);
-    const markers = g.getOption("markers") as
-      | { size?: number }
-      | undefined;
+    const markers = g.getOption("markers") as { size?: number } | undefined;
     if (markers) {
       drawPoints = true;
-      if (markers.size != null) {pointSize = markers.size;}
+      if (markers.size != null) {
+        pointSize = markers.size;
+      }
     }
 
     const forecast = g.getOption("forecast") as
@@ -703,7 +733,9 @@ export default class ZpgraphCanvasRenderer {
     const setName = e.setName;
     const errorBars =
       g.getBooleanOption("errorBars") || g.getBooleanOption("customBars");
-    if (!errorBars) {return;}
+    if (!errorBars) {
+      return;
+    }
 
     const fillGraph = g.getBooleanOption("fillGraph", setName);
     if (fillGraph) {
@@ -757,8 +789,12 @@ export default class ZpgraphCanvasRenderer {
 
       // The documentation specifically disallows nulls inside the point arrays,
       // but in case it happens we should do something sensible.
-      if (isNaN(newYs[0]!)) {newYs[0] = point.y ?? 0;}
-      if (isNaN(newYs[1]!)) {newYs[1] = point.y ?? 0;}
+      if (isNaN(newYs[0]!)) {
+        newYs[0] = point.y ?? 0;
+      }
+      if (isNaN(newYs[1]!)) {
+        newYs[1] = point.y ?? 0;
+      }
 
       newYs[0] = e.plotArea.h * newYs[0]! + e.plotArea.y;
       newYs[1] = e.plotArea.h * newYs[1]! + e.plotArea.y;
@@ -800,8 +836,10 @@ export default class ZpgraphCanvasRenderer {
 
     // Drop superfluous motions
     // Assumes all pendingActions have the same (rounded) x-value.
-    const compressActions = (opt_losslessOnly?: boolean)  => {
-      if (pendingActions.length <= 1) {return;}
+    const compressActions = (opt_losslessOnly?: boolean) => {
+      if (pendingActions.length <= 1) {
+        return;
+      }
 
       // Lossless compression: drop inconsequential moveTos.
       for (let i = pendingActions.length - 1; i > 0; i--) {
@@ -831,12 +869,16 @@ export default class ZpgraphCanvasRenderer {
       if (pendingActions.length > 2 && !opt_losslessOnly) {
         // keep an initial moveTo, but drop all others.
         let startIdx = 0;
-        if (pendingActions[0]![0] === MOVE_TO) {startIdx++;}
+        if (pendingActions[0]![0] === MOVE_TO) {
+          startIdx++;
+        }
         let minIdx: number | null = null,
           maxIdx: number | null = null;
         for (let i = startIdx; i < pendingActions.length; i++) {
           const action = pendingActions[i]!;
-          if (action[0] !== LINE_TO) {continue;}
+          if (action[0] !== LINE_TO) {
+            continue;
+          }
           if (minIdx === null && maxIdx === null) {
             minIdx = i;
             maxIdx = i;
@@ -864,7 +906,7 @@ export default class ZpgraphCanvasRenderer {
       }
     };
 
-    const flushActions = (opt_noLossyCompression?: boolean)  => {
+    const flushActions = (opt_noLossyCompression?: boolean) => {
       compressActions(opt_noLossyCompression);
       for (let i = 0, len = pendingActions.length; i < len; i++) {
         const action = pendingActions[i]!;
@@ -881,7 +923,7 @@ export default class ZpgraphCanvasRenderer {
       pendingActions = [];
     };
 
-    const addAction = (action: number, x: number, y: number)  => {
+    const addAction = (action: number, x: number, y: number) => {
       const rx = Math.round(x);
       if (lastRoundedX === null || rx !== lastRoundedX) {
         // if there are large gaps on the x-axis, it's essential to keep the
@@ -940,10 +982,14 @@ export default class ZpgraphCanvasRenderer {
    */
   static _fillPlotter(e: CanvasPlotterEvent) {
     // Skip if we're drawing a single series for interactive highlight overlay.
-    if (e.singleSeriesName) {return;}
+    if (e.singleSeriesName) {
+      return;
+    }
 
     // We'll handle all the series at once, not one-by-one.
-    if (e.seriesIndex !== 0) {return;}
+    if (e.seriesIndex !== 0) {
+      return;
+    }
 
     const g = e.zpgraph;
     const setNames = g.getLabels()!.slice(1); // remove x-axis
@@ -951,17 +997,23 @@ export default class ZpgraphCanvasRenderer {
     // getLabels() includes names for invisible series, which are not included in
     // allSeriesPoints. We remove those to make the two match.
     for (let i = setNames.length; i >= 0; i--) {
-      if (!g.visibility()[i]) {setNames.splice(i, 1);}
+      if (!g.visibility()[i]) {
+        setNames.splice(i, 1);
+      }
     }
 
     const anySeriesFilled = (() => {
       for (let i = 0; i < setNames.length; i++) {
-        if (g.getBooleanOption("fillGraph", setNames[i]!)) {return true;}
+        if (g.getBooleanOption("fillGraph", setNames[i]!)) {
+          return true;
+        }
       }
       return false;
     })();
 
-    if (!anySeriesFilled) {return;}
+    if (!anySeriesFilled) {
+      return;
+    }
 
     const area = e.plotArea;
     const sets = e.allSeriesPoints!;
@@ -987,7 +1039,7 @@ export default class ZpgraphCanvasRenderer {
       baselineX: number,
       baselineY: number,
       pathBack: [number, number][],
-    )  => {
+    ) => {
       ctx.lineTo(baselineX, baselineY);
       if (stackedGraph) {
         for (let i = pathBack.length - 1; i >= 0; i--) {
@@ -1001,15 +1053,20 @@ export default class ZpgraphCanvasRenderer {
     for (let setIdx = setCount - 1; setIdx >= 0; setIdx--) {
       let ctx: FillContext = e.drawingContext;
       const setName = setNames[setIdx]!;
-      if (!g.getBooleanOption("fillGraph", setName)) {continue;}
+      if (!g.getBooleanOption("fillGraph", setName)) {
+        continue;
+      }
 
       const fillAlpha = g.getNumericOption("fillAlpha", setName);
       const stepPlot = g.getBooleanOption("stepPlot", setName);
       const color = colors[setIdx]!;
       const axis = g.axisPropertiesForSeries(setName);
       let axisY = 1.0 + axis.minyval! * axis.yscale!;
-      if (axisY < 0.0) {axisY = 0.0;}
-      else if (axisY > 1.0) {axisY = 1.0;}
+      if (axisY < 0.0) {
+        axisY = 0.0;
+      } else if (axisY > 1.0) {
+        axisY = 1.0;
+      }
       axisY = area.h * axisY + area.y;
 
       const points = sets[setIdx]!;
@@ -1157,6 +1214,8 @@ export default class ZpgraphCanvasRenderer {
 
 const withAlpha = (color: string, alpha: number): string => {
   const rgb = utils.toRGB_(color);
-  if (!rgb) {return color;}
+  if (!rgb) {
+    return color;
+  }
   return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
 };

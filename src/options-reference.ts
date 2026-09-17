@@ -1073,14 +1073,13 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Legend"],
         type: "Object",
         description:
-          'Tooltip: show (never|onmouseover|always; null/undefined = onmouseover), position (top-left|top-right|bottom-left|bottom-right|follow), offsetX/offsetY, reserveTop, theme. follow floats near the highlighted point; top corners may reserve chrome above the plot.',
+          "Tooltip: show (never|onmouseover|always; null/undefined = onmouseover), position (top-left|top-right|bottom-left|bottom-right|follow), offsetX/offsetY, reserveTop, theme. follow floats near the highlighted point; top corners may reserve chrome above the plot.",
       },
       responsive: {
         default: "null",
         labels: ["Overall display"],
         type: "Array of {breakpoint, options}",
-        description:
-          "Breakpoint overrides applied on container resize.",
+        description: "Breakpoint overrides applied on container resize.",
       },
       fillGradient: {
         default: "null",
@@ -1114,14 +1113,14 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         default: "null",
         labels: ["Data Line display"],
         type: "Object",
-        description: "Sugar for drawPoints/pointSize ({size, strokeWidth, shape}).",
+        description:
+          "Sugar for drawPoints/pointSize ({size, strokeWidth, shape}).",
       },
       chartAnnotations: {
         default: "null",
         labels: ["Annotations"],
         type: "Object",
-        description:
-          "Region annotations: xaxis, yaxis, points, texts.",
+        description: "Region annotations: xaxis, yaxis, points, texts.",
       },
       eventMarkers: {
         default: "null",
@@ -1169,7 +1168,9 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
       "Value display/formatting": "",
     }; // </JSON>
   for (const k in OPTIONS_REFERENCE) {
-    if (!Object.hasOwn(OPTIONS_REFERENCE, k)) {continue;}
+    if (!Object.hasOwn(OPTIONS_REFERENCE, k)) {
+      continue;
+    }
     const op = OPTIONS_REFERENCE[k]!;
     for (const fld of flds) {
       if (!Object.hasOwn(op, fld)) {

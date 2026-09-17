@@ -80,11 +80,14 @@ class grid {
       // One path per axis rather than one per tick: every line on an axis shares
       // a style, so they can all be stroked together.
       for (i = 0; i < axes.length; i++) {
-        if (!drawGrid[i]) {continue;}
+        if (!drawGrid[i]) {
+          continue;
+        }
         ctx.save();
         if (stroking[i]) {
-          if (ctx.setLineDash && strokePattern[i])
-            {ctx.setLineDash(strokePattern[i]!);}
+          if (ctx.setLineDash && strokePattern[i]) {
+            ctx.setLineDash(strokePattern[i]!);
+          }
         }
         ctx.strokeStyle = strokeStyles[i]!;
         ctx.lineWidth = lineWidths[i]!;
@@ -92,7 +95,9 @@ class grid {
         ctx.beginPath();
         x = halfUp(area.x);
         for (const tick of yticks) {
-          if (!tick.has_tick || tick.axis !== i) {continue;}
+          if (!tick.has_tick || tick.axis !== i) {
+            continue;
+          }
           y = halfDown(area.y + tick.pos * area.h);
           ctx.moveTo(x, y);
           ctx.lineTo(x + area.w, y);
@@ -112,21 +117,27 @@ class grid {
         | null;
       const xStroking = !!(xStrokePattern && xStrokePattern.length >= 2);
       if (xStroking) {
-        if (ctx.setLineDash) {ctx.setLineDash(xStrokePattern);}
+        if (ctx.setLineDash) {
+          ctx.setLineDash(xStrokePattern);
+        }
       }
       ctx.strokeStyle = String(g.getOptionForAxis("gridLineColor", "x"));
       ctx.lineWidth = Number(g.getOptionForAxis("gridLineWidth", "x"));
       ctx.beginPath();
       y = halfDown(area.y + area.h);
       for (const tick of xticks) {
-        if (!tick.has_tick) {continue;}
+        if (!tick.has_tick) {
+          continue;
+        }
         x = halfUp(area.x + tick.pos * area.w);
         ctx.moveTo(x, y);
         ctx.lineTo(x, area.y);
       }
       ctx.stroke();
       if (xStroking) {
-        if (ctx.setLineDash) {ctx.setLineDash([]);}
+        if (ctx.setLineDash) {
+          ctx.setLineDash([]);
+        }
       }
       ctx.restore();
     }

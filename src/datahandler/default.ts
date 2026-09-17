@@ -62,7 +62,9 @@ class DefaultHandler extends ZpgraphDataHandler {
       num_ok = 0;
       for (j = Math.max(0, i - rollPeriod + 1); j < i + 1; j++) {
         y = originalData[j]![1];
-        if (y === null || isNaN(y)) {continue;}
+        if (y === null || isNaN(y)) {
+          continue;
+        }
         num_ok++;
         sum += y;
       }
@@ -90,7 +92,9 @@ class DefaultHandler extends ZpgraphDataHandler {
 
     for (let j = firstIdx; j <= lastIdx; j++) {
       y = series[j]![1];
-      if (y === null || isNaN(y)) {continue;}
+      if (y === null || isNaN(y)) {
+        continue;
+      }
       if (maxY === null || y > maxY) {
         maxY = y;
       }

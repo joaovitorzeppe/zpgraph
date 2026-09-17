@@ -1,14 +1,14 @@
-import { describe, expect, it } from 'vitest';
-import BarsHandler from '../src/datahandler/bars';
-import ErrorBarsHandler from '../src/datahandler/bars-error';
-import CustomBarsHandler from '../src/datahandler/bars-custom';
-import FractionsBarsHandler from '../src/datahandler/bars-fractions';
-import DefaultFractionHandler from '../src/datahandler/default-fractions';
+import { describe, expect, it } from "vitest";
+import BarsHandler from "../src/datahandler/bars";
+import ErrorBarsHandler from "../src/datahandler/bars-error";
+import CustomBarsHandler from "../src/datahandler/bars-custom";
+import FractionsBarsHandler from "../src/datahandler/bars-fractions";
+import DefaultFractionHandler from "../src/datahandler/default-fractions";
 import type {
   AxisProperties,
   OptionsManagerLike,
   UnifiedSeries,
-} from '../src/internal-types';
+} from "../src/internal-types";
 
 /**
  * Fake options object in the same shape the handlers ask for: `get('labels')`
@@ -17,13 +17,13 @@ import type {
 const makeOptions = (seriesOptions: Record<string, any> = {}) =>
   ({
     get: (name: string) => {
-      if (name === 'labels') {return ['x', 'A', 'B'];}
+      if (name === "labels") {
+        return ["x", "A", "B"];
+      }
       return null;
     },
     getForSeries: (name: string) =>
-      Object.hasOwn(seriesOptions, name)
-        ? seriesOptions[name]
-        : false,
+      Object.hasOwn(seriesOptions, name) ? seriesOptions[name] : false,
   }) as unknown as OptionsManagerLike;
 
 /** Extras of a unified sample, which every bars flavour fills in. */
@@ -33,39 +33,35 @@ const extras = (sample: UnifiedSeries[number]) =>
 /** BarsHandler is abstract; this is the thinnest thing that can be built. */
 class BareBarsHandler extends BarsHandler {
   override extractSeries(): UnifiedSeries {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
   override rollingAverage(): UnifiedSeries {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 }
 
-describe('BarsHandler', () => {
+describe("BarsHandler", () => {
   const handler = new BareBarsHandler();
 
-  it('carries no data format of its own', () => {
+  it("carries no data format of its own", () => {
     // Each bars flavour brings its own extractSeries and rollingAverage, and
     // since they are abstract a subclass that forgets one no longer compiles.
     const proto = BarsHandler.prototype;
-    expect(Object.hasOwn(proto, 'extractSeries')).toBe(
-      false,
-    );
-    expect(Object.hasOwn(proto, 'rollingAverage')).toBe(
-      false,
-    );
+    expect(Object.hasOwn(proto, "extractSeries")).toBe(false);
+    expect(Object.hasOwn(proto, "rollingAverage")).toBe(false);
   });
 
-  it('seriesToPoints copies the bar extras onto each point', () => {
+  it("seriesToPoints copies the bar extras onto each point", () => {
     const series: UnifiedSeries = [
       [1, 10, [8, 12]],
       [2, 20, [18, 22]],
     ];
-    const points = handler.seriesToPoints(series, 'A', 0);
+    const points = handler.seriesToPoints(series, "A", 0);
     expect(points).toHaveLength(2);
     expect(points[0]!).toMatchObject({
       xval: 1,
       yval: 10,
-      name: 'A',
+      name: "A",
       idx: 0,
       yval_minus: 8,
       yval_plus: 12,
@@ -81,15 +77,15 @@ describe('BarsHandler', () => {
     });
   });
 
-  it('seriesToPoints offsets idx by boundaryIdStart and nulls stay null', () => {
-    const points = handler.seriesToPoints([[1, null, [null, null]]], 'A', 3);
+  it("seriesToPoints offsets idx by boundaryIdStart and nulls stay null", () => {
+    const points = handler.seriesToPoints([[1, null, [null, null]]], "A", 3);
     expect(points[0]!.idx).toBe(3);
     expect(points[0]!.yval).toBeNull();
     expect(points[0]!.yval_minus).toBeNaN();
     expect(points[0]!.yval_plus).toBeNaN();
   });
 
-  it('getExtremeYValues spans the bar extras', () => {
+  it("getExtremeYValues spans the bar extras", () => {
     const series: UnifiedSeries = [
       [1, 10, [8, 12]],
       [2, 20, [16, 24]],
@@ -98,7 +94,7 @@ describe('BarsHandler', () => {
     expect(handler.getExtremeYValues(series, null, false)).toEqual([8, 24]);
   });
 
-  it('getExtremeYValues clamps extras that cross the center value', () => {
+  it("getExtremeYValues clamps extras that cross the center value", () => {
     // low > y and high < y both happen with custom bars; the bar is widened to y.
     expect(handler.getExtremeYValues([[1, 5, [7, 9]]], null, false)).toEqual([
       5, 9,
@@ -108,7 +104,7 @@ describe('BarsHandler', () => {
     ]);
   });
 
-  it('getExtremeYValues skips null/NaN samples and returns nulls when all are gone', () => {
+  it("getExtremeYValues skips null/NaN samples and returns nulls when all are gone", () => {
     const series: UnifiedSeries = [
       [1, null, [null, null]],
       [2, NaN, [NaN, NaN]],
@@ -120,8 +116,8 @@ describe('BarsHandler', () => {
     ).toEqual([null, null]);
   });
 
-  it('onLineEvaluated normalizes the error terms on a linear axis', () => {
-    const points = handler.seriesToPoints([[1, 10, [8, 12]]], 'A', 0);
+  it("onLineEvaluated normalizes the error terms on a linear axis", () => {
+    const points = handler.seriesToPoints([[1, 10, [8, 12]]], "A", 0);
     handler.onLineEvaluated(
       points,
       { minyval: 0, yscale: 0.01 } as AxisProperties,
@@ -132,13 +128,13 @@ describe('BarsHandler', () => {
     expect(points[0]!.y_bottom).toBeCloseTo(0.88, 10);
   });
 
-  it('onLineEvaluated normalizes the error terms on a log axis', () => {
+  it("onLineEvaluated normalizes the error terms on a log axis", () => {
     const points = handler.seriesToPoints(
       [
         [1, 30, [10, 100]],
         [2, 30, [0, 100]],
       ],
-      'A',
+      "A",
       0,
     );
     handler.onLineEvaluated(
@@ -154,10 +150,10 @@ describe('BarsHandler', () => {
   });
 });
 
-describe('ErrorBarsHandler', () => {
+describe("ErrorBarsHandler", () => {
   const handler = new ErrorBarsHandler();
 
-  it('extractSeries widens each point by sigma * stddev', () => {
+  it("extractSeries widens each point by sigma * stddev", () => {
     const raw = [
       [1, [10, 1]],
       [2, [20, 2]],
@@ -170,7 +166,7 @@ describe('ErrorBarsHandler', () => {
     ]);
   });
 
-  it('extractSeries maps null points and NaN values to empty samples', () => {
+  it("extractSeries maps null points and NaN values to empty samples", () => {
     const raw = [
       [1, null],
       [2, [NaN, 1]],
@@ -182,7 +178,7 @@ describe('ErrorBarsHandler', () => {
     expect(series[1]![2]!).toEqual([NaN, NaN, NaN]);
   });
 
-  it('extractSeries drops points whose lower bar reaches zero on a log scale', () => {
+  it("extractSeries drops points whose lower bar reaches zero on a log scale", () => {
     const raw = [
       [1, [10, 1]],
       [2, [1, 1]],
@@ -201,7 +197,7 @@ describe('ErrorBarsHandler', () => {
     expect(series[3]!).toEqual([4, null, [null, null, null]]);
   });
 
-  it('extractSeries keeps the same points when logscale is off', () => {
+  it("extractSeries keeps the same points when logscale is off", () => {
     const series = handler.extractSeries(
       [[1, [1, 1]]],
       1,
@@ -210,7 +206,7 @@ describe('ErrorBarsHandler', () => {
     expect(series).toEqual([[1, 1, [-1, 3, 1]]]);
   });
 
-  it('rollingAverage averages values and combines stddevs in quadrature', () => {
+  it("rollingAverage averages values and combines stddevs in quadrature", () => {
     const original: UnifiedSeries = [
       [1, 10, [8, 12, 1]],
       [2, 20, [16, 24, 2]],
@@ -229,7 +225,7 @@ describe('ErrorBarsHandler', () => {
     expect(extras(rolled[1]!)[1]!).toBeCloseTo(15 + Math.sqrt(5), 10);
   });
 
-  it('rollingAverage skips null samples inside the window', () => {
+  it("rollingAverage skips null samples inside the window", () => {
     const original: UnifiedSeries = [
       [1, 10, [8, 12, 1]],
       [2, null, [null, null, null]],
@@ -247,7 +243,7 @@ describe('ErrorBarsHandler', () => {
     expect(extras(rolled[2]!)[1]!).toBeCloseTo(20 + Math.sqrt(2), 10);
   });
 
-  it('rollingAverage preserves NaNs when rollPeriod is 1 and nulls otherwise', () => {
+  it("rollingAverage preserves NaNs when rollPeriod is 1 and nulls otherwise", () => {
     const opts = makeOptions({ sigma: 2 });
     const kept = handler.rollingAverage(
       [[1, NaN, [NaN, NaN, NaN]]],
@@ -272,7 +268,7 @@ describe('ErrorBarsHandler', () => {
     expect(dropped[1]!).toEqual([2, null, [null, null]]);
   });
 
-  it('getExtremeYValues uses the inherited bar extremes', () => {
+  it("getExtremeYValues uses the inherited bar extremes", () => {
     const series = handler.extractSeries(
       [
         [1, [10, 1]],
@@ -284,13 +280,13 @@ describe('ErrorBarsHandler', () => {
     expect(handler.getExtremeYValues(series, null, false)).toEqual([8, 24]);
   });
 
-  it('seriesToPoints exposes the error bar bounds', () => {
+  it("seriesToPoints exposes the error bar bounds", () => {
     const series = handler.extractSeries(
       [[1, [10, 1]]],
       1,
       makeOptions({ sigma: 2 }),
     );
-    const points = handler.seriesToPoints(series, 'A', 0);
+    const points = handler.seriesToPoints(series, "A", 0);
     expect(points[0]!).toMatchObject({
       xval: 1,
       yval: 10,
@@ -300,10 +296,10 @@ describe('ErrorBarsHandler', () => {
   });
 });
 
-describe('CustomBarsHandler', () => {
+describe("CustomBarsHandler", () => {
   const handler = new CustomBarsHandler();
 
-  it('extractSeries takes the middle value as y and the outer ones as extras', () => {
+  it("extractSeries takes the middle value as y and the outer ones as extras", () => {
     const raw = [
       [1, [8, 10, 12]],
       [2, [18, 20, 22]],
@@ -314,7 +310,7 @@ describe('CustomBarsHandler', () => {
     ]);
   });
 
-  it('extractSeries maps null points and NaN middles to empty samples', () => {
+  it("extractSeries maps null points and NaN middles to empty samples", () => {
     const raw = [
       [1, null],
       [2, [1, NaN, 3]],
@@ -325,7 +321,7 @@ describe('CustomBarsHandler', () => {
     expect(series[1]![2]!).toEqual([NaN, NaN]);
   });
 
-  it('extractSeries drops points with any non-positive component on a log scale', () => {
+  it("extractSeries drops points with any non-positive component on a log scale", () => {
     const raw = [
       [1, [8, 10, 12]],
       [2, [0, 10, 12]],
@@ -343,7 +339,7 @@ describe('CustomBarsHandler', () => {
     expect(series[3]!).toEqual([4, null, [null, null]]);
   });
 
-  it('rollingAverage averages low/mid/high over a sliding window', () => {
+  it("rollingAverage averages low/mid/high over a sliding window", () => {
     const original: UnifiedSeries = [
       [1, 10, [8, 12]],
       [2, 20, [18, 22]],
@@ -357,7 +353,7 @@ describe('CustomBarsHandler', () => {
     ]);
   });
 
-  it('rollingAverage keeps the window sums clean of null samples', () => {
+  it("rollingAverage keeps the window sums clean of null samples", () => {
     const original: UnifiedSeries = [
       [1, 10, [8, 12]],
       [2, null, [null, null]],
@@ -371,7 +367,7 @@ describe('CustomBarsHandler', () => {
     expect(rolled[2]!).toEqual([3, 30, [28, 32]]);
   });
 
-  it('rollingAverage emits a null sample when the window is empty', () => {
+  it("rollingAverage emits a null sample when the window is empty", () => {
     const rolled = handler.rollingAverage(
       [[1, null, [null, null]]],
       1,
@@ -381,7 +377,7 @@ describe('CustomBarsHandler', () => {
     expect(rolled).toEqual([[1, null, [null, null]]]);
   });
 
-  it('getExtremeYValues spans the custom bars', () => {
+  it("getExtremeYValues spans the custom bars", () => {
     const series = handler.extractSeries(
       [
         [1, [8, 10, 12]],
@@ -393,8 +389,8 @@ describe('CustomBarsHandler', () => {
     expect(handler.getExtremeYValues(series, null, false)).toEqual([8, 22]);
   });
 
-  it('seriesToPoints exposes the custom bar bounds', () => {
-    const points = handler.seriesToPoints([[1, 10, [8, 12]]], 'A', 0);
+  it("seriesToPoints exposes the custom bar bounds", () => {
+    const points = handler.seriesToPoints([[1, 10, [8, 12]]], "A", 0);
     expect(points[0]!).toMatchObject({
       xval: 1,
       yval: 10,
@@ -404,13 +400,13 @@ describe('CustomBarsHandler', () => {
   });
 });
 
-describe('FractionsBarsHandler', () => {
+describe("FractionsBarsHandler", () => {
   const handler = new FractionsBarsHandler();
   // sigma * sqrt(p * (1 - p) / den) for p = 1/4 and den = 4, which is also the
   // value for p = 3/4 since p * (1 - p) is symmetric.
   const stddevQuarter = 2 * Math.sqrt((0.25 * 0.75) / 4);
 
-  it('extractSeries turns numerator/denominator into a percentage with a bar', () => {
+  it("extractSeries turns numerator/denominator into a percentage with a bar", () => {
     const raw = [
       [1, [1, 4]],
       [2, [3, 4]],
@@ -428,7 +424,7 @@ describe('FractionsBarsHandler', () => {
     expect(extras(series[1]!)[3]!).toBe(4);
   });
 
-  it('extractSeries falls back to stddev 1 when the denominator is zero', () => {
+  it("extractSeries falls back to stddev 1 when the denominator is zero", () => {
     const series = handler.extractSeries(
       [[1, [5, 0]]],
       1,
@@ -437,7 +433,7 @@ describe('FractionsBarsHandler', () => {
     expect(series[0]!).toEqual([1, 0, [-100, 100, 5, 0]]);
   });
 
-  it('extractSeries maps null points and NaN numerators to empty samples', () => {
+  it("extractSeries maps null points and NaN numerators to empty samples", () => {
     const raw = [
       [1, null],
       [2, [NaN, 4]],
@@ -448,7 +444,7 @@ describe('FractionsBarsHandler', () => {
     expect(extras(series[1]!)[3]!).toBe(4);
   });
 
-  it('extractSeries drops non-positive numerators/denominators on a log scale', () => {
+  it("extractSeries drops non-positive numerators/denominators on a log scale", () => {
     const raw = [
       [1, [1, 4]],
       [2, [0, 4]],
@@ -464,7 +460,7 @@ describe('FractionsBarsHandler', () => {
     expect(series[2]!).toEqual([3, null, [null, null, null, null]]);
   });
 
-  it('rollingAverage sums numerators and denominators over the window', () => {
+  it("rollingAverage sums numerators and denominators over the window", () => {
     const original: UnifiedSeries = [
       [1, 25, [0, 0, 1, 4]],
       [2, 75, [0, 0, 3, 4]],
@@ -485,7 +481,7 @@ describe('FractionsBarsHandler', () => {
     expect(extras(rolled[1]!)[1]!).toBeCloseTo(100 * (0.5 + stddevHalf), 10);
   });
 
-  it('rollingAverage drops samples that leave the window', () => {
+  it("rollingAverage drops samples that leave the window", () => {
     const original: UnifiedSeries = [
       [1, 25, [0, 0, 1, 4]],
       [2, 75, [0, 0, 3, 4]],
@@ -502,7 +498,7 @@ describe('FractionsBarsHandler', () => {
     expect(rolled[2]![1]!).toBe(62.5);
   });
 
-  it('rollingAverage uses the Wilson interval when asked', () => {
+  it("rollingAverage uses the Wilson interval when asked", () => {
     const original: UnifiedSeries = [[1, 25, [0, 0, 1, 4]]];
     const rolled = handler.rollingAverage(
       original,
@@ -525,7 +521,7 @@ describe('FractionsBarsHandler', () => {
     );
   });
 
-  it('rollingAverage returns a flat zero bar for an empty Wilson denominator', () => {
+  it("rollingAverage returns a flat zero bar for an empty Wilson denominator", () => {
     const rolled = handler.rollingAverage(
       [[1, 0, [0, 0, 0, 0]]],
       1,
@@ -535,7 +531,7 @@ describe('FractionsBarsHandler', () => {
     expect(rolled).toEqual([[1, 0, [0, 0]]]);
   });
 
-  it('getExtremeYValues spans the fraction bars', () => {
+  it("getExtremeYValues spans the fraction bars", () => {
     const series = handler.extractSeries(
       [
         [1, [1, 4]],
@@ -549,23 +545,23 @@ describe('FractionsBarsHandler', () => {
     expect(max).toBeCloseTo(75 + 100 * stddevQuarter, 10);
   });
 
-  it('seriesToPoints exposes the fraction bar bounds', () => {
+  it("seriesToPoints exposes the fraction bar bounds", () => {
     const series = handler.extractSeries(
       [[1, [1, 4]]],
       1,
       makeOptions({ sigma: 2 }),
     );
-    const points = handler.seriesToPoints(series, 'A', 0);
+    const points = handler.seriesToPoints(series, "A", 0);
     expect(points[0]!.yval).toBe(25);
     expect(points[0]!.yval_minus).toBeCloseTo(25 - 100 * stddevQuarter, 10);
     expect(points[0]!.yval_plus).toBeCloseTo(25 + 100 * stddevQuarter, 10);
   });
 });
 
-describe('DefaultFractionHandler', () => {
+describe("DefaultFractionHandler", () => {
   const handler = new DefaultFractionHandler();
 
-  it('extractSeries converts fractions to percentages and keeps the raw pair', () => {
+  it("extractSeries converts fractions to percentages and keeps the raw pair", () => {
     const raw = [
       [1, [1, 4]],
       [2, [3, 4]],
@@ -576,13 +572,13 @@ describe('DefaultFractionHandler', () => {
     ]);
   });
 
-  it('extractSeries yields 0% for a zero denominator', () => {
+  it("extractSeries yields 0% for a zero denominator", () => {
     expect(handler.extractSeries([[1, [5, 0]]], 1, makeOptions())).toEqual([
       [1, 0, [5, 0]],
     ]);
   });
 
-  it('extractSeries maps null points and NaN numerators to empty samples', () => {
+  it("extractSeries maps null points and NaN numerators to empty samples", () => {
     const raw = [
       [1, null],
       [2, [NaN, 4]],
@@ -593,7 +589,7 @@ describe('DefaultFractionHandler', () => {
     expect(series[1]![2]!).toEqual([NaN, 4]);
   });
 
-  it('extractSeries drops non-positive numerators/denominators on a log scale', () => {
+  it("extractSeries drops non-positive numerators/denominators on a log scale", () => {
     const raw = [
       [1, [1, 4]],
       [2, [0, 4]],
@@ -609,7 +605,7 @@ describe('DefaultFractionHandler', () => {
     expect(series[2]!).toEqual([3, null, [null, null]]);
   });
 
-  it('rollingAverage aggregates the fractions instead of averaging percentages', () => {
+  it("rollingAverage aggregates the fractions instead of averaging percentages", () => {
     const original: UnifiedSeries = [
       [1, 25, [1, 4]],
       [2, 75, [3, 4]],
@@ -623,7 +619,7 @@ describe('DefaultFractionHandler', () => {
     ]);
   });
 
-  it('rollingAverage with period 1 mirrors the extracted percentages', () => {
+  it("rollingAverage with period 1 mirrors the extracted percentages", () => {
     const original: UnifiedSeries = [
       [1, 25, [1, 4]],
       [2, 75, [3, 4]],
@@ -634,7 +630,7 @@ describe('DefaultFractionHandler', () => {
     ]);
   });
 
-  it('getExtremeYValues uses the plain min/max inherited from DefaultHandler', () => {
+  it("getExtremeYValues uses the plain min/max inherited from DefaultHandler", () => {
     const series = handler.extractSeries(
       [
         [1, [1, 4]],
@@ -647,10 +643,10 @@ describe('DefaultFractionHandler', () => {
     expect(handler.getExtremeYValues(series, null, false)).toEqual([25, 75]);
   });
 
-  it('seriesToPoints produces plain points without bar bounds', () => {
+  it("seriesToPoints produces plain points without bar bounds", () => {
     const series = handler.extractSeries([[1, [1, 4]]], 1, makeOptions());
-    const points = handler.seriesToPoints(series, 'A', 2);
-    expect(points[0]!).toMatchObject({ xval: 1, yval: 25, name: 'A', idx: 2 });
+    const points = handler.seriesToPoints(series, "A", 2);
+    expect(points[0]!).toMatchObject({ xval: 1, yval: 25, name: "A", idx: 2 });
     expect(points[0]!.yval_minus).toBeUndefined();
     expect(points[0]!.y_top).toBeUndefined();
   });

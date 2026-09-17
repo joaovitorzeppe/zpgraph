@@ -24,7 +24,8 @@ import IFrameTarp from "../iframe-tarp";
 import type {
   LayoutPluginEvent,
   PlotArea,
-  UnifiedSeries,ZpgraphInstance
+  UnifiedSeries,
+  ZpgraphInstance,
 } from "../internal-types";
 
 const setElementRect = (
@@ -32,8 +33,10 @@ const setElementRect = (
   context: CanvasRenderingContext2D | null,
   rect: PlotArea,
   pixelRatioOption: number,
-)  => {
-  if (!canvas || !context) {return;}
+) => {
+  if (!canvas || !context) {
+    return;
+  }
   const canvasScale = pixelRatioOption || utils.getContextPixelRatio(context);
 
   canvas.style.top = rect.y + "px";
@@ -327,11 +330,15 @@ class rangeSelector {
     // position when they run, so only the last move of a frame needs to draw.
     const zoomFrame = utils.coalesceFrames(() => {
       this.drawInteractiveLayer_();
-      if (dynamic) {doZoom();}
+      if (dynamic) {
+        doZoom();
+      }
     });
     const panFrame = utils.coalesceFrames(() => {
       this.drawInteractiveLayer_();
-      if (dynamic) {doPan();}
+      if (dynamic) {
+        doPan();
+      }
     });
 
     const onZoom = (e: MouseEvent) => {
@@ -739,7 +746,9 @@ class rangeSelector {
         | boolean
         | null;
       inclusion.push(include);
-      if (include !== null) {anySet = true;} // it's set explicitly for this series
+      if (include !== null) {
+        anySet = true;
+      } // it's set explicitly for this series
     }
 
     if (anySet) {
@@ -757,7 +766,9 @@ class rangeSelector {
     const dataHandler = g.dataHandler_;
     const options = g.attributes_;
     for (i = 1; i < g.numColumns(); i++) {
-      if (!includeSeries[i]) {continue;}
+      if (!includeSeries[i]) {
+        continue;
+      }
       let series = dataHandler.extractSeries(g.rawData_!, i, options);
       if (g.rollPeriod() > 1) {
         series = dataHandler.rollingAverage(series, g.rollPeriod(), options, i);
@@ -776,7 +787,9 @@ class rangeSelector {
       let count = 0;
       for (let j = 0; j < rolledSeries.length; j++) {
         const y = rolledSeries[j]![i]![1];
-        if (y === null || isNaN(y)) {continue;}
+        if (y === null || isNaN(y)) {
+          continue;
+        }
         count++;
         sum += y;
       }
@@ -803,7 +816,9 @@ class rangeSelector {
       yMin = utils.log10(yMin);
       for (i = 0; i < combinedSeries.length; i++) {
         const yv = combinedSeries[i]![1];
-        if (yv !== null) {combinedSeries[i]![1] = utils.log10(yv);}
+        if (yv !== null) {
+          combinedSeries[i]![1] = utils.log10(yv);
+        }
       }
     } else {
       let yExtra;

@@ -50,17 +50,27 @@ abstract class BarsHandler extends ZpgraphDataHandler {
     for (let j = firstIdx; j <= lastIdx; j++) {
       const row = series[j]!;
       y = row[1];
-      if (y === null || isNaN(y)) {continue;}
+      if (y === null || isNaN(y)) {
+        continue;
+      }
 
       const extras = row[2] as number[];
       let low = extras[0]!;
       let high = extras[1]!;
 
-      if (low > y) {low = y;} // this can happen with custom bars,
-      if (high < y) {high = y;} // e.g. in tests/custom-bars.html
+      if (low > y) {
+        low = y;
+      } // this can happen with custom bars,
+      if (high < y) {
+        high = y;
+      } // e.g. in tests/custom-bars.html
 
-      if (maxY === null || high > maxY) {maxY = high;}
-      if (minY === null || low < minY) {minY = low;}
+      if (maxY === null || high > maxY) {
+        maxY = high;
+      }
+      if (minY === null || low < minY) {
+        minY = low;
+      }
     }
 
     return [minY, maxY];

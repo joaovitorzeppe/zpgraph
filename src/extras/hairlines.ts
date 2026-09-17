@@ -67,8 +67,10 @@ const chartValue = (g: ZpgraphInstance, row: number, col: number): number =>
   Number(g.getValue(row, col));
 
 /** @private Detach one hairline's divs and its drag listeners. */
-const teardownHairline = (h: Hairline)  => {
-  if (h.stopDrag) {h.stopDrag();}
+const teardownHairline = (h: Hairline) => {
+  if (h.stopDrag) {
+    h.stopDrag();
+  }
   h.lineDiv.remove();
   h.infoDiv.remove();
 };
@@ -78,7 +80,7 @@ const teardownHairline = (h: Hairline)  => {
  * such template gets an empty one instead of a crash.
  * @private
  */
-const makeInfoDiv = ()  => {
+const makeInfoDiv = () => {
   const template = document.getElementById("hairline-template");
   let infoDiv: HTMLElement;
   if (template) {
@@ -291,11 +293,14 @@ Zpgraph.Plugins.Hairlines = (() => {
       const numRows = g.numRows();
       for (let row = 0; row < numRows; row++) {
         const yval = g.getValue(row, col);
-        if (yval === null || yval === undefined || isNaN(Number(yval)))
-          {continue;}
+        if (yval === null || yval === undefined || isNaN(Number(yval))) {
+          continue;
+        }
 
         const rowXval = Number(g.getValue(row, 0));
-        if (rowXval <= xval) {prevRow = row;}
+        if (rowXval <= xval) {
+          prevRow = row;
+        }
 
         if (rowXval >= xval) {
           nextRow = row;
@@ -322,7 +327,9 @@ Zpgraph.Plugins.Hairlines = (() => {
           row = g.findClosestRow(g.toDomXCoord(h.xval) ?? 0);
           for (let i = 1; i < g.numColumns(); i++) {
             const label = labels[i];
-            if (!label) {continue;}
+            if (!label) {
+              continue;
+            }
             selPoints.push({
               canvasx: 1,
               canvasy: 1,
@@ -336,7 +343,9 @@ Zpgraph.Plugins.Hairlines = (() => {
           // "interpolated" mode.
           for (let i = 1; i < g.numColumns(); i++) {
             const label = labels[i];
-            if (!label) {continue;}
+            if (!label) {
+              continue;
+            }
 
             const prevNextRow = hairlines.findPrevNextRows(g, h.xval, i);
             prevRow = prevNextRow[0];
@@ -344,9 +353,15 @@ Zpgraph.Plugins.Hairlines = (() => {
 
             // For x-values outside the domain, interpolate "between" the extreme
             // point and itself.
-            if (prevRow === null) {prevRow = nextRow;}
-            if (nextRow === null) {nextRow = prevRow;}
-            if (prevRow === null || nextRow === null) {continue;}
+            if (prevRow === null) {
+              prevRow = nextRow;
+            }
+            if (nextRow === null) {
+              nextRow = prevRow;
+            }
+            if (prevRow === null || nextRow === null) {
+              continue;
+            }
 
             // linear interpolation
             const prevX = chartValue(g, prevRow, 0);
@@ -417,7 +432,9 @@ Zpgraph.Plugins.Hairlines = (() => {
 
     didDrawChart(_e: unknown) {
       // Early out in the (common) case of zero hairlines.
-      if (this.hairlines_.length === 0) {return;}
+      if (this.hairlines_.length === 0) {
+        return;
+      }
 
       this.updateHairlineDivPositions();
       this.attachHairlinesToChart_();

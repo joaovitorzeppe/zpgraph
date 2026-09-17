@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 /**
  * jsdom has no canvas implementation and no layout engine, so every chart test
@@ -8,7 +8,7 @@ import { vi } from 'vitest';
 export const mockCanvas = () => {
   HTMLCanvasElement.prototype.getContext = vi.fn(() => {
     const ctx: Record<string, unknown> = {
-      canvas: document.createElement('canvas'),
+      canvas: document.createElement("canvas"),
       save: vi.fn(),
       restore: vi.fn(),
       beginPath: vi.fn(),
@@ -59,27 +59,27 @@ export const recordingCanvas = () => {
     };
 
   const ctx: Record<string, unknown> = {
-    canvas: document.createElement('canvas'),
-    save: record('save'),
-    restore: record('restore'),
-    beginPath: record('beginPath'),
-    closePath: record('closePath'),
-    moveTo: record('moveTo'),
-    lineTo: record('lineTo'),
-    stroke: record('stroke'),
-    fill: record('fill'),
-    fillRect: record('fillRect'),
-    clearRect: record('clearRect'),
-    translate: record('translate'),
-    scale: record('scale'),
-    transform: record('transform'),
-    setTransform: record('setTransform'),
-    arc: record('arc'),
-    fillText: record('fillText'),
-    rect: record('rect'),
-    clip: record('clip'),
-    quadraticCurveTo: record('quadraticCurveTo'),
-    bezierCurveTo: record('bezierCurveTo'),
+    canvas: document.createElement("canvas"),
+    save: record("save"),
+    restore: record("restore"),
+    beginPath: record("beginPath"),
+    closePath: record("closePath"),
+    moveTo: record("moveTo"),
+    lineTo: record("lineTo"),
+    stroke: record("stroke"),
+    fill: record("fill"),
+    fillRect: record("fillRect"),
+    clearRect: record("clearRect"),
+    translate: record("translate"),
+    scale: record("scale"),
+    transform: record("transform"),
+    setTransform: record("setTransform"),
+    arc: record("arc"),
+    fillText: record("fillText"),
+    rect: record("rect"),
+    clip: record("clip"),
+    quadraticCurveTo: record("quadraticCurveTo"),
+    bezierCurveTo: record("bezierCurveTo"),
     setLineDash: vi.fn(),
     drawImage: vi.fn(),
     putImageData: vi.fn(),
@@ -110,19 +110,19 @@ export const stubLayoutMetrics = (
   const h = metrics.height ?? 20;
   const left = metrics.left ?? 0;
   const top = metrics.top ?? 0;
-  Object.defineProperty(el, 'offsetWidth', {
+  Object.defineProperty(el, "offsetWidth", {
     configurable: true,
     get: () => w,
   });
-  Object.defineProperty(el, 'offsetHeight', {
+  Object.defineProperty(el, "offsetHeight", {
     configurable: true,
     get: () => h,
   });
-  Object.defineProperty(el, 'clientWidth', {
+  Object.defineProperty(el, "clientWidth", {
     configurable: true,
     get: () => w,
   });
-  Object.defineProperty(el, 'clientHeight', {
+  Object.defineProperty(el, "clientHeight", {
     configurable: true,
     get: () => h,
   });
@@ -142,13 +142,13 @@ export const stubLayoutMetrics = (
 };
 
 export const mountDiv = (width = 480, height = 320) => {
-  const el = document.createElement('div');
+  const el = document.createElement("div");
   el.style.width = `${width}px`;
   el.style.height = `${height}px`;
-  Object.defineProperty(el, 'offsetWidth', { get: () => width });
-  Object.defineProperty(el, 'offsetHeight', { get: () => height });
-  Object.defineProperty(el, 'clientWidth', { get: () => width });
-  Object.defineProperty(el, 'clientHeight', { get: () => height });
+  Object.defineProperty(el, "offsetWidth", { get: () => width });
+  Object.defineProperty(el, "offsetHeight", { get: () => height });
+  Object.defineProperty(el, "clientWidth", { get: () => width });
+  Object.defineProperty(el, "clientHeight", { get: () => height });
   document.body.appendChild(el);
   return el;
 };

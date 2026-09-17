@@ -16,7 +16,9 @@ const SAFE_CSS_CLASS = /^[^\s<>"'`;\\]+$/;
 /** Split and filter a className string for safe DOM use. */
 export const safeCssClasses = (cssClass: unknown): string[] =>
   typeof cssClass === "string"
-    ? cssClass.split(/\s+/).filter((c) => c.length > 0 && SAFE_CSS_CLASS.test(c))
+    ? cssClass
+        .split(/\s+/)
+        .filter((c) => c.length > 0 && SAFE_CSS_CLASS.test(c))
     : [];
 
 /** `base` plus optional extra classes from the app. */
@@ -29,16 +31,13 @@ export const getChartClassNames = (
   g: Pick<Zpgraph, "getOption">,
 ): ChartClassNames => {
   const value = g.getOption("classNames");
-  return value && typeof value === "object"
-    ? (value as ChartClassNames)
-    : {};
+  return value && typeof value === "object" ? (value as ChartClassNames) : {};
 };
 
 /** Keep `graphDiv.className` as `zpgraph` + optional `classNames.root`. */
 export const applyRootClassNames = (g: Zpgraph): void => {
-  if (!g.graphDiv) {return;}
-  g.graphDiv.className = withClassNames(
-    "zpgraph",
-    getChartClassNames(g).root,
-  );
+  if (!g.graphDiv) {
+    return;
+  }
+  g.graphDiv.className = withClassNames("zpgraph", getChartClassNames(g).root);
 };

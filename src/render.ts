@@ -29,7 +29,7 @@ import type Zpgraph from "./zpgraph";
 type SeriesExtremes = [number | null, number | null];
 type GatheredExtremes = Record<string, SeriesExtremes>;
 
-const isNullUndefinedOrNaN = (num: unknown)  => {
+const isNullUndefinedOrNaN = (num: unknown) => {
   return isNaN(parseFloat(String(num)));
 };
 
@@ -131,7 +131,9 @@ export const stackPoints = (
   const findNextPoint = (idx: number): Point | null => {
     // If we've previously found a non-NaN point and haven't gone past it yet,
     // just use that.
-    if (nextPointIdx >= idx) {return cachedNextPoint;}
+    if (nextPointIdx >= idx) {
+      return cachedNextPoint;
+    }
 
     // We haven't found a non-NaN point yet or have moved past it,
     // look towards the right to find a non-NaN point.
@@ -150,7 +152,9 @@ export const stackPoints = (
   for (let i = 0; i < points.length; ++i) {
     const point = points[i]!;
     const xval = point.xval;
-    if (xval == null) {continue;}
+    if (xval == null) {
+      continue;
+    }
     if (cumulativeYval[xval] === undefined) {
       cumulativeYval[xval] = 0;
     }
@@ -236,7 +240,9 @@ export const gatherDatasets = (
   const num_series = rolledSeries.length - 1;
   let series: UnifiedSeries;
   for (seriesIdx = num_series; seriesIdx >= 1; seriesIdx--) {
-    if (!g.visibility()[seriesIdx - 1]) {continue;}
+    if (!g.visibility()[seriesIdx - 1]) {
+      continue;
+    }
 
     // Prune down to the desired range, if necessary (for zooming)
     // Because there can be lines going to points outside of the visible area,
@@ -250,11 +256,17 @@ export const gatherDatasets = (
       // search. The linear scan this replaces ran over every sample of
       // every series on every frame of a pan.
       firstIdx = utils.lowerBoundX(series, low);
-      if (firstIdx === series.length) {firstIdx = null;}
+      if (firstIdx === series.length) {
+        firstIdx = null;
+      }
       lastIdx = utils.upperBoundX(series, high);
-      if (lastIdx < 0) {lastIdx = null;}
+      if (lastIdx < 0) {
+        lastIdx = null;
+      }
 
-      if (firstIdx === null) {firstIdx = 0;}
+      if (firstIdx === null) {
+        firstIdx = 0;
+      }
       let correctedFirstIdx = firstIdx;
       let isInvalidValue = true;
       while (isInvalidValue && correctedFirstIdx > 0) {
@@ -263,7 +275,9 @@ export const gatherDatasets = (
         isInvalidValue = series[correctedFirstIdx]![1] === null;
       }
 
-      if (lastIdx === null) {lastIdx = series.length - 1;}
+      if (lastIdx === null) {
+        lastIdx = series.length - 1;
+      }
       let correctedLastIdx = lastIdx;
       isInvalidValue = true;
       while (isInvalidValue && correctedLastIdx < series.length - 1) {
@@ -346,7 +360,9 @@ export const drawGraph = (g: Zpgraph) => {
   const pixelWidth = g.plotter_?.area?.w || g.width_;
   const [xMin, xMax] = g.dateWindow_ ?? xAxisExtremes(g);
   for (let i = 1; i < points.length; i++) {
-    if (!g.visibility()[i - 1]) {continue;}
+    if (!g.visibility()[i - 1]) {
+      continue;
+    }
     const seriesPoints = points[i];
     if (seriesPoints?.length) {
       points[i] = decimatePointsByX(seriesPoints, xMin, xMax, pixelWidth);
@@ -357,7 +373,9 @@ export const drawGraph = (g: Zpgraph) => {
   const labels = g.attr_("labels") as string[];
   let dataIdx = 0;
   for (let i = 1; i < points.length; i++) {
-    if (!g.visibility()[i - 1]) {continue;}
+    if (!g.visibility()[i - 1]) {
+      continue;
+    }
     g.layout_.addDataset(labels[i]!, points[i]!);
     g.datasetIndex_[i] = dataIdx++;
   }
@@ -458,13 +476,17 @@ export const computeYAxes = (g: Zpgraph) => {
     if (axis === 0) {
       opts = g.optionsViewForAxis_("y" + (axis ? "2" : ""));
       v = opts("valueRange");
-      if (v) {g.axes_[axis]!.valueRange = v as [number | null, number | null];}
+      if (v) {
+        g.axes_[axis]!.valueRange = v as [number | null, number | null];
+      }
     } else {
       // To keep old behavior
       const axes = g.user_attrs_.axes;
       if (axes && axes.y2) {
         v = axes.y2.valueRange;
-        if (v) {g.axes_[axis]!.valueRange = v;}
+        if (v) {
+          g.axes_[axis]!.valueRange = v;
+        }
       }
     }
   }
@@ -523,7 +545,9 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
       for (let j = 0; j < series.length; j++) {
         // this skips invisible series
         const seriesName = series[j];
-        if (!seriesName || !Object.hasOwn(extremes, seriesName)) {continue;}
+        if (!seriesName || !Object.hasOwn(extremes, seriesName)) {
+          continue;
+        }
 
         // Only use valid extremes to stop null data series' from corrupting the scale.
         extremeMinY = extremes[seriesName]![0];
@@ -538,13 +562,21 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
 
       // Include zero if requested by the user.
       if (includeZero && !logscale) {
-        if (minY > 0) {minY = 0;}
-        if (maxY < 0) {maxY = 0;}
+        if (minY > 0) {
+          minY = 0;
+        }
+        if (maxY < 0) {
+          maxY = 0;
+        }
       }
 
       // Ensure we have a valid scale, otherwise default to [0, 1] for safety.
-      if (minY === Infinity) {minY = 0;}
-      if (maxY === -Infinity) {maxY = 1;}
+      if (minY === Infinity) {
+        minY = 0;
+      }
+      if (maxY === -Infinity) {
+        maxY = 1;
+      }
 
       span = maxY - minY;
       // special case: if we have no sense of scale, center on the sole value.
@@ -570,8 +602,12 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
 
           // Backwards-compatible behavior: Move the span to start or end at zero if it's
           // close to zero.
-          if (minAxisY < 0 && minY >= 0) {minAxisY = 0;}
-          if (maxAxisY > 0 && maxY <= 0) {maxAxisY = 0;}
+          if (minAxisY < 0 && minY >= 0) {
+            minAxisY = 0;
+          }
+          if (maxAxisY > 0 && maxY <= 0) {
+            maxAxisY = 0;
+          }
         }
       }
       axis.extremeRange = [minAxisY, maxAxisY];
@@ -630,11 +666,15 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
         g,
       );
       // Define the first independent axis as primary axis.
-      if (!p_axis) {p_axis = axis;}
+      if (!p_axis) {
+        p_axis = axis;
+      }
     }
   }
   if (p_axis === undefined) {
-    throw new Error('Configuration Error: At least one axis has to have the "independentTicks" option activated.');
+    throw new Error(
+      'Configuration Error: At least one axis has to have the "independentTicks" option activated.',
+    );
   }
   // Add ticks. By default, all axes inherit the tick positions of the
   // primary axis. However, if an axis is specifically marked as having

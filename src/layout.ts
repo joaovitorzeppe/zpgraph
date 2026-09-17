@@ -214,7 +214,9 @@ export default class ZpgraphLayout {
         continue;
       }
       utils.update(a as unknown as Record<string, unknown>, src);
-      if (!a.xval) {a.xval = parse(a.x);}
+      if (!a.xval) {
+        a.xval = parse(a.x);
+      }
       this.annotations.push(a);
     }
   }
@@ -288,8 +290,7 @@ export default class ZpgraphLayout {
         (xAxis.xlogscale as number)
       );
     }
-      return (value! - xAxis.minval) * xAxis.scale;
-    
+    return (value! - xAxis.minval) * xAxis.scale;
   }
 
   /**
@@ -309,8 +310,7 @@ export default class ZpgraphLayout {
           axis.ylogscale!;
       return isFinite(x) ? x : NaN; // shim for v8 issue; see pull request 276
     }
-      return 1.0 - (value! - axis.minyval!) * axis.yscale!;
-    
+    return 1.0 - (value! - axis.minyval!) * axis.yscale!;
   }
 
   _evaluateLineCharts() {

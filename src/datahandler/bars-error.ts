@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @license
@@ -12,9 +12,9 @@ import type {
   OptionsManagerLike,
   RawData,
   UnifiedSeries,
-} from '../internal-types';
-import BarsHandler from './bars';
-import { seriesOption } from './datahandler';
+} from "../internal-types";
+import BarsHandler from "./bars";
+import { seriesOption } from "./datahandler";
 
 class ErrorBarsHandler extends BarsHandler {
   /** @inheritDoc */
@@ -25,8 +25,8 @@ class ErrorBarsHandler extends BarsHandler {
   ): UnifiedSeries {
     const series = Array.from({ length: rawData.length }) as UnifiedSeries;
     let x, y, variance, point;
-    const logScale = seriesOption<boolean>(options, i, 'logscale');
-    const sigma = seriesOption<number>(options, i, 'sigma');
+    const logScale = seriesOption<boolean>(options, i, "logscale");
+    const sigma = seriesOption<number>(options, i, "sigma");
     for (let j = 0; j < rawData.length; j++) {
       x = rawData[j]![0] as number;
       point = rawData[j]![i] as number[] | null;
@@ -64,7 +64,7 @@ class ErrorBarsHandler extends BarsHandler {
   ): UnifiedSeries {
     rollPeriod = Math.min(rollPeriod, originalData.length);
     const rollingData: UnifiedSeries = [];
-    const sigma = seriesOption<number>(options, seriesIndex_, 'sigma');
+    const sigma = seriesOption<number>(options, seriesIndex_, "sigma");
 
     let i, j, y, v, sum, num_ok, stddev, variance, value;
 
@@ -76,7 +76,9 @@ class ErrorBarsHandler extends BarsHandler {
       num_ok = 0;
       for (j = Math.max(0, i - rollPeriod + 1); j < i + 1; j++) {
         y = originalData[j]![1];
-        if (y === null || isNaN(y)) {continue;}
+        if (y === null || isNaN(y)) {
+          continue;
+        }
         num_ok++;
         sum += y;
         variance += Math.pow((originalData[j]![2] as number[])[2]!, 2);

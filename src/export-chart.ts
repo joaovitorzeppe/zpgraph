@@ -25,7 +25,9 @@ export type ToCsvOptions = {
  */
 export const toPng = (g: Zpgraph, opts: ToPngOptions = {}): string => {
   const plot = g.hidden_ ?? g.canvas_;
-  if (!plot) {return "";}
+  if (!plot) {
+    return "";
+  }
 
   const overlay = g.canvas_;
   const scale = opts.scale ?? 1;
@@ -35,7 +37,9 @@ export const toPng = (g: Zpgraph, opts: ToPngOptions = {}): string => {
   out.width = Math.max(1, Math.round(w * scale));
   out.height = Math.max(1, Math.round(h * scale));
   const ctx = out.getContext("2d");
-  if (!ctx) {return "";}
+  if (!ctx) {
+    return "";
+  }
 
   if (opts.background) {
     ctx.fillStyle = opts.background;
@@ -78,7 +82,9 @@ export const toCsv = (g: Zpgraph, opts: ToCsvOptions = {}): string => {
 };
 
 const formatCsvCell = (v: unknown): string => {
-  if (v == null) {return "";}
+  if (v == null) {
+    return "";
+  }
   if (v instanceof Date) {
     return Number.isFinite(v.getTime()) ? escapeCsv(v.toISOString()) : "";
   }
@@ -94,7 +100,9 @@ const formatCsvCell = (v: unknown): string => {
 };
 
 const escapeCsv = (s: string): string => {
-  if (/[",\n\r]/.test(s)) {return `"${s.replace(/"/g, '""')}"`;}
+  if (/[",\n\r]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
   return s;
 };
 

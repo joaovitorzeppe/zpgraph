@@ -22,13 +22,17 @@ class data_labels {
   didDrawChart(e: ChartDrawPluginEvent) {
     const g = e.zpgraph as unknown as Zpgraph;
     const opts = g.getOption("dataLabels") as DataLabelsOptions | undefined;
-    if (!opts?.enabled) {return;}
+    if (!opts?.enabled) {
+      return;
+    }
 
     const every = opts.filter?.every ?? 1;
     const minDist = opts.filter?.minDistancePx ?? 40;
     const ctx = e.drawingContext;
     const sets = g.layout_.points as Point[][] | undefined;
-    if (!sets?.length) {return;}
+    if (!sets?.length) {
+      return;
+    }
 
     ctx.save();
     ctx.font = "11px sans-serif";
@@ -39,10 +43,16 @@ class data_labels {
     for (const pts of sets) {
       let lastX = -Infinity;
       for (let i = 0; i < pts.length; i++) {
-        if (i % every !== 0) {continue;}
+        if (i % every !== 0) {
+          continue;
+        }
         const p = pts[i]!;
-        if (p.canvasx == null || p.canvasy == null || p.yval == null) {continue;}
-        if (p.canvasx - lastX < minDist) {continue;}
+        if (p.canvasx == null || p.canvasy == null || p.yval == null) {
+          continue;
+        }
+        if (p.canvasx - lastX < minDist) {
+          continue;
+        }
         lastX = p.canvasx;
         const text = opts.formatter
           ? opts.formatter(p.yval, p)

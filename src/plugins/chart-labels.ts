@@ -13,7 +13,8 @@
 import type {
   ChartDrawPluginEvent,
   LayoutPluginEvent,
-  PlotArea,ZpgraphInstance
+  PlotArea,
+  ZpgraphInstance,
 } from "../internal-types";
 import { getChartClassNames, withClassNames } from "../class-names";
 

@@ -127,8 +127,7 @@ export const numericTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) => {
               pixel_coord: pixel_coord,
             };
           } else if (
-            Math.abs(pixel_coord - lastDisplayed.pixel_coord) >=
-            pixels_per_tick
+            Math.abs(pixel_coord - lastDisplayed.pixel_coord) >= pixels_per_tick
           ) {
             lastDisplayed = {
               tickValue: tickValue,
@@ -281,7 +280,11 @@ const TICK_PLACEMENT: TickPlacement[] = [
   { datefield: DateField.DATEFIELD_D, step: 2, spacing: 1000 * 86400 * 2 }, // TWO_DAILY
   { datefield: DateField.DATEFIELD_D, step: 7, spacing: 1000 * 604800 }, // WEEKLY
   // 1e3 * 60 * 60 * 24 * 365.2425 / 12
-  { datefield: DateField.DATEFIELD_M, step: 1, spacing: 1000 * 7200 * 365.2425 }, // MONTHLY
+  {
+    datefield: DateField.DATEFIELD_M,
+    step: 1,
+    spacing: 1000 * 7200 * 365.2425,
+  }, // MONTHLY
   // 1e3 * 60 * 60 * 24 * 365.2425 / 4
   {
     datefield: DateField.DATEFIELD_M,

@@ -54,7 +54,9 @@ export const yAxisRange = (
   g: Zpgraph,
   idx?: number,
 ): [number, number] | null => {
-  if (typeof idx == "undefined") {idx = 0;}
+  if (typeof idx == "undefined") {
+    idx = 0;
+  }
   if (idx < 0 || idx >= g.axes_.length) {
     return null;
   }
@@ -155,9 +157,8 @@ export const toDataXCoord = (g: Zpgraph, x: number | null) => {
   if (!g.attributes_.getForAxis("logscale", "x")) {
     return xRange[0] + ((x - area.x) / area.w) * (xRange[1] - xRange[0]);
   }
-    const pct = (x - area.x) / area.w;
-    return utils.logRangeFraction(xRange[0], xRange[1], pct);
-  
+  const pct = (x - area.x) / area.w;
+  return utils.logRangeFraction(xRange[0], xRange[1], pct);
 };
 
 /**
@@ -172,7 +173,9 @@ export const toDataYCoord = (g: Zpgraph, y: number | null, axis?: number) => {
   }
 
   const area = g.plotter_.area;
-  if (typeof axis == "undefined") {axis = 0;}
+  if (typeof axis == "undefined") {
+    axis = 0;
+  }
   const yRange = yAxisRange(g, axis)!;
   const y0 = yRange[0]!;
   const y1 = yRange[1]!;
@@ -180,11 +183,10 @@ export const toDataYCoord = (g: Zpgraph, y: number | null, axis?: number) => {
   if (!g.attributes_.getForAxis("logscale", axis)) {
     return y0 + ((area.y + area.h - y) / area.h) * (y1 - y0);
   }
-    // Computing the inverse of toDomCoord.
-    const pct = (y - area.y) / area.h;
-    // Note reversed yRange, y1 is on top with pct==0.
-    return utils.logRangeFraction(y1, y0, pct);
-  
+  // Computing the inverse of toDomCoord.
+  const pct = (y - area.y) / area.h;
+  // Note reversed yRange, y1 is on top with pct==0.
+  return utils.logRangeFraction(y1, y0, pct);
 };
 
 /**
@@ -211,7 +213,9 @@ export const toPercentYCoord = (
   if (y === null) {
     return null;
   }
-  if (typeof axis == "undefined") {axis = 0;}
+  if (typeof axis == "undefined") {
+    axis = 0;
+  }
 
   const yRange = yAxisRange(g, axis)!;
   const y0 = yRange[0]!;
@@ -276,9 +280,8 @@ export const eventToDomCoords = (g: Zpgraph, event: MouseEvent) => {
   if (event.offsetX && event.offsetY) {
     return [event.offsetX, event.offsetY];
   }
-    const eventElementPos = utils.findPos(g.mouseEventElement_);
-    const canvasx = utils.pageX(event) - eventElementPos.x;
-    const canvasy = utils.pageY(event) - eventElementPos.y;
-    return [canvasx, canvasy];
-  
+  const eventElementPos = utils.findPos(g.mouseEventElement_);
+  const canvasx = utils.pageX(event) - eventElementPos.x;
+  const canvasy = utils.pageY(event) - eventElementPos.y;
+  return [canvasx, canvasy];
 };

@@ -141,18 +141,11 @@ export const doZoomXDates = (
   const new_window: [number, number] = [minDate!, maxDate!];
   const zoomCallback = g.getFunctionOption("zoomCallback");
   const that = g;
-  doAnimatedZoom(
-    g,
-    old_window,
-    new_window,
-    null,
-    null,
-    ()  => {
-      if (zoomCallback) {
-        zoomCallback.call(that, minDate!, maxDate!, that.yAxisRanges());
-      }
-    },
-  );
+  doAnimatedZoom(g, old_window, new_window, null, null, () => {
+    if (zoomCallback) {
+      zoomCallback.call(that, minDate!, maxDate!, that.yAxisRanges());
+    }
+  });
 };
 
 /**
@@ -179,19 +172,12 @@ export const doZoomY = (g: Zpgraph, lowY: number, highY: number) => {
 
   const zoomCallback = g.getFunctionOption("zoomCallback");
   const that = g;
-  doAnimatedZoom(
-    g,
-    null,
-    null,
-    oldValueRanges,
-    newValueRanges,
-    ()  => {
-      if (zoomCallback) {
-        const [minX, maxX] = that.xAxisRange();
-        zoomCallback.call(that, minX, maxX, that.yAxisRanges());
-      }
-    },
-  );
+  doAnimatedZoom(g, null, null, oldValueRanges, newValueRanges, () => {
+    if (zoomCallback) {
+      const [minX, maxX] = that.xAxisRange();
+      zoomCallback.call(that, minX, maxX, that.yAxisRanges());
+    }
+  });
 };
 
 /**
@@ -216,7 +202,9 @@ export const resetZoom = (g: Zpgraph) => {
   // Clear any selection, since it's likely to be drawn in the wrong place.
   g.clearSelection();
 
-  if (!dirty) {return;}
+  if (!dirty) {
+    return;
+  }
 
   // Calculate extremes to avoid lack of padding on reset.
   const [minDate, maxDate] = g.xAxisExtremes();
@@ -227,7 +215,9 @@ export const resetZoom = (g: Zpgraph) => {
   if (!animatedZooms) {
     g.dateWindow_ = null;
     g.axes_.forEach((axis: AxisProperties) => {
-      if (axis.valueRange) {delete axis.valueRange;}
+      if (axis.valueRange) {
+        delete axis.valueRange;
+      }
     });
 
     g.drawGraph_();
@@ -258,10 +248,12 @@ export const resetZoom = (g: Zpgraph) => {
     newWindow,
     oldValueRanges,
     newValueRanges,
-    ()  => {
+    () => {
       that.dateWindow_ = null;
       that.axes_.forEach((axis: AxisProperties) => {
-        if (axis.valueRange) {delete axis.valueRange;}
+        if (axis.valueRange) {
+          delete axis.valueRange;
+        }
       });
       if (zoomCallback) {
         zoomCallback.call(that, minDate, maxDate, that.yAxisRanges());
@@ -325,7 +317,9 @@ export const doAnimatedZoom = (
       if (valueRanges.length) {
         for (let i = 0; i < that.axes_.length; i++) {
           const w = valueRanges[frame]?.[i];
-          if (!w) {continue;}
+          if (!w) {
+            continue;
+          }
           that.axes_[i]!.valueRange = [w[0], w[1]];
         }
       }

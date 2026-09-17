@@ -54,7 +54,7 @@ type ArrayLikeRecord = Record<string, unknown> & {
 /** @private */
 export const type = (o: unknown): string => {
   return o === null ? "null" : typeof o;
-}
+};
 
 /**
  * @throws {Error} if series labels (indices 1..) contain duplicates.
@@ -73,7 +73,7 @@ export const validateSeriesLabels = (labels: string[]) => {
     }
     seen.add(name);
   }
-}
+};
 
 export const LOG_SCALE = 10;
 export const LN_TEN = Math.log(LOG_SCALE);
@@ -89,13 +89,17 @@ export const halfDown = (y: number) => Math.round(y) - 0.5;
  * @param x * */
 export const log10 = (x: number): number => {
   return Math.log(x) / LN_TEN;
-}
+};
 
 /**
  * @private
  *
  * @param pct * */
-export const logRangeFraction = (r0: number, r1: number, pct: number): number => {
+export const logRangeFraction = (
+  r0: number,
+  r1: number,
+  pct: number,
+): number => {
   // Computing the inverse of toPercentXCoord. The function was arrived at with
   // the following steps:
   //
@@ -119,7 +123,7 @@ export const logRangeFraction = (r0: number, r1: number, pct: number): number =>
   const exponent = logr0 + pct * (logr1 - logr0);
   const value = Math.pow(LOG_SCALE, exponent);
   return value;
-}
+};
 
 /** A dotted line stroke pattern. */
 export const DOTTED_LINE = [2, 2];
@@ -148,7 +152,7 @@ export const getContext = (
     throw new Error("Zpgraph: this browser has no 2d canvas context.");
   }
   return ctx;
-}
+};
 
 /**
  * EventListener options
@@ -160,7 +164,7 @@ const _eventListenerOptions = (eventType: string) => {
         passive: true,
       }
     : false;
-}
+};
 
 /**
  * Add an event handler.
@@ -176,7 +180,7 @@ export const addEvent = (
   fn: EventListenerOrEventListenerObject,
 ) => {
   elem.addEventListener(eventType, fn, _eventListenerOptions(eventType));
-}
+};
 
 /**
  * Remove an event handler.
@@ -191,7 +195,7 @@ export const removeEvent = (
   fn: EventListenerOrEventListenerObject,
 ) => {
   elem.removeEventListener(eventType, fn, _eventListenerOptions(eventType));
-}
+};
 
 /**
  * Cancels further processing of an event (prevent default + stop bubbling).
@@ -202,7 +206,7 @@ export const cancelEvent = (e: Event) => {
   e.preventDefault();
   e.stopPropagation();
   return false;
-}
+};
 
 /**
  * Convert hsv values to an rgb(r,g,b) string. Taken from MochiKit.Color. This
@@ -270,7 +274,7 @@ export const hsvToRGB = (
   green = Math.floor(255 * green + 0.5);
   blue = Math.floor(255 * blue + 0.5);
   return "rgb(" + red + "," + green + "," + blue + ")";
-}
+};
 
 /**
  * Find the coordinates of an object relative to the top left of the page.
@@ -283,7 +287,7 @@ export const findPos = (obj: Element) => {
     x: p.left + window.pageXOffset,
     y: p.top + window.pageYOffset,
   };
-}
+};
 
 /**
  * Returns the x-coordinate of the event in a coordinate system where the
@@ -293,7 +297,7 @@ export const findPos = (obj: Element) => {
  */
 export const pageX = (e: PageCoordEvent): number => {
   return !e.pageX || e.pageX < 0 ? 0 : e.pageX;
-}
+};
 
 /**
  * Returns the y-coordinate of the event in a coordinate system where the
@@ -303,7 +307,7 @@ export const pageX = (e: PageCoordEvent): number => {
  */
 export const pageY = (e: PageCoordEvent): number => {
   return !e.pageY || e.pageY < 0 ? 0 : e.pageY;
-}
+};
 
 /**
  * Converts page the x-coordinate of the event to pixel x-coordinates on the
@@ -317,7 +321,7 @@ export const dragGetX_ = (
   context: InteractionContext,
 ): number => {
   return pageX(e) - context.px;
-}
+};
 
 /**
  * Converts page the y-coordinate of the event to pixel y-coordinates on the
@@ -331,7 +335,7 @@ export const dragGetY_ = (
   context: InteractionContext,
 ): number => {
   return pageY(e) - context.py;
-}
+};
 
 /**
  * This returns true unless the parameter is 0, null, undefined or NaN.
@@ -342,7 +346,7 @@ export const dragGetY_ = (
  */
 export const isNonZeroNonNan = (x: unknown): boolean => {
   return Boolean(x) && !Number.isNaN(Number(x));
-}
+};
 
 /** @deprecated Prefer {@link isNonZeroNonNan}. Kept for API compatibility. */
 export const isOK = isNonZeroNonNan;
@@ -357,13 +361,23 @@ export const isValidPoint = (
   p: Partial<Point> | null | undefined,
   opt_allowNaNY?: boolean,
 ): boolean => {
-  if (!p) {return false;} // null or undefined object
-  if (p.yval === null) {return false;} // missing point
-  if (p.x === null || p.x === undefined) {return false;}
-  if (p.y === null || p.y === undefined) {return false;}
-  if (isNaN(p.x) || (!opt_allowNaNY && isNaN(p.y))) {return false;}
+  if (!p) {
+    return false;
+  } // null or undefined object
+  if (p.yval === null) {
+    return false;
+  } // missing point
+  if (p.x === null || p.x === undefined) {
+    return false;
+  }
+  if (p.y === null || p.y === undefined) {
+    return false;
+  }
+  if (isNaN(p.x) || (!opt_allowNaNY && isNaN(p.y))) {
+    return false;
+  }
   return true;
-}
+};
 
 /**
  * Number formatting function which mimics the behavior of %g in printf, i.e.
@@ -406,16 +420,18 @@ export const floatFormat = (x: number, opt_precision?: number): string => {
   return Math.abs(x) < 1.0e-3 && x !== 0.0
     ? x.toExponential(p - 1)
     : x.toPrecision(p);
-}
+};
 
 /**
  * Converts '9' to '09' (useful for dates)
  * @private
  */
 export const zeropad = (x: number): string => {
-  if (x < 10) {return "0" + x;}
+  if (x < 10) {
+    return "0" + x;
+  }
   return "" + x;
-}
+};
 
 /**
  * Date accessors to get the parts of a calendar date (year, month,
@@ -494,7 +510,7 @@ export const hmsString_ = (
     }
   }
   return ret;
-}
+};
 
 /**
  * Convert a JS date (millis since epoch) to a formatted string.
@@ -526,7 +542,7 @@ export const dateString_ = (time: number, utc: boolean): string => {
     ret += " " + hmsString_(hh, mm, ss, ms);
   }
   return ret;
-}
+};
 
 /**
  * Round a number to the specified number of digits past the decimal point.
@@ -538,7 +554,7 @@ export const dateString_ = (time: number, utc: boolean): string => {
 export const round_ = (num: number, places: number): number => {
   const shift = Math.pow(10, places);
   return Math.round(num * shift) / shift;
-}
+};
 
 /**
  * Implementation of binary search over an array.
@@ -571,11 +587,14 @@ export const lowerBoundX = (
   let high = series.length;
   while (low < high) {
     const mid = (low + high) >>> 1;
-    if (series[mid]![0] < x) {low = mid + 1;}
-    else {high = mid;}
+    if (series[mid]![0] < x) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
   }
   return low;
-}
+};
 
 /**
  * Last index of `series` whose x value is <= `x`, or -1 when every x is
@@ -591,11 +610,14 @@ export const upperBoundX = (
   let high = series.length;
   while (low < high) {
     const mid = (low + high) >>> 1;
-    if (series[mid]![0] <= x) {low = mid + 1;}
-    else {high = mid;}
+    if (series[mid]![0] <= x) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
   }
   return low - 1;
-}
+};
 
 export const binarySearch = (
   val: number,
@@ -619,7 +641,7 @@ export const binarySearch = (
   if (abs === null || abs === undefined) {
     abs = 0;
   }
-  const validIndex = (idx: number)  => {
+  const validIndex = (idx: number) => {
     return idx >= 0 && idx < arry.length;
   };
   const mid = parseInt(String((low + high) / 2), 10);
@@ -647,7 +669,7 @@ export const binarySearch = (
     return binarySearch(val, arry, abs, mid + 1, high);
   }
   return -1; // can't actually happen, but makes closure compiler happy
-}
+};
 
 /**
  * Parses a date, returning the number of milliseconds since epoch. This can be
@@ -675,24 +697,30 @@ export const dateParser = (dateStr: string) => {
     dateStr.search("Z") !== -1
   ) {
     d = dateStrToMillis(dateStr);
-    if (d != null && !isNaN(d)) {return d;}
+    if (d != null && !isNaN(d)) {
+      return d;
+    }
   }
 
   if (dateStr.search("-") !== -1) {
     // e.g. '2009-7-12' or '2009-07-12'
     const dateStrSlashed = dateStr.replace(_dateParser_re, "/");
     d = dateStrToMillis(dateStrSlashed);
-    if (d != null && !isNaN(d)) {return d;}
+    if (d != null && !isNaN(d)) {
+      return d;
+    }
   }
 
   // Any format that Date.parse will accept, e.g. "2009/07/12" or
   // "2009/07/12 12:34:56"
   d = dateStrToMillis(dateStr);
-  if (d != null && !isNaN(d)) {return d;}
+  if (d != null && !isNaN(d)) {
+    return d;
+  }
 
   log.error("Couldn't parse " + dateStr + " as a date");
   return NaN;
-}
+};
 
 /**
  * This is identical to JavaScript's built-in Date.parse() method, except that
@@ -704,7 +732,7 @@ export const dateParser = (dateStr: string) => {
  */
 export const dateStrToMillis = (str: string): number => {
   return new Date(str).getTime();
-}
+};
 
 /**
  * Keys that walk out of the object being merged and into the prototype chain.
@@ -717,7 +745,7 @@ const UNSAFE_MERGE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 /** @private */
 const mergeableKeys = (o: object): string[] => {
   return Object.keys(o).filter((k) => !UNSAFE_MERGE_KEYS.has(k));
-}
+};
 
 // These functions are all based on MochiKit.
 /**
@@ -736,15 +764,15 @@ export const update = (
     }
   }
   return self;
-}
+};
 
 // internal: check if o is a DOM node, and we know it’s not null
 const _isNode =
   typeof Node !== "undefined" && Node !== null && typeof Node === "object"
-    ? (o: unknown)  => {
+    ? (o: unknown) => {
         return o instanceof Node;
       }
-    : (o: unknown)  => {
+    : (o: unknown) => {
         return (
           typeof o === "object" &&
           o !== null &&
@@ -789,13 +817,15 @@ export const updateDeep = (
     }
   }
   return self;
-}
+};
 
 /**
  * @private
  */
 export const typeArrayLike = (o: unknown): string => {
-  if (o === null) {return "null";}
+  if (o === null) {
+    return "null";
+  }
   const t = typeof o;
   const value = o as ArrayLikeRecord;
   if (
@@ -804,10 +834,11 @@ export const typeArrayLike = (o: unknown): string => {
     typeof value.length === "number" &&
     value.nodeType !== 3 &&
     value.nodeType !== 4
-  )
-    {return "array";}
+  ) {
+    return "array";
+  }
   return t;
-}
+};
 
 /**
  * @private
@@ -823,7 +854,7 @@ export const isArrayLike = (o: unknown): boolean => {
     value.nodeType !== 3 &&
     value.nodeType !== 4
   );
-}
+};
 
 /**
  * @private
@@ -834,7 +865,7 @@ export const isDateLike = (o: unknown): boolean => {
     typeof o === "object" &&
     typeof (o as { getTime?: unknown }).getTime === "function"
   );
-}
+};
 
 /**
  * Deep-clone nested arrays (chart data). Uses structuredClone when available.
@@ -854,7 +885,7 @@ export const clone = (o: unknown[]): unknown[] => {
     }
   }
   return r;
-}
+};
 
 /**
  * Create a new canvas element.
@@ -863,7 +894,7 @@ export const clone = (o: unknown[]): unknown[] => {
  */
 export const createCanvas = (): HTMLCanvasElement => {
   return document.createElement("canvas");
-}
+};
 
 /**
  * Returns the context's pixel ratio, which is the ratio between the device
@@ -883,7 +914,7 @@ export const getContextPixelRatio = (
   _context?: CanvasRenderingContext2D | null,
 ): number => {
   return window.devicePixelRatio || 1;
-}
+};
 
 /**
  *
@@ -995,22 +1026,30 @@ export const coalesceFrames = (fn: (...args: unknown[]) => void): Coalesced => {
     handle = 0;
     const args = pending;
     pending = null;
-    if (args) {fn(...args);}
+    if (args) {
+      fn(...args);
+    }
   };
 
   const wrapped = ((...args: unknown[]) => {
     pending = args;
-    if (!handle) {handle = requestAnimFrame(run);}
+    if (!handle) {
+      handle = requestAnimFrame(run);
+    }
   }) as Coalesced;
 
   wrapped.flush = () => {
-    if (!handle) {return;}
+    if (!handle) {
+      return;
+    }
     window.cancelAnimationFrame(handle);
     run();
   };
 
   wrapped.cancel = () => {
-    if (handle) {window.cancelAnimationFrame(handle);}
+    if (handle) {
+      window.cancelAnimationFrame(handle);
+    }
     handle = 0;
     pending = null;
   };
@@ -1048,7 +1087,9 @@ export const repeatAndCleanup = (
   const maxFrameArg = maxFrames - 1;
 
   const loop = () => {
-    if (frameNumber >= maxFrames) {return;}
+    if (frameNumber >= maxFrames) {
+      return;
+    }
     requestAnimFrame(() => {
       // Determine which frame to draw based on the delay so far.  Will skip
       // frames if necessary.
@@ -1149,7 +1190,7 @@ export const isPixelChangingOptionList = (
 
   // Scan through a flat (i.e. non-nested) object of options.
   // Returns true/false depending on whether new points are needed.
-  const scanFlatOptions = (options: Record<string, unknown>)  => {
+  const scanFlatOptions = (options: Record<string, unknown>) => {
     for (const property in options) {
       if (Object.hasOwn(options, property) && !pixelSafeOptions[property]) {
         return true;
@@ -1160,7 +1201,9 @@ export const isPixelChangingOptionList = (
 
   // Iterate through the list of updated options.
   for (const property in attrs) {
-    if (!Object.hasOwn(attrs, property)) {continue;}
+    if (!Object.hasOwn(attrs, property)) {
+      continue;
+    }
 
     // Find out of this field is actually a series specific options list.
     if (
@@ -1168,8 +1211,9 @@ export const isPixelChangingOptionList = (
       (seriesNamesDictionary[property] && !attrs.series)
     ) {
       // This property value is a list of options for this series.
-      if (scanFlatOptions(attrs[property] as Record<string, unknown>))
-        {return true;}
+      if (scanFlatOptions(attrs[property] as Record<string, unknown>)) {
+        return true;
+      }
     } else if (property === "series" || property === "axes") {
       // This is twice-nested options list.
       const perSeries = attrs[property] as Record<
@@ -1187,12 +1231,14 @@ export const isPixelChangingOptionList = (
     } else {
       // If this was not a series specific option list,
       // check if it's a pixel-changing property.
-      if (!pixelSafeOptions[property]) {return true;}
+      if (!pixelSafeOptions[property]) {
+        return true;
+      }
     }
   }
 
   return false;
-}
+};
 
 export const Circles: {
   DEFAULT: DrawPointCallback;
@@ -1231,7 +1277,7 @@ export const detectLineDelimiter = (data: string): string | null => {
   }
 
   return null;
-}
+};
 
 /**
  * Is one node contained by another?
@@ -1252,7 +1298,7 @@ export const isNodeContainedBy = (
     containeeNode = containeeNode.parentNode;
   }
   return containeeNode === container;
-}
+};
 
 const RGBAxRE =
   /^#([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})?$/;
@@ -1277,16 +1323,24 @@ const parseRGBA = (rgbStr: string) => {
     r = parseInt(bits[1]!, 16);
     g = parseInt(bits[2]!, 16);
     b = parseInt(bits[3]!, 16);
-    if (bits[4]!) {a = parseInt(bits[4]!, 16);}
+    if (bits[4]!) {
+      a = parseInt(bits[4]!, 16);
+    }
   } else if ((bits = RGBA_RE.exec(rgbStr))) {
     r = parseInt(bits[1]!, 10);
     g = parseInt(bits[2]!, 10);
     b = parseInt(bits[3]!, 10);
-    if (bits[4]!) {a = parseFloat(bits[4]!);}
-  } else {return null;}
-  if (a !== null) {return { r: r, g: g, b: b, a: a };}
+    if (bits[4]!) {
+      a = parseFloat(bits[4]!);
+    }
+  } else {
+    return null;
+  }
+  if (a !== null) {
+    return { r: r, g: g, b: b, a: a };
+  }
   return { r: r, g: g, b: b };
-}
+};
 
 /**
  * Converts any valid CSS color (hex, rgb(), named color) to an RGB tuple.
@@ -1300,7 +1354,9 @@ export const toRGB_ = (colorStr: string) => {
   // manipulation.  If that fails (e.g. for named colors like 'red'), then
   // create a hidden DOM element and parse its computed color.
   const rgb = parseRGBA(colorStr);
-  if (rgb) {return rgb;}
+  if (rgb) {
+    return rgb;
+  }
 
   const div = document.createElement("div");
   div.style.backgroundColor = colorStr;
@@ -1309,7 +1365,7 @@ export const toRGB_ = (colorStr: string) => {
   const rgbStr = window.getComputedStyle(div, null).backgroundColor;
   div.remove();
   return parseRGBA(rgbStr);
-}
+};
 
 /**
  * Parses the value as a floating point number. This is like the parseFloat()
@@ -1327,14 +1383,20 @@ export const parseFloat_ = (
   opt_line?: string,
 ) => {
   const val = parseFloat(x);
-  if (!isNaN(val)) {return val;}
+  if (!isNaN(val)) {
+    return val;
+  }
 
   // Try to figure out what happeend.
   // If the value is the empty string, parse it as null.
-  if (/^ *$/.test(x)) {return null;}
+  if (/^ *$/.test(x)) {
+    return null;
+  }
 
   // If it was actually "NaN", return it as NaN.
-  if (/^ *nan *$/i.test(x)) {return NaN;}
+  if (/^ *nan *$/i.test(x)) {
+    return NaN;
+  }
 
   // Looks like a parsing error.
   let msg = "Unable to parse '" + x + "' as a number";
@@ -1345,7 +1407,7 @@ export const parseFloat_ = (
   log.error(msg);
 
   return null;
-}
+};
 
 // Label constants for the labelsKMB and labelsKMG2 options.
 // (i.e. '100000' -> '100k')
@@ -1382,7 +1444,9 @@ export const numberValueFormatter = (x: number, opts: OptionsGetter) => {
   }
 
   // shortcut 0 so later code does not need to worry about it
-  if (x === 0.0) {return "0";}
+  if (x === 0.0) {
+    return "0";
+  }
 
   const digits = opts("digitsAfterDecimal") as number;
   const maxNumberWidth = opts("maxNumberWidth") as number;
@@ -1422,9 +1486,11 @@ export const numberValueFormatter = (x: number, opts: OptionsGetter) => {
         if (absx >= n) {
           // guaranteed to hit because absx >= k (Math.pow(k, 1))
           // if immensely large still switch to scientific notation
-          if (absx / n >= Math.pow(10, maxNumberWidth))
-            {label = x.toExponential(digits);}
-          else {label = round_(x / n, digits) + k_labels[j]!;}
+          if (absx / n >= Math.pow(10, maxNumberWidth)) {
+            label = x.toExponential(digits);
+          } else {
+            label = round_(x / n, digits) + k_labels[j]!;
+          }
           return label;
         }
       }
@@ -1434,11 +1500,16 @@ export const numberValueFormatter = (x: number, opts: OptionsGetter) => {
       while (j < m_labels.length) {
         ++j;
         n = Math.pow(k, j);
-        if (absx * n >= 1) {break;}
+        if (absx * n >= 1) {
+          break;
+        }
       }
       // if _still_ too small, switch to scientific notation instead
-      if (absx * n < Math.pow(10, -digits)) {label = x.toExponential(digits);}
-      else {label = round_(x * n, digits) + m_labels[j - 1]!;}
+      if (absx * n < Math.pow(10, -digits)) {
+        label = x.toExponential(digits);
+      } else {
+        label = round_(x * n, digits) + m_labels[j - 1]!;
+      }
       return label;
     }
     // else fall through
@@ -1452,7 +1523,7 @@ export const numberValueFormatter = (x: number, opts: OptionsGetter) => {
   }
 
   return label;
-}
+};
 
 /**
  * variant for use as an axisLabelFormatter.
@@ -1464,7 +1535,7 @@ export const numberAxisLabelFormatter = (
   opts: OptionsGetter,
 ) => {
   return numberValueFormatter(x, opts);
-}
+};
 
 /**
 
@@ -1532,7 +1603,7 @@ export const dateAxisLabelFormatter = (
     return hmsString_(hours, mins, secs, 0);
   }
   return hmsString_(hours, mins, secs, millis);
-}
+};
 
 /**
  * Return a string version of a JS date for a value label. This respects the
@@ -1543,7 +1614,7 @@ export const dateAxisLabelFormatter = (
  */
 export const dateValueFormatter = (d: number, opts: OptionsGetter) => {
   return dateString_(d, opts("labelsUTC") as boolean);
-}
+};
 
 // stuff for simple onDOMready implementation
 let deferDOM_callbacks: Array<() => void> | null = [];
@@ -1556,9 +1627,11 @@ let deferDOM_handlerCalled = false;
  * @return whether the DOM is currently ready
  */
 const deferDOM_ready = (cb: () => void): boolean => {
-  if (typeof cb === "function") {cb();}
+  if (typeof cb === "function") {
+    cb();
+  }
   return true;
-}
+};
 
 /**
  * Setup a simple onDOMready implementation on the given objct.
@@ -1573,7 +1646,9 @@ export const setupDOMready_ = (self: {
     // called by browser
     const handler = () => {
       /* execute only once */
-      if (deferDOM_handlerCalled) {return;}
+      if (deferDOM_handlerCalled) {
+        return;
+      }
       deferDOM_handlerCalled = true;
       /* subsequent calls must not enqueue */
       self.onDOMready = deferDOM_ready;
@@ -1596,7 +1671,9 @@ export const setupDOMready_ = (self: {
       }
       // onDOMready, after setup, before DOM is ready
       const enqfn = (queuedCb: () => void) => {
-        if (typeof queuedCb === "function") {deferDOM_callbacks!.push(queuedCb);}
+        if (typeof queuedCb === "function") {
+          deferDOM_callbacks!.push(queuedCb);
+        }
         return false;
       };
       /* subsequent calls will enqueue */

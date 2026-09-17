@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  Zpgraph,
-  safeCssClasses,
-  withClassNames,
-} from "../src/index";
+import { Zpgraph, safeCssClasses, withClassNames } from "../src/index";
 import { mockCanvas, mountDiv, sampleData } from "./helpers";
 
 describe("classNames + CSS class sanitizer", () => {
