@@ -87,26 +87,6 @@ Screenshots from the live demos. Open [`demos/`](https://github.com/joaovitorzep
       <p><b>Underlay</b> — paint bands behind series with <code>underlayCallback</code>.</p>
     </td>
   </tr>
-  <tr>
-    <td width="50%">
-      <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/annotations.png" alt="Annotations" />
-      <p><b>Annotations</b> — markers on points; click to add more.</p>
-    </td>
-    <td width="50%">
-      <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/highlight-series.png" alt="Highlight series" />
-      <p><b>Highlight series</b> — emphasize the hovered series.</p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/random-dataset.png" alt="Random dataset swap" />
-      <p><b>Random dataset</b> — swap the entire <code>file</code> on a button click.</p>
-    </td>
-    <td width="50%">
-      <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/crosshair.png" alt="Crosshair" />
-      <p><b>Crosshair</b> — extra plugin for selection crosshairs.</p>
-    </td>
-  </tr>
 </table>
 
 <p align="center">
