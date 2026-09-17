@@ -23,9 +23,9 @@ class FractionsBarsHandler extends BarsHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = new Array(rawData.length);
+    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
     let x, y, point, num, den, value, stddev, variance;
-    let mult = 100.0;
+    const mult = 100.0;
     const logScale = seriesOption<boolean>(options, i, 'logscale');
     const sigma = seriesOption<number>(options, i, 'sigma');
     for (let j = 0; j < rawData.length; j++) {
@@ -78,7 +78,7 @@ class FractionsBarsHandler extends BarsHandler {
     let low, high, i, stddev;
     let num = 0;
     let den = 0; // numerator/denominator
-    let mult = 100.0;
+    const mult = 100.0;
     for (i = 0; i < originalData.length; i++) {
       num += (originalData[i]![2] as number[])[2]!;
       den += (originalData[i]![2] as number[])[3]!;
@@ -87,18 +87,18 @@ class FractionsBarsHandler extends BarsHandler {
         den -= (originalData[i - rollPeriod]![2] as number[])[3]!;
       }
 
-      let date = originalData[i]![0];
-      let value = den ? num / den : 0.0;
+      const date = originalData[i]![0];
+      const value = den ? num / den : 0.0;
       if (wilsonInterval) {
         // For more details on this confidence interval, see:
         // https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
         if (den) {
-          let p = value < 0 ? 0 : value,
+          const p = value < 0 ? 0 : value,
             n = den;
-          let pm =
+          const pm =
             sigma *
             Math.sqrt((p * (1 - p)) / n + (sigma * sigma) / (4 * n * n));
-          let denom = 1 + (sigma * sigma) / den;
+          const denom = 1 + (sigma * sigma) / den;
           low = (p + (sigma * sigma) / (2 * den) - pm) / denom;
           high = (p + (sigma * sigma) / (2 * den) + pm) / denom;
           rollingData[i] = [date, p * mult, [low * mult, high * mult]];

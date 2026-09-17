@@ -33,6 +33,11 @@ const rangeSelectorOf = (g: Zpgraph) =>
     .map((entry) => entry.plugin)
     .find((plugin) => String(plugin) === "RangeSelector Plugin")!;
 
+const mouse = (type: string, target: EventTarget, clientX: number) =>
+  target.dispatchEvent(
+    new MouseEvent(type, { bubbles: true, clientX, clientY: 0, button: 0 }),
+  );
+
 describe("RangeSelector plugin", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
@@ -234,11 +239,6 @@ describe("RangeSelector plugin", () => {
         top: 300,
       });
     }
-
-    const mouse = (type: string, target: EventTarget, clientX: number) =>
-      target.dispatchEvent(
-        new MouseEvent(type, { bubbles: true, clientX, clientY: 0, button: 0 }),
-      );
 
     mouse("dragstart", left, leftCenter);
     mouse("mousemove", document, leftCenter + 60);

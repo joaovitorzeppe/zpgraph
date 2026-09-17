@@ -14,6 +14,17 @@ import {
   zeropad,
 } from '../src/utils';
 
+const handlerFn = () => 42;
+
+const numberFormatterOpts = (name: string) => {
+  if (name === 'digitsAfterDecimal') {return 2;}
+  if (name === 'maxNumberWidth') {return 6;}
+  if (name === 'sigFigs') {return null;}
+  if (name === 'labelsKMB') {return false;}
+  if (name === 'labelsKMG2') {return false;}
+  return null;
+};
+
 describe('utils', () => {
   it('isOK rejects null, zero and NaN (dygraphs semantics)', () => {
     expect(isOK(1.5)).toBe(true);
@@ -46,7 +57,6 @@ describe('utils', () => {
   });
 
   it('updateDeep keeps untouched keys, functions and DOM nodes', () => {
-    const fn = () => 42;
     const node = document.createElement('div');
     const self: Record<string, unknown> = {
       keep: 'old',
@@ -54,12 +64,12 @@ describe('utils', () => {
     };
     updateDeep(self, {
       nested: { b: 2 },
-      handler: fn,
+      handler: handlerFn,
       labelsDiv: node,
     });
     expect(self.keep).toBe('old');
     expect(self.nested).toEqual({ a: 1, b: 2 });
-    expect(self.handler).toBe(fn);
+    expect(self.handler).toBe(handlerFn);
     expect(self.labelsDiv).toBe(node);
   });
 
@@ -77,14 +87,6 @@ describe('utils', () => {
 
   it('parseFloat_ and numberValueFormatter', () => {
     expect(parseFloat_('3.14')).toBeCloseTo(3.14);
-    const opts = (name: string) => {
-      if (name === 'digitsAfterDecimal') return 2;
-      if (name === 'maxNumberWidth') return 6;
-      if (name === 'sigFigs') return null;
-      if (name === 'labelsKMB') return false;
-      if (name === 'labelsKMG2') return false;
-      return null;
-    };
-    expect(numberValueFormatter(12.345, opts)).toBe('12.35');
+    expect(numberValueFormatter(12.345, numberFormatterOpts)).toBe('12.35');
   });
 });

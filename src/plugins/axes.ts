@@ -23,6 +23,7 @@ Options left to make axis-friendly.
 
 import { log } from "../logger";
 import * as utils from "../utils";
+import { halfDown, halfUp } from "../utils";
 import { getChartClassNames, withClassNames } from "../class-names";
 import type {
   ChartDrawPluginEvent,
@@ -56,10 +57,10 @@ class axes {
   }
 
   layout(e: LayoutPluginEvent) {
-    let g = e.zpgraph;
+    const g = e.zpgraph;
 
     if (g.getOptionForAxis("drawAxis", "y")) {
-      let w =
+      const w =
         axisNum(g, "y", "axisLabelWidth") + 2 * axisNum(g, "y", "axisTickSize");
       e.reserveSpaceLeft(w);
     }
@@ -81,7 +82,7 @@ class axes {
 
     if (g.numAxes() === 2) {
       if (g.getOptionForAxis("drawAxis", "y2")) {
-        let w =
+        const w =
           axisNum(g, "y2", "axisLabelWidth") +
           2 * axisNum(g, "y2", "axisTickSize");
         e.reserveSpaceRight(w);
@@ -97,22 +98,15 @@ class axes {
   }
 
   detachLabels() {
-    function removeArray(ary: HTMLElement[]) {
-      for (let i = 0; i < ary.length; i++) {
-        let el = ary[i]!;
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }
-    }
-
-    removeArray(this.xlabels_);
-    removeArray(this.ylabels_);
+    this.xlabels_.forEach((el) => el.remove());
+    this.ylabels_.forEach((el) => el.remove());
     this.xlabels_ = [];
     this.ylabels_ = [];
   }
 
   trimLabels_(labels: HTMLElement[], count: number) {
     for (const el of labels.slice(count)) {
-      if (el.parentNode) el.parentNode.removeChild(el);
+      el.remove();
     }
     labels.length = count;
   }
@@ -125,7 +119,7 @@ class axes {
   }
 
   willDrawChart(e: ChartDrawPluginEvent) {
-    let g = e.zpgraph;
+    const g = e.zpgraph;
 
     if (
       !g.getOptionForAxis("drawAxis", "x") &&
@@ -136,22 +130,14 @@ class axes {
       return;
     }
 
-    // Round pixels to half-integer boundaries for crisper drawing.
-    function halfUp(x: number) {
-      return Math.round(x) + 0.5;
-    }
-    function halfDown(y: number) {
-      return Math.round(y) - 0.5;
-    }
-
-    let context = e.drawingContext;
-    let containerDiv = e.canvas.parentNode as HTMLElement;
-    let canvasWidth = g.width_; // e.canvas.width is affected by pixel ratio.
-    let canvasHeight = g.height_;
+    const context = e.drawingContext;
+    const containerDiv = e.canvas.parentNode as HTMLElement;
+    const canvasWidth = g.width_; // e.canvas.width is affected by pixel ratio.
+    const canvasHeight = g.height_;
 
     let label, x, y;
 
-    let makeLabelStyle = function (axis: "x" | "y" | "y2") {
+    const makeLabelStyle = (axis: "x" | "y" | "y2")  => {
       return {
         position: "absolute",
         fontSize: axisNum(g, axis, "axisLabelFontSize") + "px",
@@ -159,7 +145,7 @@ class axes {
       };
     };
 
-    let labelStyles = {
+    const labelStyles = {
       x: makeLabelStyle("x"),
       y: makeLabelStyle("y"),
       y2: makeLabelStyle("y2"),
@@ -175,13 +161,13 @@ class axes {
      * was one. Reusing it costs a style reset; recreating it costs two elements
      * and two tree mutations, once per tick per frame.
      */
-    let makeDiv = function (
+    const makeDiv = (
       labels: HTMLElement[],
       idx: number,
       txt: string,
       axis: string,
       prec_axis?: string | null,
-    ) {
+    )  => {
       let div = labels[idx];
       let inner_div: HTMLElement;
       if (div) {
@@ -196,7 +182,7 @@ class axes {
         labels[idx] = div;
         containerDiv.appendChild(div);
       }
-      let labelStyle =
+      const labelStyle =
         labelStyles[prec_axis === "y2" ? "y2" : (axis as "x" | "y" | "y2")];
       utils.update(div.style as unknown as Record<string, unknown>, labelStyle);
       inner_div.className = withClassNames(
@@ -215,15 +201,12 @@ class axes {
     // axis lines
     context.save();
 
-    let layout = g.layout_;
-    let area = e.zpgraph.plotter_.area;
+    const layout = g.layout_;
+    const area = e.zpgraph.plotter_.area;
 
     // Helper for repeated axis-option accesses.
-    let makeOptionGetter = function (axis: "x" | "y" | "y2") {
-      return function (option: string) {
-        return axisNum(g, axis, option);
-      };
-    };
+    const makeOptionGetter = (axis: "x" | "y" | "y2") => (option: string) =>
+      axisNum(g, axis, option);
 
     // Counted across the whole draw so that labels left over from a previous one
     // — a tick that disappeared, or an axis that was turned off — are removed
@@ -236,10 +219,10 @@ class axes {
       (g.numAxes() === 2 && g.getOptionForAxis("drawAxis", "y2"))
     ) {
       if (layout.yticks && layout.yticks.length > 0) {
-        let num_axes = g.numAxes();
-        let getOptions = [makeOptionGetter("y"), makeOptionGetter("y2")];
+        const num_axes = g.numAxes();
+        const getOptions = [makeOptionGetter("y"), makeOptionGetter("y2")];
         layout.yticks!.forEach((tick) => {
-          if (tick.label === undefined) return; // this tick only has a grid line.
+          if (tick.label === undefined) {return;} // this tick only has a grid line.
           x = area.x;
           let prec_axis = "y1";
           let getAxisOption = getOptions[0]!;
@@ -249,8 +232,8 @@ class axes {
             prec_axis = "y2";
             getAxisOption = getOptions[1]!;
           }
-          if (!getAxisOption("drawAxis")) return;
-          let fontSize = getAxisOption("axisLabelFontSize");
+          if (!getAxisOption("drawAxis")) {return;}
+          const fontSize = getAxisOption("axisLabelFontSize");
           y = area.y + tick.pos * area.h;
 
           /* Tick marks are currently clipped, so don't bother drawing them.
@@ -269,7 +252,7 @@ class axes {
             num_axes === 2 ? prec_axis : null,
           );
           let top = y - fontSize / 2;
-          if (top < 0) top = 0;
+          if (top < 0) {top = 0;}
 
           if (top + fontSize + 3 > canvasHeight) {
             label.style.bottom = "0";
@@ -299,7 +282,7 @@ class axes {
       let axisX;
       if (g.getOption("drawAxesAtZero")) {
         let r = g.toPercentXCoord(0) ?? 0;
-        if (r > 1 || r < 0 || isNaN(r)) r = 0;
+        if (r > 1 || r < 0 || isNaN(r)) {r = 0;}
         axisX = halfUp(area.x + r * area.w);
       } else {
         axisX = halfUp(area.x);
@@ -328,9 +311,9 @@ class axes {
 
     if (g.getOptionForAxis("drawAxis", "x")) {
       if (layout.xticks) {
-        let getAxisOption = makeOptionGetter("x");
+        const getAxisOption = makeOptionGetter("x");
         layout.xticks!.forEach((tick) => {
-          if (tick.label === undefined) return; // this tick only has a grid line.
+          if (tick.label === undefined) {return;} // this tick only has a grid line.
           x = area.x + tick.pos * area.w;
           y = area.y + area.h;
 
@@ -367,7 +350,7 @@ class axes {
       let axisY;
       if (g.getOption("drawAxesAtZero")) {
         let r = g.toPercentYCoord(0, 0) ?? 1;
-        if (r > 1 || r < 0) r = 1;
+        if (r > 1 || r < 0) {r = 1;}
         axisY = halfDown(area.y + r * area.h);
       } else {
         axisY = halfDown(area.y + area.h);

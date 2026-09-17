@@ -87,7 +87,7 @@ class OptionsManager {
     if (typeof axis == "string") {
       if (Object.hasOwn(OptionsManager.AXIS_STRING_MAPPINGS_, axis)) {
         const mapped = OptionsManager.AXIS_STRING_MAPPINGS_[axis];
-        if (mapped !== undefined) return mapped;
+        if (mapped !== undefined) {return mapped;}
       }
       throw new Error("Unknown axis : " + axis);
     }
@@ -380,7 +380,7 @@ class OptionsManager {
    * @private
    */
   validateOptions_() {
-    if (!OPTIONS_REFERENCE) return;
+    if (!OPTIONS_REFERENCE) {return;}
 
     const validateOption = (optionName: string) => {
       if (!OPTIONS_REFERENCE[optionName]) {
@@ -405,7 +405,7 @@ class OptionsManager {
     }
     for (let i = 0; i < optionsDicts.length; i++) {
       const dict = optionsDicts[i];
-      if (!dict) continue;
+      if (!dict) {continue;}
       for (const optionName in dict) {
         if (Object.hasOwn(dict, optionName)) {
           validateOption(optionName);
@@ -421,7 +421,7 @@ class OptionsManager {
   warnInvalidOption_(optionName: string): void {
     if (!WARNINGS[optionName]) {
       WARNINGS[optionName] = true;
-      const isSeries = this.labels_.indexOf(optionName) >= 0;
+      const isSeries = this.labels_.includes(optionName);
       if (isSeries) {
         log.warn(
           "Use per-series options (saw " +

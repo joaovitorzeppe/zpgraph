@@ -8,7 +8,7 @@ describe('DefaultHandler', () => {
   // Partial double: the handlers only ever ask for labels and per-series options.
   const options = {
     get: (name: string) => {
-      if (name === 'labels') return ['x', 'A', 'B'];
+      if (name === 'labels') {return ['x', 'A', 'B'];}
       return null;
     },
     getForSeries: () => false,

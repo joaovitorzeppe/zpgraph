@@ -10,9 +10,8 @@
 
 /*global Zpgraph:false */
 
-import type { AnnotatedPoint, ChartDrawPluginEvent } from "../internal-types";
+import type { AnnotatedPoint, ChartDrawPluginEvent,ZpgraphInstance } from "../internal-types";
 import type { Annotation, AnnotationHandler } from "../types";
-import type { ZpgraphInstance } from "../internal-types";
 import { getChartClassNames, safeCssClasses, withClassNames } from "../class-names";
 
 /**
@@ -42,7 +41,7 @@ class annotations {
 
   detachLabels() {
     for (const a of this.annotations_) {
-      if (a.parentNode) a.parentNode.removeChild(a);
+      a.remove();
     }
     this.annotations_ = [];
   }
@@ -52,15 +51,15 @@ class annotations {
   }
 
   didDrawChart(e: ChartDrawPluginEvent) {
-    let g = e.zpgraph;
+    const g = e.zpgraph;
 
     // Early out in the (common) case of zero annotations.
-    let points = g.layout_.annotated_points as AnnotatedPoint[] | undefined;
-    if (!points || points.length === 0) return;
+    const points = g.layout_.annotated_points as AnnotatedPoint[] | undefined;
+    if (!points || points.length === 0) {return;}
 
-    let containerDiv = e.canvas.parentNode as HTMLElement;
+    const containerDiv = e.canvas.parentNode as HTMLElement;
 
-    let bindEvt = function (
+    const bindEvt = (
       eventName: keyof Pick<
         Annotation,
         | "clickHandler"
@@ -74,10 +73,10 @@ class annotations {
         | "annotationMouseOutHandler"
         | "annotationDblClickHandler",
       pt: AnnotatedPoint,
-    ) {
+    )  => {
       return function (annotation_event: Event) {
         const mouseEvent = annotation_event as MouseEvent;
-        let a = pt.annotation;
+        const a = pt.annotation;
         const handler = a[eventName] as AnnotationHandler | undefined;
         if (handler) {
           handler(a, pt, g, mouseEvent);
@@ -91,13 +90,13 @@ class annotations {
     };
 
     // Add the annotations one-by-one.
-    let area = e.zpgraph.getArea();
+    const area = e.zpgraph.getArea();
 
     // x-coord to sum of previous annotation's heights (used for stacking).
     const xToUsedHeight: Record<number, number> = {};
 
     for (let i = 0; i < points.length; i++) {
-      let p = points[i]!;
+      const p = points[i]!;
       if (
         p.canvasx == null ||
         p.canvasy == null ||
@@ -109,7 +108,7 @@ class annotations {
         continue;
       }
 
-      let a = p.annotation;
+      const a = p.annotation;
       let tick_height = 6;
       if (Object.hasOwn(a, "tickHeight")) {
         tick_height = a.tickHeight ?? tick_height;
@@ -119,7 +118,7 @@ class annotations {
       // rather than rendering an empty box.
       const hasIcon = typeof a.icon === "string" && isSafeIconUrl(a.icon);
 
-      let div = document.createElement("div");
+      const div = document.createElement("div");
       div.style["fontSize"] = g.getNumericOption("axisLabelFontSize") + "px";
       let className = "zpgraph-annotation";
       if (!hasIcon) {
@@ -129,14 +128,14 @@ class annotations {
       className = withClassNames(className, getChartClassNames(g).annotation);
       if (Object.hasOwn(a, "cssClass")) {
         const extra = safeCssClasses(a.cssClass);
-        if (extra.length) className += " " + extra.join(" ");
+        if (extra.length) {className += " " + extra.join(" ");}
       }
       div.className = className;
 
-      let width = Object.hasOwn(a, "width") ? (a.width ?? 16) : 16;
-      let height = Object.hasOwn(a, "height") ? (a.height ?? 16) : 16;
+      const width = Object.hasOwn(a, "width") ? (a.width ?? 16) : 16;
+      const height = Object.hasOwn(a, "height") ? (a.height ?? 16) : 16;
       if (hasIcon) {
-        let img = document.createElement("img");
+        const img = document.createElement("img");
         img.className = "zpgraph-annotation-icon";
         img.src = a.icon ?? "";
         img.width = width;
@@ -146,7 +145,7 @@ class annotations {
       } else if (Object.hasOwn(p.annotation, "shortText")) {
         div.appendChild(document.createTextNode(p.annotation.shortText ?? ""));
       }
-      let left = p.canvasx! - width / 2;
+      const left = p.canvasx! - width / 2;
       div.style.left = left + "px";
       let divTop = 0;
       let y: number;
@@ -194,7 +193,7 @@ class annotations {
       containerDiv.appendChild(div);
       this.annotations_.push(div);
 
-      let ctx = e.drawingContext;
+      const ctx = e.drawingContext;
       ctx.save();
       ctx.strokeStyle = Object.hasOwn(a, "tickColor")
         ? (a.tickColor ?? g.colorsMap_[p.name] ?? "")
@@ -207,9 +206,9 @@ class annotations {
         ctx.moveTo(p.canvasx!, p.canvasy!);
         ctx.lineTo(p.canvasx!, p.canvasy! - 2 - tick_height);
       } else {
-        let y = divTop + height;
-        ctx.moveTo(p.canvasx!, y);
-        ctx.lineTo(p.canvasx!, y + tick_height);
+        const tickY = divTop + height;
+        ctx.moveTo(p.canvasx!, tickY);
+        ctx.lineTo(p.canvasx!, tickY + tick_height);
       }
       ctx.closePath();
       ctx.stroke();
@@ -227,7 +226,7 @@ class annotations {
 const SAFE_ICON_URL = /^(https?:\/\/|\/|\.\/|\.\.\/|data:image\/)/i;
 
 /** @private */
-const isSafeIconUrl = function (url: unknown): boolean {
+const isSafeIconUrl = (url: unknown): boolean  => {
   return typeof url === "string" && SAFE_ICON_URL.test(url.trim());
 };
 

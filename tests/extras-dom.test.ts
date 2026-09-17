@@ -12,18 +12,34 @@ import {
  * annotation text used to be spliced into markup.
  */
 
+const template = (html: string) => {
+  const el = document.createElement('div');
+  el.id = 'a-template';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  return el;
+};
+
+const makeEl = () => {
+  const el = document.createElement('div');
+  el.style.position = 'absolute';
+  el.style.left = '100px';
+  document.body.appendChild(el);
+  return el;
+};
+
+const pointer = (type: string, clientX: number, clientY = 0) =>
+  new (window as any).MouseEvent(type, {
+    bubbles: true,
+    clientX,
+    clientY,
+    button: 0,
+  });
+
 describe('fillTemplate', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
   });
-
-  const template = (html: string) => {
-    const el = document.createElement('div');
-    el.id = 'a-template';
-    el.innerHTML = html;
-    document.body.appendChild(el);
-    return el;
-  };
 
   it('substitutes placeholders inside text', () => {
     const filled = fillTemplate(template('<span>{{text}}</span> at {{x}}'), {
@@ -93,22 +109,6 @@ describe('drag', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
   });
-
-  const makeEl = () => {
-    const el = document.createElement('div');
-    el.style.position = 'absolute';
-    el.style.left = '100px';
-    document.body.appendChild(el);
-    return el;
-  };
-
-  const pointer = (type: string, clientX: number, clientY = 0) =>
-    new (window as any).MouseEvent(type, {
-      bubbles: true,
-      clientX,
-      clientY,
-      button: 0,
-    });
 
   /** jsdom has no PointerEvent, and the code only reads these four fields. */
   const send = (

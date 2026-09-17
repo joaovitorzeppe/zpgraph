@@ -214,7 +214,7 @@ export default class ZpgraphLayout {
         continue;
       }
       utils.update(a as unknown as Record<string, unknown>, src);
-      if (!a.xval) a.xval = parse(a.x);
+      if (!a.xval) {a.xval = parse(a.x);}
       this.annotations.push(a);
     }
   }
@@ -287,9 +287,9 @@ export default class ZpgraphLayout {
         (utils.log10(value as number) - utils.log10(xAxis.minval)) *
         (xAxis.xlogscale as number)
       );
-    } else {
-      return (value! - xAxis.minval) * xAxis.scale;
     }
+      return (value! - xAxis.minval) * xAxis.scale;
+    
   }
 
   /**
@@ -308,9 +308,9 @@ export default class ZpgraphLayout {
         (utils.log10(value as number) - utils.log10(axis.minyval!)) *
           axis.ylogscale!;
       return isFinite(x) ? x : NaN; // shim for v8 issue; see pull request 276
-    } else {
-      return 1.0 - (value! - axis.minyval!) * axis.yscale!;
     }
+      return 1.0 - (value! - axis.minyval!) * axis.yscale!;
+    
   }
 
   _evaluateLineCharts() {

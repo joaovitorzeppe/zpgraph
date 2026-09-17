@@ -24,12 +24,6 @@ type ZpgraphExtrasHost = typeof ZpgraphImport & {
 const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
 Zpgraph.Plugins = Zpgraph.Plugins || {};
 
-// Matches DefaultHandler.parseFloat
-const parseFloat = (val: number | null) => {
-  if (val === null) return NaN;
-  return val;
-};
-
 class RebaseHandler extends DefaultHandler {
   baseOpt: RebaseBase;
 
@@ -43,7 +37,7 @@ class RebaseHandler extends DefaultHandler {
     initial: number | null,
     base: RebaseBase,
   ): number {
-    if (value === null || initial === null) return NaN;
+    if (value === null || initial === null) {return NaN;}
     if (base === "percent") {
       return (value / initial - 1) * 100;
     }
@@ -58,9 +52,9 @@ class RebaseHandler extends DefaultHandler {
     let minY = null,
       maxY = null,
       y;
-    let firstIdx = 0,
+    const firstIdx = 0,
       lastIdx = series.length - 1;
-    let initial = series[firstIdx]![1];
+    const initial = series[firstIdx]![1];
 
     for (let j = firstIdx; j <= lastIdx; j++) {
       if (j === firstIdx) {
@@ -68,7 +62,7 @@ class RebaseHandler extends DefaultHandler {
       } else {
         y = RebaseHandler.rebase(series[j]![1], initial, this.baseOpt);
       }
-      if (y === null || isNaN(y)) continue;
+      if (y === null || isNaN(y)) {continue;}
       if (maxY === null || y > maxY) {
         maxY = y;
       }
@@ -85,13 +79,13 @@ class RebaseHandler extends DefaultHandler {
     boundaryIdStart: number,
   ): Point[] {
     const points: Point[] = [];
-    let firstIdx = 0;
-    let lastIdx = series.length - 1;
-    let initial = series[firstIdx]![1];
+    const firstIdx = 0;
+    const lastIdx = series.length - 1;
+    const initial = series[firstIdx]![1];
     for (let i = 0; i <= lastIdx; ++i) {
-      let item = series[i]!;
-      let yraw = item[1];
-      let yval = yraw === null ? null : parseFloat(yraw);
+      const item = series[i]!;
+      const yraw = item[1];
+      let yval = yraw;
       if (yval !== null) {
         if (i === firstIdx) {
           yval = this.baseOpt === "percent" ? 0 : this.baseOpt;
@@ -99,10 +93,10 @@ class RebaseHandler extends DefaultHandler {
           yval = RebaseHandler.rebase(yval, initial, this.baseOpt);
         }
       }
-      let point = {
+      const point = {
         x: NaN,
         y: NaN,
-        xval: parseFloat(item[0]),
+        xval: item[0] as number,
         yval: yval,
         name: setName,
         idx: i + boundaryIdStart,
@@ -142,7 +136,7 @@ class Rebase {
   }
 
   predraw(e: PluginEventBase) {
-    let g = e.zpgraph;
+    const g = e.zpgraph;
 
     if (this.baseOpt_ === "percent") {
       g.updateOptions(

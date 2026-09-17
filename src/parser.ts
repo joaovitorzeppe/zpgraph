@@ -60,7 +60,7 @@ export const detectTypeFromString = (g: Zpgraph, str: string): void => {
   const dashPos = str.indexOf("-"); // could be 2006-01-01 _or_ 1.0e-2
   if (
     (dashPos > 0 && str[dashPos - 1] !== "e" && str[dashPos - 1] !== "E") ||
-    str.indexOf("/") >= 0 ||
+    str.includes("/") ||
     isNaN(parseFloat(str))
   ) {
     isDate = true;
@@ -79,7 +79,7 @@ export const setXAxisOptions = (g: Zpgraph, isDate: boolean): void => {
       utils.dateAxisLabelFormatter as AxisLabelFormatter;
   } else {
     /** @private (shut up, jsdoc!) */
-    g.attrs_.xValueParser = function (x: string): number {
+    g.attrs_.xValueParser = (x: string): number  => {
       return parseFloat(x);
     };
     /** @private (shut up, jsdoc!) */
@@ -118,8 +118,8 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
   const firstLine = lines[0];
   if (
     firstLine &&
-    firstLine.indexOf(delim) === -1 &&
-    firstLine.indexOf("\t") >= 0
+    !firstLine.includes(delim) &&
+    firstLine.includes("\t")
   ) {
     delim = "\t";
   }
@@ -137,10 +137,10 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
   let outOfOrder = false;
   for (let i = start; i < lines.length; i++) {
     const line = lines[i]!;
-    if (line.length === 0) continue; // skip blank lines
-    if (line[0] === "#") continue; // skip comment lines
+    if (line.length === 0) {continue;} // skip blank lines
+    if (line[0] === "#") {continue;} // skip comment lines
     const inFields = line.split(delim);
-    if (inFields.length < 2) continue;
+    if (inFields.length < 2) {continue;}
 
     const fields: RawDataRow = [];
     if (!defaultParserSet) {
@@ -254,7 +254,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
     if (i === 0 && g.attr_("labels")) {
       let all_null = true;
       for (j = 0; all_null && j < fields.length; j++) {
-        if (fields[j]) all_null = false;
+        if (fields[j]) {all_null = false;}
       }
       if (all_null) {
         log.warn(
@@ -273,7 +273,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
 
   if (outOfOrder) {
     log.warn("CSV is out of order; order it correctly to speed loading.");
-    ret.sort(function (a: RawDataRow, b: RawDataRow) {
+    ret.sort((a: RawDataRow, b: RawDataRow)  => {
       return (a[0] as number) - (b[0] as number);
     });
   }
@@ -296,9 +296,9 @@ export const validateNativeFormat = (data: DataArray): void => {
   }
   for (let i = 1; i < firstRow.length; i++) {
     const val = firstRow[i];
-    if (val === null || val === undefined) continue;
-    if (typeof val === "number") continue;
-    if (utils.isArrayLike(val)) continue; // e.g. errorBars or customBars
+    if (val === null || val === undefined) {continue;}
+    if (typeof val === "number") {continue;}
+    if (utils.isArrayLike(val)) {continue;} // e.g. errorBars or customBars
     throw new Error(`Expected number or array but got ${typeof val}: ${val}.`);
   }
 };
@@ -379,7 +379,7 @@ export const parseArray = (
       parsedData[i]![0] = (xVal as Date).getTime();
     }
     return parsedData;
-  } else {
+  }
     // Some intelligent defaults for a numeric x-axis.
     const xAxis = xAxisOpts(g);
     xAxis.valueFormatter = numericValueFormatter;
@@ -387,7 +387,22 @@ export const parseArray = (
     xAxis.axisLabelFormatter =
       utils.numberAxisLabelFormatter as AxisLabelFormatter;
     return data;
+  
+};
+
+const shortTextForAnnotationNum = (num: number): string  => {
+  // converts [0-9]+ [A-Z][a-z]*
+  // example: 0=A, 1=B, 25=Z, 26=Aa, 27=Ab
+  // and continues like.. Ba Bb .. Za .. Zz..Aaa...Zzz Aaaa Zzzz
+  let shortText = String.fromCharCode(65 /* A */ + (num % 26));
+  num = Math.floor(num / 26);
+  while (num > 0) {
+    shortText =
+      String.fromCharCode(65 /* A */ + ((num - 1) % 26)) +
+      shortText.toLowerCase();
+    num = Math.floor((num - 1) / 26);
   }
+  return shortText;
 };
 
 /**
@@ -400,21 +415,6 @@ export const parseArray = (
  * @private
  */
 export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
-  const shortTextForAnnotationNum = function (num: number): string {
-    // converts [0-9]+ [A-Z][a-z]*
-    // example: 0=A, 1=B, 25=Z, 26=Aa, 27=Ab
-    // and continues like.. Ba Bb .. Za .. Zz..Aaa...Zzz Aaaa Zzzz
-    let shortText = String.fromCharCode(65 /* A */ + (num % 26));
-    num = Math.floor(num / 26);
-    while (num > 0) {
-      shortText =
-        String.fromCharCode(65 /* A */ + ((num - 1) % 26)) +
-        shortText.toLowerCase();
-      num = Math.floor((num - 1) / 26);
-    }
-    return shortText;
-  };
-
   const cols = data.getNumberOfColumns();
   const rows = data.getNumberOfRows();
 
@@ -427,7 +427,7 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
     xAxis.axisLabelFormatter =
       utils.dateAxisLabelFormatter as AxisLabelFormatter;
   } else if (indepType === "number") {
-    g.attrs_.xValueParser = function (x: string): number {
+    g.attrs_.xValueParser = (x: string): number  => {
       return parseFloat(x);
     };
     const xAxis = xAxisOpts(g);
@@ -474,10 +474,10 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
   const labels = [data.getColumnLabel(0)];
   for (i = 0; i < colIdx.length; i++) {
     labels.push(data.getColumnLabel(colIdx[i]!));
-    if (g.getBooleanOption("errorBars")) i += 1;
+    if (g.getBooleanOption("errorBars")) {i += 1;}
   }
   g.attrs_.labels = labels;
-  let colCount = labels.length;
+  const colCount = labels.length;
 
   const ret: RawData = [];
   let outOfOrder = false;
@@ -519,7 +519,7 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
             text: "",
           };
           for (let k = 0; k < annCols.length; k++) {
-            if (k) ann.text += "\n";
+            if (k) {ann.text += "\n";}
             ann.text += String(data.getValue(i, annCols[k]!));
           }
           annotations.push(ann);
@@ -528,7 +528,7 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
 
       // Strip out infinities, which give zpgraph problems later on.
       for (j = 0; j < row.length; j++) {
-        if (!isFinite(row[j] as number)) row[j] = null;
+        if (!isFinite(row[j] as number)) {row[j] = null;}
       }
     } else {
       for (j = 0; j < colCount - 1; j++) {
@@ -551,7 +551,7 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
 
   if (outOfOrder) {
     log.warn("DataTable is out of order; order it correctly to speed loading.");
-    ret.sort(function (a: RawDataRow, b: RawDataRow) {
+    ret.sort((a: RawDataRow, b: RawDataRow)  => {
       return (a[0] as number) - (b[0] as number);
     });
   }

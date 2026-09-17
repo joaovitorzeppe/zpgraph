@@ -66,7 +66,33 @@ Zpgraph.Plugins = Zpgraph.Plugins || {};
 const chartValue = (g: ZpgraphInstance, row: number, col: number): number =>
   Number(g.getValue(row, col));
 
-Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
+/** @private Detach one hairline's divs and its drag listeners. */
+const teardownHairline = (h: Hairline)  => {
+  if (h.stopDrag) {h.stopDrag();}
+  h.lineDiv.remove();
+  h.infoDiv.remove();
+};
+
+/**
+ * The info div is a clone of the page's #hairline-template. A page that has no
+ * such template gets an empty one instead of a crash.
+ * @private
+ */
+const makeInfoDiv = ()  => {
+  const template = document.getElementById("hairline-template");
+  let infoDiv: HTMLElement;
+  if (template) {
+    infoDiv = template.cloneNode(true) as HTMLElement;
+    infoDiv.removeAttribute("id");
+  } else {
+    infoDiv = div();
+    infoDiv.appendChild(div("hairline-legend"));
+  }
+  setStyle(infoDiv, { position: "absolute", display: "block" });
+  return infoDiv;
+};
+
+Zpgraph.Plugins.Hairlines = (() => {
   "use strict";
 
   /**
@@ -81,7 +107,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
 
   // We have to wait a few ms after clicks to give the user a chance to
   // double-click to unzoom. This sets that delay period.
-  let CLICK_DELAY_MS = 300;
+  const CLICK_DELAY_MS = 300;
 
   /**
    * Notifies of `hairlineCreated`, `hairlineDeleted`, `hairlineMoved` and
@@ -142,7 +168,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     }
 
     hairlineWasDragged(h: Hairline, left: number) {
-      let oldXVal = h.xval;
+      const oldXVal = h.xval;
       h.xval = this.zpgraph_!.toDataXCoord(left)!;
       this.moveHairlineToTop(h);
       this.updateHairlineDivPositions();
@@ -156,8 +182,6 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     }
 
     createHairline(props: Partial<Hairline> & Pick<Hairline, "xval">) {
-      let h: Hairline;
-
       const lineContainerDiv = div("zpgraph-hairline", {
         width: "6px",
         "margin-left": "-3px",
@@ -176,7 +200,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
 
       const infoDiv = makeInfoDiv();
 
-      h = Object.assign(
+      const h = Object.assign(
         {
           interpolated: true,
           selected: false,
@@ -216,23 +240,23 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     }
 
     moveHairlineToTop(h: Hairline) {
-      let graphDiv = this.g_().graphDiv;
+      const graphDiv = this.g_().graphDiv;
       graphDiv.appendChild(h.infoDiv);
       graphDiv.appendChild(h.lineDiv);
 
-      let idx = this.hairlines_.indexOf(h);
+      const idx = this.hairlines_.indexOf(h);
       this.hairlines_.splice(idx, 1);
       this.hairlines_.push(h);
     }
 
     updateHairlineDivPositions() {
-      let g = this.g_();
-      let layout = g.getArea();
-      let chartLeft = layout.x,
+      const g = this.g_();
+      const layout = g.getArea();
+      const chartLeft = layout.x,
         chartRight = layout.x + layout.w;
 
       for (const h of this.hairlines_) {
-        let left = g.toDomXCoord(h.xval) ?? 0;
+        const left = g.toDomXCoord(h.xval) ?? 0;
         h.domX = left; // See comments in this.dataDidUpdate
         setStyle(h.lineDiv, {
           left: left + "px",
@@ -244,7 +268,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
           top: layout.y + "px",
         });
 
-        let visible = left >= chartLeft && left <= chartRight;
+        const visible = left >= chartLeft && left <= chartRight;
         toggle(h.infoDiv, visible);
         toggle(h.lineDiv, visible);
       }
@@ -264,14 +288,14 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     ): [number | null, number | null] {
       let prevRow: number | null = null;
       let nextRow: number | null = null;
-      let numRows = g.numRows();
+      const numRows = g.numRows();
       for (let row = 0; row < numRows; row++) {
-        let yval = g.getValue(row, col);
+        const yval = g.getValue(row, col);
         if (yval === null || yval === undefined || isNaN(Number(yval)))
-          continue;
+          {continue;}
 
-        let rowXval = Number(g.getValue(row, 0));
-        if (rowXval <= xval) prevRow = row;
+        const rowXval = Number(g.getValue(row, 0));
+        if (rowXval <= xval) {prevRow = row;}
 
         if (rowXval >= xval) {
           nextRow = row;
@@ -283,12 +307,12 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     }
 
     updateHairlineInfo() {
-      let g = this.g_();
+      const g = this.g_();
 
       for (const h of this.hairlines_) {
         // To use generateLegendHTML, we synthesize an array of selected points.
         const selPoints: HairlineSelPoint[] = [];
-        let labels = g.getLabels()!;
+        const labels = g.getLabels()!;
         let row: number | undefined;
         let prevRow: number | null;
         let nextRow: number | null;
@@ -298,7 +322,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
           row = g.findClosestRow(g.toDomXCoord(h.xval) ?? 0);
           for (let i = 1; i < g.numColumns(); i++) {
             const label = labels[i];
-            if (!label) continue;
+            if (!label) {continue;}
             selPoints.push({
               canvasx: 1,
               canvasy: 1,
@@ -312,26 +336,26 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
           // "interpolated" mode.
           for (let i = 1; i < g.numColumns(); i++) {
             const label = labels[i];
-            if (!label) continue;
+            if (!label) {continue;}
 
-            let prevNextRow = hairlines.findPrevNextRows(g, h.xval, i);
+            const prevNextRow = hairlines.findPrevNextRows(g, h.xval, i);
             prevRow = prevNextRow[0];
             nextRow = prevNextRow[1];
 
             // For x-values outside the domain, interpolate "between" the extreme
             // point and itself.
-            if (prevRow === null) prevRow = nextRow;
-            if (nextRow === null) nextRow = prevRow;
-            if (prevRow === null || nextRow === null) continue;
+            if (prevRow === null) {prevRow = nextRow;}
+            if (nextRow === null) {nextRow = prevRow;}
+            if (prevRow === null || nextRow === null) {continue;}
 
             // linear interpolation
-            let prevX = chartValue(g, prevRow, 0);
-            let nextX = chartValue(g, nextRow, 0);
-            let prevY = chartValue(g, prevRow, i);
-            let nextY = chartValue(g, nextRow, i);
-            let frac =
+            const prevX = chartValue(g, prevRow, 0);
+            const nextX = chartValue(g, nextRow, 0);
+            const prevY = chartValue(g, prevRow, i);
+            const nextY = chartValue(g, nextRow, i);
+            const frac =
               prevRow === nextRow ? 0 : (h.xval - prevX) / (nextX - prevX);
-            let yval = frac * nextY + (1 - frac) * prevY;
+            const yval = frac * nextY + (1 - frac) * prevY;
 
             selPoints.push({
               canvasx: 1,
@@ -354,9 +378,9 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
             zpgraph: g,
           });
         } else {
-          let target = h.infoDiv.querySelector(".hairline-legend");
+          const target = h.infoDiv.querySelector(".hairline-legend");
           if (target) {
-            let content = Zpgraph.Plugins.Legend!.generateLegendHTML(
+            const content = Zpgraph.Plugins.Legend!.generateLegendHTML(
               g,
               h.xval,
               selPoints,
@@ -374,7 +398,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     }
 
     attachHairlinesToChart_() {
-      let graphDiv = this.g_().graphDiv;
+      const graphDiv = this.g_().graphDiv;
       for (const h of this.hairlines_) {
         graphDiv.appendChild(h.lineDiv);
         graphDiv.appendChild(h.infoDiv);
@@ -382,7 +406,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
     }
 
     removeHairline(h: Hairline) {
-      let idx = this.hairlines_.indexOf(h);
+      const idx = this.hairlines_.indexOf(h);
       if (idx >= 0) {
         this.hairlines_.splice(idx, 1);
         teardownHairline(h);
@@ -393,7 +417,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
 
     didDrawChart(_e: unknown) {
       // Early out in the (common) case of zero hairlines.
-      if (this.hairlines_.length === 0) return;
+      if (this.hairlines_.length === 0) {return;}
 
       this.updateHairlineDivPositions();
       this.attachHairlinesToChart_();
@@ -405,7 +429,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
       // When the data in the chart updates, the hairlines should stay in the same
       // position on the screen. didDrawChart stores a domX parameter for each
       // hairline. We use that to reposition them on data updates.
-      let g = this.g_();
+      const g = this.g_();
       for (const h of this.hairlines_) {
         if (h.domX !== undefined) {
           h.xval = g.toDataXCoord(h.domX)!;
@@ -419,7 +443,7 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
         return;
       }
 
-      let xval = this.zpgraph_!.toDataXCoord(e.canvasx)!;
+      const xval = this.zpgraph_!.toDataXCoord(e.canvasx)!;
 
       this.addTimer_ = setTimeout(() => {
         this.addTimer_ = null;
@@ -462,12 +486,12 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
       return result;
     }
 
-    set(hairlines: PublicHairline[]) {
+    set(nextHairlines: PublicHairline[]) {
       // Re-use divs from the old hairlines array so far as we can.
       // They're already correctly z-ordered.
       let anyCreated = false;
-      for (let i = 0; i < hairlines.length; i++) {
-        let h = hairlines[i]!;
+      for (let i = 0; i < nextHairlines.length; i++) {
+        const h = nextHairlines[i]!;
 
         if (this.hairlines_.length > i) {
           const existing = this.hairlines_[i]!;
@@ -487,8 +511,8 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
       }
 
       // If there are any remaining hairlines, destroy them.
-      while (hairlines.length < this.hairlines_.length) {
-        this.removeHairline(this.hairlines_[hairlines.length]!);
+      while (nextHairlines.length < this.hairlines_.length) {
+        this.removeHairline(this.hairlines_[nextHairlines.length]!);
       }
 
       this.updateHairlineDivPositions();
@@ -501,32 +525,6 @@ Zpgraph.Plugins.Hairlines = (function _extras_hairlines_closure() {
       this.emit_("hairlinesChanged", {});
     }
   }
-
-  /** @private Detach one hairline's divs and its drag listeners. */
-  const teardownHairline = function (h: Hairline) {
-    if (h.stopDrag) h.stopDrag();
-    h.lineDiv.remove();
-    h.infoDiv.remove();
-  };
-
-  /**
-   * The info div is a clone of the page's #hairline-template. A page that has no
-   * such template gets an empty one instead of a crash.
-   * @private
-   */
-  const makeInfoDiv = function () {
-    let template = document.getElementById("hairline-template");
-    let infoDiv: HTMLElement;
-    if (template) {
-      infoDiv = template.cloneNode(true) as HTMLElement;
-      infoDiv.removeAttribute("id");
-    } else {
-      infoDiv = div();
-      infoDiv.appendChild(div("hairline-legend"));
-    }
-    setStyle(infoDiv, { position: "absolute", display: "block" });
-    return infoDiv;
-  };
 
   // This creates the hairline object and returns it.
   // It does not position it and does not attach it to the chart.

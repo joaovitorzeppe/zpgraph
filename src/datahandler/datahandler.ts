@@ -107,7 +107,7 @@ abstract class ZpgraphDataHandler {
 
     for (let i = 0; i < length; ++i) {
       const item = series[i]!;
-      let yraw = item[1];
+      const yraw = item[1];
       let point = points[i];
       if (point === undefined) {
         // canvasx/canvasy start out present so the shape never changes later,

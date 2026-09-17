@@ -5,16 +5,16 @@ import {
   pickDateTickGranularity,
 } from '../src/tickers';
 
-describe('tickers', () => {
-  const opts = (name: string) => {
-    if (name === 'pixelsPerLabel') return 30;
-    if (name === 'axisTickSize') return 3;
-    if (name === 'axisLabelFormatter') {
-      return (v: number) => String(v);
-    }
-    return null;
-  };
+const opts = (name: string) => {
+  if (name === 'pixelsPerLabel') {return 30;}
+  if (name === 'axisTickSize') {return 3;}
+  if (name === 'axisLabelFormatter') {
+    return (v: number) => String(v);
+  }
+  return null;
+};
 
+describe('tickers', () => {
   it('numericTicks returns ticks in range', () => {
     const ticks = numericTicks(0, 100, 300, opts, null as never, null as never);
     expect(ticks.length).toBeGreaterThan(2);

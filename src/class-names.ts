@@ -36,7 +36,7 @@ export const getChartClassNames = (
 
 /** Keep `graphDiv.className` as `zpgraph` + optional `classNames.root`. */
 export const applyRootClassNames = (g: Zpgraph): void => {
-  if (!g.graphDiv) return;
+  if (!g.graphDiv) {return;}
   g.graphDiv.className = withClassNames(
     "zpgraph",
     getChartClassNames(g).root,

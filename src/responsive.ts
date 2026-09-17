@@ -13,26 +13,20 @@ import type Zpgraph from "./zpgraph";
  */
 export const applyResponsiveOptions = (g: Zpgraph): void => {
   const rules = g.getOption("responsive") as ResponsiveRule[] | undefined;
-  if (!rules?.length) return;
+  if (!rules?.length) {return;}
 
   const width = g.width_ || g.maindiv_?.clientWidth || 0;
   const sorted = [...rules].toSorted((a, b) => a.breakpoint - b.breakpoint);
-  let match: ResponsiveRule | undefined;
-  for (const rule of sorted) {
-    if (width <= rule.breakpoint) {
-      match = rule;
-      break;
-    }
-  }
+  const match = sorted.find((rule) => width <= rule.breakpoint);
 
   const key = match ? match.breakpoint : -1;
   const prev = (g as unknown as { responsiveBreakpoint_: number })
     .responsiveBreakpoint_;
-  if (prev === key) return;
+  if (prev === key) {return;}
   (g as unknown as { responsiveBreakpoint_: number }).responsiveBreakpoint_ =
     key;
 
-  if (!match) return;
+  if (!match) {return;}
 
   // Strip nested responsive to avoid recursion.
   const { responsive: _r, ...rest } = match.options;

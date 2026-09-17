@@ -18,7 +18,15 @@ let nextHandle = 1;
 const runFrame = () => {
   const due = [...frames.values()];
   frames.clear();
-  for (const f of due) f(0);
+  for (const f of due) {f(0);}
+};
+
+const mouseEvent = (type: string, pageX: number) => {
+  const e: any = new MouseEvent(type, { bubbles: true });
+  // jsdom leaves pageX at 0; the interaction code reads only this.
+  Object.defineProperty(e, "pageX", { value: pageX });
+  Object.defineProperty(e, "pageY", { value: 100 });
+  return e;
 };
 
 beforeEach(() => {
@@ -88,14 +96,6 @@ describe("a mouse drag", () => {
       height: 320,
       dateWindow: [10, 20],
     }) as unknown as Record<string, any>;
-
-  const mouseEvent = (type: string, pageX: number) => {
-    const e: any = new MouseEvent(type, { bubbles: true });
-    // jsdom leaves pageX at 0; the interaction code reads only this.
-    Object.defineProperty(e, "pageX", { value: pageX });
-    Object.defineProperty(e, "pageY", { value: 100 });
-    return e;
-  };
 
   it("repaints once per frame and ends at the last event", () => {
     const g = makeChart();

@@ -13,9 +13,8 @@
 import type {
   ChartDrawPluginEvent,
   LayoutPluginEvent,
-  PlotArea,
+  PlotArea,ZpgraphInstance
 } from "../internal-types";
-import type { ZpgraphInstance } from "../internal-types";
 import { getChartClassNames, withClassNames } from "../class-names";
 
 class chart_labels {
@@ -37,16 +36,14 @@ class chart_labels {
   }
 
   detachLabels_() {
-    let els = [
+    const els = [
       this.title_div_,
       this.xlabel_div_,
       this.ylabel_div_,
       this.y2label_div_,
     ];
-    for (let i = 0; i < els.length; i++) {
-      let el = els[i];
-      if (!el) continue;
-      if (el.parentNode) el.parentNode.removeChild(el);
+    for (const el of els) {
+      el?.remove();
     }
 
     this.title_div_ = null;
@@ -58,16 +55,16 @@ class chart_labels {
   layout(e: LayoutPluginEvent) {
     this.detachLabels_();
 
-    let g = e.zpgraph;
-    let div = e.chart_div;
+    const g = e.zpgraph;
+    const div = e.chart_div;
     if (g.getOption("title")) {
       // reserveSpace* returns a PlotArea; createDivInRect wraps it as absolute DOM.
-      let title_rect = e.reserveSpaceTop(g.getNumericOption("titleHeight"));
+      const title_rect = e.reserveSpaceTop(g.getNumericOption("titleHeight"));
       this.title_div_ = createDivInRect(title_rect);
       this.title_div_.style.fontSize =
         g.getNumericOption("titleHeight") - 8 + "px";
 
-      let class_div = document.createElement("div");
+      const class_div = document.createElement("div");
       class_div.className = withClassNames(
         "zpgraph-label zpgraph-title",
         getChartClassNames(g).title,
@@ -78,12 +75,12 @@ class chart_labels {
     }
 
     if (g.getOption("xlabel")) {
-      let x_rect = e.reserveSpaceBottom(g.getNumericOption("xLabelHeight"));
+      const x_rect = e.reserveSpaceBottom(g.getNumericOption("xLabelHeight"));
       this.xlabel_div_ = createDivInRect(x_rect);
       this.xlabel_div_.style.fontSize =
         g.getNumericOption("xLabelHeight") - 2 + "px";
 
-      let class_div = document.createElement("div");
+      const class_div = document.createElement("div");
       class_div.className = withClassNames(
         "zpgraph-label zpgraph-xlabel",
         getChartClassNames(g).xlabel,
@@ -98,7 +95,7 @@ class chart_labels {
       // label, but the default yAxisLabelWidth is large enough that this results
       // in overly-padded charts. The y-axis label should fit fine. If it
       // doesn't, the yAxisLabelWidth option can be increased.
-      let y_rect = e.reserveSpaceLeft(0);
+      const y_rect = e.reserveSpaceLeft(0);
 
       this.ylabel_div_ = createRotatedDiv(
         g,
@@ -115,7 +112,7 @@ class chart_labels {
 
     if (g.getOption("y2label") && g.numAxes() === 2) {
       // same logic applies here as for ylabel.
-      let y2_rect = e.reserveSpaceRight(0);
+      const y2_rect = e.reserveSpaceRight(0);
       this.y2label_div_ = createRotatedDiv(
         g,
         y2_rect,
@@ -131,7 +128,7 @@ class chart_labels {
   }
 
   didDrawChart(e: ChartDrawPluginEvent) {
-    let g = e.zpgraph;
+    const g = e.zpgraph;
     if (this.title_div_) {
       this.title_div_.children[0]!.textContent = g.getStringOption("title");
     }
@@ -157,7 +154,7 @@ class chart_labels {
 
 // Local helpers — only chart-labels needs these; no shared plugin-utils yet.
 const createDivInRect = (r: PlotArea) => {
-  let div = document.createElement("div");
+  const div = document.createElement("div");
   div.style.position = "absolute";
   div.style.left = r.x + "px";
   div.style.top = r.y + "px";
@@ -173,7 +170,7 @@ const createRotatedDiv = (
   classes: string,
   text: string,
 ) => {
-  let div = document.createElement("div");
+  const div = document.createElement("div");
   div.style.position = "absolute";
   if (axis === 1) {
     // NOTE: this is cheating. Should be positioned relative to the box.
@@ -186,7 +183,7 @@ const createRotatedDiv = (
   div.style.height = box.h + "px";
   div.style.fontSize = g.getNumericOption("yLabelWidth") - 2 + "px";
 
-  let inner_div = document.createElement("div");
+  const inner_div = document.createElement("div");
   inner_div.style.position = "absolute";
   inner_div.style.width = box.h + "px";
   inner_div.style.height = box.w + "px";
@@ -195,7 +192,7 @@ const createRotatedDiv = (
   inner_div.className =
     "zpgraph-label-rotate-" + (axis === 1 ? "right" : "left");
 
-  let class_div = document.createElement("div");
+  const class_div = document.createElement("div");
   class_div.className = classes;
   // textContent, not innerHTML: chart labels are routinely built from
   // application data (a device name, a customer), so HTML here is an

@@ -22,11 +22,11 @@ class DefaultHandler extends ZpgraphDataHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = new Array(rawData.length);
+    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
     const logScale = seriesOption<boolean>(options, i, "logscale");
     for (let j = 0; j < rawData.length; j++) {
       const row = rawData[j]!;
-      let x = row[0] as number;
+      const x = row[0] as number;
       let point = row[i] as number | null;
       if (logScale) {
         // On the log scale, points less than zero do not exist.
@@ -62,7 +62,7 @@ class DefaultHandler extends ZpgraphDataHandler {
       num_ok = 0;
       for (j = Math.max(0, i - rollPeriod + 1); j < i + 1; j++) {
         y = originalData[j]![1];
-        if (y === null || isNaN(y)) continue;
+        if (y === null || isNaN(y)) {continue;}
         num_ok++;
         sum += y;
       }
@@ -85,12 +85,12 @@ class DefaultHandler extends ZpgraphDataHandler {
     let minY = null,
       maxY = null,
       y;
-    let firstIdx = 0,
+    const firstIdx = 0,
       lastIdx = series.length - 1;
 
     for (let j = firstIdx; j <= lastIdx; j++) {
       y = series[j]![1];
-      if (y === null || isNaN(y)) continue;
+      if (y === null || isNaN(y)) {continue;}
       if (maxY === null || y > maxY) {
         maxY = y;
       }

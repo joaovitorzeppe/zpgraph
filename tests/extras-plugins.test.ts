@@ -19,6 +19,12 @@ const makeChart = (plugin: unknown) =>
     plugins: [plugin as import("../src/types").Plugin],
   }) as unknown as Record<string, any>;
 
+const pointer = (type: string, clientX: number, clientY = 0) =>
+  Object.assign(
+    new MouseEvent(type, { bubbles: true, clientX, clientY, button: 0 }),
+    { pointerId: 1 },
+  );
+
 describe("Hairlines plugin", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
@@ -79,12 +85,6 @@ describe("Hairlines plugin", () => {
     );
     g.destroy();
   });
-
-  const pointer = (type: string, clientX: number, clientY = 0) =>
-    Object.assign(
-      new MouseEvent(type, { bubbles: true, clientX, clientY, button: 0 }),
-      { pointerId: 1 },
-    );
 
   const sendPointer = (
     el: HTMLElement,

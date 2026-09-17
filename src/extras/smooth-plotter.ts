@@ -43,30 +43,30 @@ interface CanvasPoint {
  *
  * This is loosely based on the HighCharts algorithm.
  */
-function getControlPoints(
+const getControlPoints = (
   p0: CanvasPoint,
   p1: CanvasPoint,
   p2: CanvasPoint | null | undefined,
   opt_alpha?: number,
   opt_allowFalseExtrema?: boolean,
-): [number, number, number | null, number | null] {
-  let alpha = opt_alpha !== undefined ? opt_alpha : 1 / 3; // 0=no smoothing, 1=crazy smoothing
-  let allowFalseExtrema = opt_allowFalseExtrema || false;
+): [number, number, number | null, number | null] => {
+  const alpha = opt_alpha !== undefined ? opt_alpha : 1 / 3; // 0=no smoothing, 1=crazy smoothing
+  const allowFalseExtrema = opt_allowFalseExtrema || false;
 
   if (!p2) {
     return [p1.x, p1.y, null, null];
   }
 
   // Step 1: Position the control points along each line segment.
-  let l1x = (1 - alpha) * p1.x + alpha * p0.x,
-    l1y = (1 - alpha) * p1.y + alpha * p0.y,
-    r1x = (1 - alpha) * p1.x + alpha * p2.x,
-    r1y = (1 - alpha) * p1.y + alpha * p2.y;
+  const l1x = (1 - alpha) * p1.x + alpha * p0.x;
+  let l1y = (1 - alpha) * p1.y + alpha * p0.y;
+  const r1x = (1 - alpha) * p1.x + alpha * p2.x;
+  let r1y = (1 - alpha) * p1.y + alpha * p2.y;
 
   // Step 2: shift the points up so that p1 is on the l1–r1 line.
   if (l1x !== r1x) {
     // This can be derived w/ some basic algebra.
-    let deltaY = p1.y - r1y - ((p1.x - r1x) * (l1y - r1y)) / (l1x - r1x);
+    const deltaY = p1.y - r1y - ((p1.x - r1x) * (l1y - r1y)) / (l1x - r1x);
     l1y += deltaY;
     r1y += deltaY;
   }
@@ -94,20 +94,20 @@ function getControlPoints(
 }
 
 // i.e. is none of (null, undefined, NaN)
-function isOK(x: number | null | undefined): boolean {
+const isOK = (x: number | null | undefined): boolean => {
   return x != null && !isNaN(x);
 }
 
 // A plotter which uses splines to create a smooth curve.
 // See tests/plotters.html for a demo.
 // Can be controlled via smoothPlotter.smoothing
-function smoothPlotter(e: PlotterEvent) {
-  let ctx = e.drawingContext,
+const smoothPlotter = (e: PlotterEvent) => {
+  const ctx = e.drawingContext,
     points = e.points;
 
   let start = 0;
-  while (start < points.length && !isOK(points[start]?.canvasy)) start++;
-  if (start >= points.length) return;
+  while (start < points.length && !isOK(points[start]?.canvasy)) {start++;}
+  if (start >= points.length) {return;}
 
   ctx.beginPath();
   ctx.moveTo(points[start]!.canvasx!, points[start]!.canvasy!);
@@ -124,7 +124,7 @@ function smoothPlotter(e: PlotterEvent) {
     p1 = p1 && isOK(p1.canvasy) ? p1 : undefined;
     p2 = p2 && isOK(p2.canvasy) ? p2 : undefined;
     if (p0 && p1) {
-      let controls = getControlPoints(
+      const controls = getControlPoints(
         { x: p0.canvasx!, y: p0.canvasy! },
         { x: p1.canvasx!, y: p1.canvasy! },
         p2 ? { x: p2.canvasx!, y: p2.canvasy! } : null,

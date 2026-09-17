@@ -30,6 +30,21 @@ const dragEvent = (pageX: number, pageY: number): MouseEvent =>
     stopPropagation: vi.fn(),
   }) as unknown as MouseEvent;
 
+const touchEvent = (
+  points: Array<{ x: number; y: number }>,
+  target: Element,
+): TouchEvent =>
+  ({
+    preventDefault: vi.fn(),
+    touches: points.map((p) => ({
+      pageX: p.x,
+      pageY: p.y,
+      clientX: p.x,
+      clientY: p.y,
+      target,
+    })),
+  }) as unknown as TouchEvent;
+
 // The interaction functions treat the context as a scratchpad and add keys to
 // it as a gesture progresses, so this is deliberately open.
 const newContext = (startX = 0, startY = 0): InteractionContext =>
@@ -197,21 +212,6 @@ describe("touch", () => {
     document.body.innerHTML = "";
     mockCanvas();
   });
-
-  const touchEvent = (
-    points: Array<{ x: number; y: number }>,
-    target: Element,
-  ): TouchEvent =>
-    ({
-      preventDefault: vi.fn(),
-      touches: points.map((p) => ({
-        pageX: p.x,
-        pageY: p.y,
-        clientX: p.x,
-        clientY: p.y,
-        target,
-      })),
-    }) as unknown as TouchEvent;
 
   it("a one-finger swipe pans without rescaling", () => {
     const g = makeChart({ dateWindow: [10, 20] });

@@ -13,9 +13,9 @@
 import Zpgraph from "./zpgraph";
 import cssText from "./style.css";
 
-function injectStylesheet(css: string) {
-  if (typeof document === "undefined") return;
-  if (document.getElementById("zpgraph-stylesheet")) return;
+const injectStylesheet = (css: string) => {
+  if (typeof document === "undefined") {return;}
+  if (document.getElementById("zpgraph-stylesheet")) {return;}
   const style = document.createElement("style");
   style.id = "zpgraph-stylesheet";
   style.textContent = css;

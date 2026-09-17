@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": ["dist", "coverage", "node_modules", "typings"],
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
@@ -8,7 +9,7 @@
   },
   "env": {
     "browser": true,
-    "es2022": true,
+    "es2023": true,
     "node": true
   },
   "globals": {
@@ -16,23 +17,56 @@
   },
   "rules": {
     "no-var": "error",
+    "prefer-const": "error",
     "eqeqeq": ["error", "smart"],
     "no-unused-vars": [
-      "warn",
-      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "args": "all",
+        "caughtErrors": "all"
+      }
     ],
 
     "typescript/no-explicit-any": "error",
     "no-underscore-dangle": "off",
 
     "typescript/no-this-alias": "warn",
-    "unicorn/no-new-array": "off",
-    "unicorn/consistent-function-scoping": "off",
-    "unicorn/prefer-add-event-listener": "off",
-    "unicorn/no-instanceof-builtins": "off",
-    "no-shadow": "off",
+    "unicorn/no-new-array": "warn",
+    "unicorn/consistent-function-scoping": "warn",
+    "unicorn/prefer-add-event-listener": "warn",
+    "unicorn/no-instanceof-builtins": "warn",
+    "no-shadow": "warn",
     "no-prototype-builtins": "error",
-    "no-empty": "warn"
+    "no-empty": "warn",
+    "no-loop-func": "warn",
+
+    "no-throw-literal": "error",
+    "radix": "error",
+    "array-callback-return": "error",
+    "typescript/no-non-null-asserted-optional-chain": "error",
+    "prefer-object-has-own": "error",
+    "unicorn/prefer-includes": "error",
+    "typescript/prefer-includes": "error",
+    "unicorn/prefer-array-some": "error",
+    "unicorn/prefer-array-find": "error",
+    "unicorn/prefer-string-slice": "error",
+
+    "typescript/prefer-optional-chain": "warn",
+    "no-useless-return": "warn",
+    "no-useless-catch": "warn",
+    "no-useless-concat": "warn",
+    "no-else-return": "warn",
+    "unicorn/prefer-dom-node-remove": "warn",
+    "unicorn/prefer-modern-dom-apis": "warn",
+    "curly": "warn",
+
+    "import/no-cycle": "warn",
+    "import/no-duplicates": "warn",
+
+    "func-style": ["error", "expression"],
+    "prefer-arrow-callback": "error"
   },
   "overrides": [
     {

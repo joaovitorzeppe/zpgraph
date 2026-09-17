@@ -86,20 +86,16 @@ class status_overlay {
   }
 
   hideLoading_() {
-    if (this.loadingEl_) this.loadingEl_.hidden = true;
+    if (this.loadingEl_) {this.loadingEl_.hidden = true;}
   }
 
   hideNoData_() {
-    if (this.noDataEl_) this.noDataEl_.hidden = true;
+    if (this.noDataEl_) {this.noDataEl_.hidden = true;}
   }
 
   detach_() {
-    if (this.noDataEl_?.parentNode) {
-      this.noDataEl_.parentNode.removeChild(this.noDataEl_);
-    }
-    if (this.loadingEl_?.parentNode) {
-      this.loadingEl_.parentNode.removeChild(this.loadingEl_);
-    }
+    this.noDataEl_?.remove();
+    this.loadingEl_?.remove();
     this.noDataEl_ = null;
     this.loadingEl_ = null;
   }

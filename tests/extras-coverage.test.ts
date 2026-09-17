@@ -3,7 +3,7 @@ import { Zpgraph } from "../src/index";
 import Crosshair from "../src/extras/crosshair";
 import shapes from "../src/extras/shapes";
 import smoothPlotter from "../src/extras/smooth-plotter";
-import synchronize from "../src/extras/synchronizer";
+import { synchronize } from "../src/extras/synchronizer";
 import Unzoom from "../src/extras/unzoom";
 import { mockCanvas, mountDiv, recordingCanvas, sampleData } from "./helpers";
 

@@ -58,8 +58,15 @@ type ZpgraphExtrasHost = typeof ZpgraphImport & {
 const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
 Zpgraph.Plugins = Zpgraph.Plugins || {};
 
+/** @private Detach one annotation's divs and its drag listeners. */
+const teardownAnnotation = (a: InternalAnnotation)  => {
+  if (a.stopDrag) {a.stopDrag();}
+  a.lineDiv?.remove();
+  a.infoDiv?.remove();
+};
+
 Zpgraph.Plugins.SuperAnnotations =
-  (function _extras_superAnnotations_closure() {
+  (() => {
     "use strict";
 
     /**
@@ -134,15 +141,15 @@ Zpgraph.Plugins.SuperAnnotations =
       }
 
       annotationWasDragged(a: InternalAnnotation, top: number) {
-        let g = this.g_();
-        let area = g.getArea();
-        let oldYFrac = a.yFrac;
+        const g = this.g_();
+        const area = g.getArea();
+        const oldYFrac = a.yFrac;
 
-        let infoDiv = a.infoDiv!;
+        const infoDiv = a.infoDiv!;
         infoDiv.style.top = top + "px";
-        let newYFrac =
+        const newYFrac =
           (infoDiv.offsetTop + infoDiv.offsetHeight - area.y) / area.h;
-        if (newYFrac === oldYFrac) return;
+        if (newYFrac === oldYFrac) {return;}
 
         a.yFrac = newYFrac;
 
@@ -158,7 +165,7 @@ Zpgraph.Plugins.SuperAnnotations =
       }
 
       makeAnnotationEditable(a: InternalAnnotation) {
-        if (a.editable === true) return;
+        if (a.editable === true) {return;}
         this.moveAnnotationToTop(a);
 
         // Note: we have to fill out the div ourselves because
@@ -175,8 +182,8 @@ Zpgraph.Plugins.SuperAnnotations =
       createAnnotation(
         a: PublicAnnotation & Partial<InternalAnnotation>,
       ): InternalAnnotation {
-        let ann = a as InternalAnnotation;
-        let color = this.getColorForSeries_(ann.series) ?? "#000";
+        const ann = a as InternalAnnotation;
+        const color = this.getColorForSeries_(ann.series) ?? "#000";
 
         const lineDiv = div("zpgraph-annotation-line", {
           width: "1px",
@@ -188,7 +195,7 @@ Zpgraph.Plugins.SuperAnnotations =
           "z-index": "10",
         });
 
-        let template = document.getElementById("annotation-template");
+        const template = document.getElementById("annotation-template");
         let infoDiv: HTMLElement;
         if (template) {
           infoDiv = template.cloneNode(true) as HTMLElement;
@@ -260,14 +267,14 @@ Zpgraph.Plugins.SuperAnnotations =
       }
 
       findPointIndex_(series: string, xval: number): [number, number] | null {
-        let col = this.g_().getLabels()!.indexOf(series);
-        if (col === -1) return null;
+        const col = this.g_().getLabels()!.indexOf(series);
+        if (col === -1) {return null;}
 
         let lowIdx = 0;
         let highIdx = this.g_().numRows() - 1;
         while (lowIdx <= highIdx) {
-          let idx = Math.floor((lowIdx + highIdx) / 2);
-          let xAtIdx = Number(this.g_().getValue(idx, 0));
+          const idx = Math.floor((lowIdx + highIdx) / 2);
+          const xAtIdx = Number(this.g_().getValue(idx, 0));
           if (xAtIdx === xval) {
             return [idx, col];
           } else if (xAtIdx < xval) {
@@ -280,35 +287,35 @@ Zpgraph.Plugins.SuperAnnotations =
       }
 
       getColorForSeries_(series: string): string | null {
-        let colors = this.g_().getColors();
-        let col = this.g_().getLabels()!.indexOf(series);
-        if (col === -1) return null;
+        const colors = this.g_().getColors();
+        const col = this.g_().getLabels()!.indexOf(series);
+        if (col === -1) {return null;}
 
         return colors[(col - 1) % colors.length] ?? null;
       }
 
       moveAnnotationToTop(a: InternalAnnotation) {
-        let graphDiv = this.g_().graphDiv;
+        const graphDiv = this.g_().graphDiv;
         graphDiv.appendChild(a.infoDiv!);
         graphDiv.appendChild(a.lineDiv!);
 
-        let idx = this.annotations_.indexOf(a);
+        const idx = this.annotations_.indexOf(a);
         this.annotations_.splice(idx, 1);
         this.annotations_.push(a);
       }
 
       updateAnnotationDivPositions() {
-        let layout = this.g_().getArea();
-        let chartLeft = layout.x;
-        let chartRight = layout.x + layout.w;
-        let chartTop = layout.y;
-        let chartBottom = layout.y + layout.h;
-        let graphDiv = this.g_().graphDiv;
+        const layout = this.g_().getArea();
+        const chartLeft = layout.x;
+        const chartRight = layout.x + layout.w;
+        const chartTop = layout.y;
+        const chartBottom = layout.y + layout.h;
+        const graphDiv = this.g_().graphDiv;
 
-        let g = this.g_();
+        const g = this.g_();
 
         for (const a of this.annotations_) {
-          let row_col = this.findPointIndex_(a.series, a.xval);
+          const row_col = this.findPointIndex_(a.series, a.xval);
           if (row_col == null) {
             toggle(a.lineDiv!, false);
             toggle(a.infoDiv!, false);
@@ -317,11 +324,11 @@ Zpgraph.Plugins.SuperAnnotations =
           toggle(a.lineDiv!, true);
           toggle(a.infoDiv!, true);
 
-          let xy = g.toDomCoords(
+          const xy = g.toDomCoords(
             a.xval,
             Number(g.getValue(row_col[0], row_col[1])),
           );
-          let x = xy[0],
+          const x = xy[0],
             pointY = xy[1];
 
           let lineHeight = 6;
@@ -345,7 +352,7 @@ Zpgraph.Plugins.SuperAnnotations =
           if (!a.isDragging) {
             a.infoDiv!.style.bottom = graphDiv.offsetHeight - y + "px";
 
-            let visible =
+            const visible =
               x >= chartLeft &&
               x <= chartRight &&
               pointY >= chartTop &&
@@ -357,12 +364,12 @@ Zpgraph.Plugins.SuperAnnotations =
       }
 
       updateAnnotationInfo() {
-        let templateDiv = document.getElementById("annotation-template");
+        const templateDiv = document.getElementById("annotation-template");
         for (const a of this.annotations_) {
           // We should never update an editable div -- doing so may kill unsaved
           // edits to an annotation.
           a.infoDiv!.classList.toggle("editable", !!a.editable);
-          if (a.editable) continue;
+          if (a.editable) {continue;}
           this.fillInfoDiv_(templateDiv, a);
         }
       }
@@ -384,32 +391,32 @@ Zpgraph.Plugins.SuperAnnotations =
       }
 
       fillInfoDiv_(template: HTMLElement | null, a: InternalAnnotation) {
-        if (!template) return;
-        let g = this.g_();
-        let row_col = this.findPointIndex_(a.series, a.xval);
-        if (row_col == null) return; // perhaps it's no longer a real point?
-        let row = row_col[0];
-        let col = row_col[1];
+        if (!template) {return;}
+        const g = this.g_();
+        const row_col = this.findPointIndex_(a.series, a.xval);
+        if (row_col == null) {return;} // perhaps it's no longer a real point?
+        const row = row_col[0];
+        const col = row_col[1];
 
-        let yOptView = g.optionsViewForAxis_("y1");
-        let xOptView = g.optionsViewForAxis_("x");
-        let xvf = g.getOptionForAxis("valueFormatter", "x");
+        const yOptView = g.optionsViewForAxis_("y1");
+        const xOptView = g.optionsViewForAxis_("x");
+        const xvf = g.getOptionForAxis("valueFormatter", "x");
 
-        let x = (xvf as (...args: unknown[]) => unknown).call(
+        const x = (xvf as (...args: unknown[]) => unknown).call(
           g,
           a.xval,
           xOptView,
         );
-        let y = (
+        const y = (
           g.getOption("valueFormatter", a.series) as (
             ...args: unknown[]
           ) => unknown
         ).call(g, g.getValue(row, col), yOptView);
 
-        let values = this.createPublicAnnotation_(a, { x: x, y: y });
+        const values = this.createPublicAnnotation_(a, { x: x, y: y });
         for (const key of Object.keys(values)) {
           // e.g. a nested object a caller hung off the annotation.
-          if (typeof values[key] === "object") delete values[key];
+          if (typeof values[key] === "object") {delete values[key];}
         }
 
         a.infoDiv!.replaceChildren(
@@ -417,19 +424,19 @@ Zpgraph.Plugins.SuperAnnotations =
         );
       }
 
-      extractUpdatedProperties_(div: HTMLElement, a: InternalAnnotation) {
-        for (const el of div.querySelectorAll("[dg-ann-field]")) {
-          let k = el.getAttribute("dg-ann-field");
-          if (k) a[k] = (el as HTMLInputElement).value;
+      extractUpdatedProperties_(el: HTMLElement, a: InternalAnnotation) {
+        for (const fieldEl of el.querySelectorAll("[dg-ann-field]")) {
+          const k = fieldEl.getAttribute("dg-ann-field");
+          if (k) {a[k] = (fieldEl as HTMLInputElement).value;}
         }
       }
 
       attachAnnotationsToChart_() {
-        let graphDiv = this.g_().graphDiv;
+        const graphDiv = this.g_().graphDiv;
         for (const a of this.annotations_) {
           // Re-attaching an editable div to the DOM can clear its focus.
           // This makes typing really difficult!
-          if (a.editable) continue;
+          if (a.editable) {continue;}
 
           graphDiv.appendChild(a.lineDiv!);
           graphDiv.appendChild(a.infoDiv!);
@@ -437,7 +444,7 @@ Zpgraph.Plugins.SuperAnnotations =
       }
 
       removeAnnotation(a: InternalAnnotation) {
-        let idx = this.annotations_.indexOf(a);
+        const idx = this.annotations_.indexOf(a);
         if (idx >= 0) {
           this.annotations_.splice(idx, 1);
           teardownAnnotation(a);
@@ -448,7 +455,7 @@ Zpgraph.Plugins.SuperAnnotations =
 
       didDrawChart(_e: unknown) {
         // Early out in the (common) case of zero annotations.
-        if (this.annotations_.length === 0) return;
+        if (this.annotations_.length === 0) {return;}
 
         this.updateAnnotationDivPositions();
         this.attachAnnotationsToChart_();
@@ -459,7 +466,7 @@ Zpgraph.Plugins.SuperAnnotations =
         // Prevent any other behavior based on this click, e.g. creation of a hairline.
         e.preventDefault();
 
-        let a = this.createAnnotation(
+        const a = this.createAnnotation(
           Object.assign({}, this.defaultAnnotationProperties_, {
             series: e.point.name,
             xval: e.point.xval!,
@@ -490,16 +497,16 @@ Zpgraph.Plugins.SuperAnnotations =
         return result;
       }
 
-      set(annotations: PublicAnnotation[]) {
+      set(nextAnnotations: PublicAnnotation[]) {
         // Re-use divs from the old annotations array so far as we can.
         // They're already correctly z-ordered.
         let anyCreated = false;
-        for (let i = 0; i < annotations.length; i++) {
-          let a = annotations[i]!;
+        for (let i = 0; i < nextAnnotations.length; i++) {
+          const a = nextAnnotations[i]!;
 
           if (this.annotations_.length > i) {
             // Only the divs and their listeners need to be preserved.
-            let oldA = this.annotations_[i]!;
+            const oldA = this.annotations_[i]!;
             this.annotations_[i] = Object.assign(
               {
                 infoDiv: oldA.infoDiv,
@@ -515,8 +522,8 @@ Zpgraph.Plugins.SuperAnnotations =
         }
 
         // If there are any remaining annotations, destroy them.
-        while (annotations.length < this.annotations_.length) {
-          this.removeAnnotation(this.annotations_[annotations.length]!);
+        while (nextAnnotations.length < this.annotations_.length) {
+          this.removeAnnotation(this.annotations_[nextAnnotations.length]!);
         }
 
         this.updateAnnotationDivPositions();
@@ -528,13 +535,6 @@ Zpgraph.Plugins.SuperAnnotations =
         this.emit_("annotationsChanged", {});
       }
     }
-
-    /** @private Detach one annotation's divs and its drag listeners. */
-    const teardownAnnotation = function (a: InternalAnnotation) {
-      if (a.stopDrag) a.stopDrag();
-      a.lineDiv?.remove();
-      a.infoDiv?.remove();
-    };
 
     // This creates the annotation object and returns it.
     // It does not position it and does not attach it to the chart.

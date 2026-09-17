@@ -23,7 +23,7 @@ class ErrorBarsHandler extends BarsHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = new Array(rawData.length);
+    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
     let x, y, variance, point;
     const logScale = seriesOption<boolean>(options, i, 'logscale');
     const sigma = seriesOption<number>(options, i, 'sigma');
@@ -76,7 +76,7 @@ class ErrorBarsHandler extends BarsHandler {
       num_ok = 0;
       for (j = Math.max(0, i - rollPeriod + 1); j < i + 1; j++) {
         y = originalData[j]![1];
-        if (y === null || isNaN(y)) continue;
+        if (y === null || isNaN(y)) {continue;}
         num_ok++;
         sum += y;
         variance += Math.pow((originalData[j]![2] as number[])[2]!, 2);

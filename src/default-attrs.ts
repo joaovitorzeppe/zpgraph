@@ -14,7 +14,7 @@ import ZpgraphCanvasRenderer from "./canvas";
 import * as utils from "./utils";
 
 // Default attribute values.
-let DEFAULT_ATTRS = {
+const DEFAULT_ATTRS = {
   highlightCircleSize: 3,
   highlightSeriesOpts: null,
   highlightSeriesBackgroundAlpha: 0.5,

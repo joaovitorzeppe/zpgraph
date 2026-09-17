@@ -24,9 +24,29 @@ import IFrameTarp from "../iframe-tarp";
 import type {
   LayoutPluginEvent,
   PlotArea,
-  UnifiedSeries,
+  UnifiedSeries,ZpgraphInstance
 } from "../internal-types";
-import type { ZpgraphInstance } from "../internal-types";
+
+const setElementRect = (
+  canvas: HTMLCanvasElement | null,
+  context: CanvasRenderingContext2D | null,
+  rect: PlotArea,
+  pixelRatioOption: number,
+)  => {
+  if (!canvas || !context) {return;}
+  const canvasScale = pixelRatioOption || utils.getContextPixelRatio(context);
+
+  canvas.style.top = rect.y + "px";
+  canvas.style.left = rect.x + "px";
+  canvas.width = rect.w * canvasScale;
+  canvas.height = rect.h * canvasScale;
+  canvas.style.width = rect.w + "px";
+  canvas.style.height = rect.h + "px";
+
+  if (canvasScale !== 1) {
+    context.scale(canvasScale, canvasScale);
+  }
+};
 
 class rangeSelector {
   hasTouchInterface_ = typeof TouchEvent != "undefined";
@@ -124,10 +144,10 @@ class rangeSelector {
     if (!graphDiv) {
       return;
     }
-    graphDiv.removeChild(this.bgcanvas_!);
-    graphDiv.removeChild(this.fgcanvas_!);
-    graphDiv.removeChild(this.leftZoomHandle_!);
-    graphDiv.removeChild(this.rightZoomHandle_!);
+    this.bgcanvas_!.remove();
+    this.fgcanvas_!.remove();
+    this.leftZoomHandle_!.remove();
+    this.rightZoomHandle_!.remove();
     this.graphDiv_ = null;
   }
 
@@ -154,7 +174,7 @@ class rangeSelector {
   }
 
   updateVisibility_() {
-    let enabled = this.getOptionBool_("showRangeSelector");
+    const enabled = this.getOptionBool_("showRangeSelector");
     if (enabled) {
       if (!this.interfaceCreated_) {
         this.createInterface_();
@@ -163,8 +183,8 @@ class rangeSelector {
       }
     } else if (this.graphDiv_) {
       this.removeFromGraph_();
-      let zpgraph = this.chart_();
-      setTimeout(function () {
+      const zpgraph = this.chart_();
+      setTimeout(() => {
         zpgraph.width_ = 0;
         zpgraph.resize();
       }, 1);
@@ -173,28 +193,7 @@ class rangeSelector {
   }
 
   resize_() {
-    function setElementRect(
-      canvas: HTMLCanvasElement | null,
-      context: CanvasRenderingContext2D | null,
-      rect: PlotArea,
-      pixelRatioOption: number,
-    ) {
-      if (!canvas || !context) return;
-      let canvasScale = pixelRatioOption || utils.getContextPixelRatio(context);
-
-      canvas.style.top = rect.y + "px";
-      canvas.style.left = rect.x + "px";
-      canvas.width = rect.w * canvasScale;
-      canvas.height = rect.h * canvasScale;
-      canvas.style.width = rect.w + "px";
-      canvas.style.height = rect.h + "px";
-
-      if (canvasScale !== 1) {
-        context.scale(canvasScale, canvasScale);
-      }
-    }
-
-    let plotArea = this.chart_().layout_.getPlotArea();
+    const plotArea = this.chart_().layout_.getPlotArea();
 
     let xAxisLabelHeight = 0;
     if (this.chart_().getOptionForAxis("drawAxis", "x")) {
@@ -210,7 +209,7 @@ class rangeSelector {
       h: this.getOptionNum_("rangeSelectorHeight"),
     };
 
-    let pixelRatioOption = this.chart_().getNumericOption("pixelRatio");
+    const pixelRatioOption = this.chart_().getNumericOption("pixelRatio");
     setElementRect(
       this.bgcanvas_,
       this.bgcanvas_ctx_,
@@ -241,7 +240,7 @@ class rangeSelector {
   }
 
   createZoomHandles_() {
-    let img = new Image();
+    const img = new Image();
     img.className = "zpgraph-rangesel-zoomhandle";
     img.style.position = "absolute";
     img.style.zIndex = "10";
@@ -278,21 +277,6 @@ class rangeSelector {
     // steal mouseup. See IFrameTarp.
     const tarp = new IFrameTarp();
 
-    let doZoom: () => void;
-    let doPan: () => void;
-
-    // A drag delivers several moves per frame. The handle itself is moved
-    // synchronously below, but the two canvas redraws it implies read the handle
-    // position when they run, so only the last move of a frame needs to draw.
-    const zoomFrame = utils.coalesceFrames(() => {
-      this.drawInteractiveLayer_();
-      if (dynamic) doZoom();
-    });
-    const panFrame = utils.coalesceFrames(() => {
-      this.drawInteractiveLayer_();
-      if (dynamic) doPan();
-    });
-
     const toXDataWindow = (zoomHandleStatus: {
       leftHandlePos: number;
       rightHandlePos: number;
@@ -307,6 +291,48 @@ class rangeSelector {
         (zoomHandleStatus.rightHandlePos - canvasRect.x) * fact;
       return [xDataMin, xDataMax];
     };
+
+    const doZoom = () => {
+      try {
+        const zoomHandleStatus = this.getZoomHandleStatus_();
+        this.isChangingRange_ = true;
+        if (!zoomHandleStatus.isZoomed) {
+          this.chart_().resetZoom();
+        } else {
+          const xDataWindow = toXDataWindow(zoomHandleStatus) as [
+            number,
+            number,
+          ];
+          this.chart_().doZoomXDates_(xDataWindow[0], xDataWindow[1]);
+        }
+      } finally {
+        this.isChangingRange_ = false;
+      }
+    };
+
+    const doPan = () => {
+      try {
+        this.isChangingRange_ = true;
+        this.chart_().dateWindow_ = toXDataWindow(
+          this.getZoomHandleStatus_(),
+        ) as [number, number];
+        this.chart_().drawGraph_(false);
+      } finally {
+        this.isChangingRange_ = false;
+      }
+    };
+
+    // A drag delivers several moves per frame. The handle itself is moved
+    // synchronously below, but the two canvas redraws it implies read the handle
+    // position when they run, so only the last move of a frame needs to draw.
+    const zoomFrame = utils.coalesceFrames(() => {
+      this.drawInteractiveLayer_();
+      if (dynamic) {doZoom();}
+    });
+    const panFrame = utils.coalesceFrames(() => {
+      this.drawInteractiveLayer_();
+      if (dynamic) {doPan();}
+    });
 
     const onZoom = (e: MouseEvent) => {
       if (!isZooming || !handle) {
@@ -393,24 +419,6 @@ class rangeSelector {
       this.fgcanvas_!.style.cursor = "col-resize";
       tarp.cover();
       return true;
-    };
-
-    doZoom = () => {
-      try {
-        const zoomHandleStatus = this.getZoomHandleStatus_();
-        this.isChangingRange_ = true;
-        if (!zoomHandleStatus.isZoomed) {
-          this.chart_().resetZoom();
-        } else {
-          const xDataWindow = toXDataWindow(zoomHandleStatus) as [
-            number,
-            number,
-          ];
-          this.chart_().doZoomXDates_(xDataWindow[0], xDataWindow[1]);
-        }
-      } finally {
-        this.isChangingRange_ = false;
-      }
     };
 
     const isMouseInPanZone = (e: MouseEvent) => {
@@ -510,18 +518,6 @@ class rangeSelector {
       return false;
     };
 
-    doPan = () => {
-      try {
-        this.isChangingRange_ = true;
-        this.chart_().dateWindow_ = toXDataWindow(
-          this.getZoomHandleStatus_(),
-        ) as [number, number];
-        this.chart_().drawGraph_(false);
-      } finally {
-        this.isChangingRange_ = false;
-      }
-    };
-
     const onCanvasHover = (e: MouseEvent) => {
       if (isZooming || isPanning) {
         return;
@@ -581,7 +577,7 @@ class rangeSelector {
     );
     this.setDefaultOption_("panEdgeFraction", 0.0001);
 
-    let dragStartEvent = (window as Window & { opera?: unknown }).opera
+    const dragStartEvent = (window as Window & { opera?: unknown }).opera
       ? "mousedown"
       : "dragstart";
     this.chart_().addAndTrackEvent(
@@ -636,19 +632,19 @@ class rangeSelector {
   }
 
   drawMiniPlot_() {
-    let fillStyle = this.getOptionStr_("rangeSelectorPlotFillColor");
-    let fillGradientStyle = this.getOptionStr_(
+    const fillStyle = this.getOptionStr_("rangeSelectorPlotFillColor");
+    const fillGradientStyle = this.getOptionStr_(
       "rangeSelectorPlotFillGradientColor",
     );
-    let strokeStyle = this.getOptionStr_("rangeSelectorPlotStrokeColor");
+    const strokeStyle = this.getOptionStr_("rangeSelectorPlotStrokeColor");
     if (!fillStyle && !strokeStyle) {
       return;
     }
 
-    let stepPlot = this.getOptionBool_("stepPlot");
+    const stepPlot = this.getOptionBool_("stepPlot");
 
-    let combinedSeriesData = this.computeCombinedSeriesAndLimits_();
-    let yRange = combinedSeriesData.yMax - combinedSeriesData.yMin;
+    const combinedSeriesData = this.computeCombinedSeriesAndLimits_();
+    const yRange = combinedSeriesData.yMax - combinedSeriesData.yMin;
 
     // Draw the mini plot.
     const ctx = this.bgcanvas_ctx_!;
@@ -668,10 +664,10 @@ class rangeSelector {
     ctx.beginPath();
     ctx.moveTo(margin, canvasHeight);
     for (let i = 0; i < combinedSeriesData.data.length; i++) {
-      let dataPoint = combinedSeriesData.data[i]!;
-      let x =
+      const dataPoint = combinedSeriesData.data[i]!;
+      const x =
         dataPoint[0] !== null ? (dataPoint[0]! - xExtremes[0]!) * xFact : NaN;
-      let y =
+      const y =
         dataPoint[1] !== null
           ? canvasHeight - (dataPoint[1]! - combinedSeriesData.yMin) * yFact
           : NaN;
@@ -724,24 +720,26 @@ class rangeSelector {
   }
 
   computeCombinedSeriesAndLimits_() {
-    let g = this.chart_();
-    let logscale = this.getOptionBool_("logscale");
+    const g = this.chart_();
+    const logscale = this.getOptionBool_("logscale");
     let i;
 
     // Select series to combine. By default, all series are combined.
-    let numColumns = g.numColumns();
-    let labels = g.getLabels();
-    let includeSeries = new Array(numColumns);
+    const numColumns = g.numColumns();
+    const labels = g.getLabels();
+    const includeSeries = Array.from({
+      length: numColumns,
+    }) as Array<boolean | null | undefined>;
     let anySet = false;
-    let visibility = g.visibility();
+    const visibility = g.visibility();
     const inclusion: Array<boolean | null> = [];
 
     for (i = 1; i < numColumns; i++) {
-      let include = this.getOption_("showInRangeSelector", labels![i]!) as
+      const include = this.getOption_("showInRangeSelector", labels![i]!) as
         | boolean
         | null;
       inclusion.push(include);
-      if (include !== null) anySet = true; // it's set explicitly for this series
+      if (include !== null) {anySet = true;} // it's set explicitly for this series
     }
 
     if (anySet) {
@@ -756,10 +754,10 @@ class rangeSelector {
 
     // Create a combined series (average of selected series values).
     const rolledSeries: UnifiedSeries[] = [];
-    let dataHandler = g.dataHandler_;
-    let options = g.attributes_;
+    const dataHandler = g.dataHandler_;
+    const options = g.attributes_;
     for (i = 1; i < g.numColumns(); i++) {
-      if (!includeSeries[i]) continue;
+      if (!includeSeries[i]) {continue;}
       let series = dataHandler.extractSeries(g.rawData_!, i, options);
       if (g.rollPeriod() > 1) {
         series = dataHandler.rollingAverage(series, g.rollPeriod(), options, i);
@@ -777,8 +775,8 @@ class rangeSelector {
       let sum = 0;
       let count = 0;
       for (let j = 0; j < rolledSeries.length; j++) {
-        let y = rolledSeries[j]![i]![1];
-        if (y === null || isNaN(y)) continue;
+        const y = rolledSeries[j]![i]![1];
+        if (y === null || isNaN(y)) {continue;}
         count++;
         sum += y;
       }
@@ -789,7 +787,7 @@ class rangeSelector {
     let yMin = Number.MAX_VALUE;
     let yMax = -Number.MAX_VALUE;
     for (i = 0; i < combinedSeries.length; i++) {
-      let yVal = combinedSeries[i]![1];
+      const yVal = combinedSeries[i]![1];
       if (yVal !== null && isFinite(yVal) && (!logscale || yVal > 0)) {
         yMin = Math.min(yMin, yVal);
         yMax = Math.max(yMax, yVal);
@@ -798,18 +796,18 @@ class rangeSelector {
 
     // Convert Y data to log scale if needed.
     // Also, expand the Y range to compress the mini plot a little.
-    let extraPercent = 0.25;
+    const extraPercent = 0.25;
     if (logscale) {
       yMax = utils.log10(yMax);
       yMax += yMax * extraPercent;
       yMin = utils.log10(yMin);
       for (i = 0; i < combinedSeries.length; i++) {
         const yv = combinedSeries[i]![1];
-        if (yv !== null) combinedSeries[i]![1] = utils.log10(yv);
+        if (yv !== null) {combinedSeries[i]![1] = utils.log10(yv);}
       }
     } else {
       let yExtra;
-      let yRange = yMax - yMin;
+      const yRange = yMax - yMin;
       if (yRange <= Number.MIN_VALUE) {
         yExtra = yMax * extraPercent;
       } else {

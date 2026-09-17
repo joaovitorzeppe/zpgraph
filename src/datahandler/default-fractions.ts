@@ -23,9 +23,9 @@ class DefaultFractionHandler extends DefaultHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = new Array(rawData.length);
+    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
     let x, y, point, num, den, value;
-    let mult = 100.0;
+    const mult = 100.0;
     const logScale = seriesOption<boolean>(options, i, 'logscale');
     for (let j = 0; j < rawData.length; j++) {
       x = rawData[j]![0] as number;
@@ -69,7 +69,7 @@ class DefaultFractionHandler extends DefaultHandler {
     let i;
     let num = 0;
     let den = 0; // numerator/denominator
-    let mult = 100.0;
+    const mult = 100.0;
     for (i = 0; i < originalData.length; i++) {
       num += (originalData[i]![2] as number[])[0]!;
       den += (originalData[i]![2] as number[])[1]!;
@@ -78,8 +78,8 @@ class DefaultFractionHandler extends DefaultHandler {
         den -= (originalData[i - rollPeriod]![2] as number[])[1]!;
       }
 
-      let date = originalData[i]![0];
-      let value = den ? num / den : 0.0;
+      const date = originalData[i]![0];
+      const value = den ? num / den : 0.0;
       rollingData[i] = [date, mult * value];
     }
 

@@ -81,7 +81,6 @@ import {
   toPercentYCoord,
   xAxisExtremes,
   xAxisRange,
-  yAxisExtremes,
   yAxisRange,
   yAxisRanges,
 } from "./coords";
@@ -106,7 +105,7 @@ import {
   drawZoomRect,
   resetZoom,
 } from "./zoom";
-import { drawGraph, predraw } from "./render";
+import { drawGraph, predraw, yAxisExtremes } from "./render";
 import {
   addXTicks_,
   cascadeEvents_ as cascadeEventsFn_,
@@ -317,14 +316,14 @@ export default class Zpgraph {
    */
   isZoomed(axis?: "x" | "y" | null) {
     const isZoomedX = !!this.dateWindow_;
-    if (axis === "x") return isZoomedX;
+    if (axis === "x") {return isZoomedX;}
 
     const isZoomedY =
-      this.axes_.map((ax) => !!ax.valueRange).indexOf(true) >= 0;
+      this.axes_.some((ax) => !!ax.valueRange);
     if (axis === null || axis === undefined) {
       return isZoomedX || isZoomedY;
     }
-    if (axis === "y") return isZoomedY;
+    if (axis === "y") {return isZoomedY;}
 
     throw new Error(`axis parameter is [${axis}] must be null, 'x' or 'y'.`);
   }
@@ -333,8 +332,8 @@ export default class Zpgraph {
    * Returns information about the Zpgraph object, including its containing ID.
    */
   toString() {
-    let maindiv = this.maindiv_;
-    let id = maindiv && maindiv.id ? maindiv.id : maindiv;
+    const maindiv = this.maindiv_;
+    const id = maindiv && maindiv.id ? maindiv.id : maindiv;
     return "[Zpgraph " + id + "]";
   }
 
@@ -453,14 +452,14 @@ export default class Zpgraph {
       opt: string,
     ): unknown | undefined => {
       const bucket = axes?.[axisName] as Record<string, unknown> | undefined;
-      if (bucket && Object.hasOwn(bucket, opt)) return bucket[opt];
+      if (bucket && Object.hasOwn(bucket, opt)) {return bucket[opt];}
       return undefined;
     };
     const userAttrs = this.user_attrs_ as Record<string, unknown>;
 
     return (opt: string) => {
       const userAxisOpt = readAxisOpt(this.user_attrs_.axes, opt);
-      if (userAxisOpt !== undefined) return userAxisOpt;
+      if (userAxisOpt !== undefined) {return userAxisOpt;}
 
       // I don't like that this is in a second spot.
       if (axis === "x" && opt === "logscale") {
@@ -475,15 +474,15 @@ export default class Zpgraph {
       }
 
       const attrsAxisOpt = readAxisOpt(this.attrs_.axes, opt);
-      if (attrsAxisOpt !== undefined) return attrsAxisOpt;
+      if (attrsAxisOpt !== undefined) {return attrsAxisOpt;}
 
       // check old-style axis options
       if (axis === "y") {
         const y0 = this.axes_?.[0];
-        if (y0 && Object.hasOwn(y0, opt)) return y0[opt];
+        if (y0 && Object.hasOwn(y0, opt)) {return y0[opt];}
       } else if (axis === "y2") {
         const y1 = this.axes_?.[1];
-        if (y1 && Object.hasOwn(y1, opt)) return y1[opt];
+        if (y1 && Object.hasOwn(y1, opt)) {return y1[opt];}
       }
       return this.attr_(opt);
     };
@@ -561,8 +560,8 @@ export default class Zpgraph {
    * @return The number of columns.
    */
   numColumns() {
-    if (!this.rawData_) return 0;
-    if (this.rawData_[0]) return this.rawData_[0].length;
+    if (!this.rawData_) {return 0;}
+    if (this.rawData_[0]) {return this.rawData_[0].length;}
     const labels = this.attr_("labels");
     return Array.isArray(labels) ? labels.length : 0;
   }
@@ -572,7 +571,7 @@ export default class Zpgraph {
    * @return The number of rows, less any header.
    */
   numRows() {
-    if (!this.rawData_) return 0;
+    if (!this.rawData_) {return 0;}
     return this.rawData_.length;
   }
 
@@ -587,9 +586,9 @@ export default class Zpgraph {
    *     were out of range.
    */
   getValue(row: number, col: number) {
-    if (row < 0 || row >= this.rawData_.length) return null;
+    if (row < 0 || row >= this.rawData_.length) {return null;}
     const dataRow = this.rawData_[row]!;
-    if (col < 0 || col >= dataRow.length) return null;
+    if (col < 0 || col >= dataRow.length) {return null;}
 
     return dataRow[col];
   }
@@ -635,15 +634,15 @@ export default class Zpgraph {
    */
   getPropertiesForSeries(series_name: string) {
     let idx = -1;
-    let labels = this.getLabels();
-    if (!labels) return null;
+    const labels = this.getLabels();
+    if (!labels) {return null;}
     for (let i = 1; i < labels.length; i++) {
       if (labels[i] === series_name) {
         idx = i;
         break;
       }
     }
-    if (idx === -1) return null;
+    if (idx === -1) {return null;}
 
     return {
       name: series_name,
@@ -911,9 +910,9 @@ export default class Zpgraph {
   static copyUserAttrs_(attrs: Partial<ZpgraphOptions>) {
     const src = attrs as Record<string, unknown>;
     const my_attrs: Record<string, unknown> = {};
-    for (let k in src) {
-      if (!Object.hasOwn(src, k)) continue;
-      if (k === "file") continue;
+    for (const k in src) {
+      if (!Object.hasOwn(src, k)) {continue;}
+      if (k === "file") {continue;}
       my_attrs[k] = src[k];
     }
     return my_attrs as Partial<ZpgraphOptions>;
@@ -944,8 +943,8 @@ export default class Zpgraph {
       width = height = null;
     }
 
-    let old_width = this.width_;
-    let old_height = this.height_;
+    const old_width = this.width_;
+    const old_height = this.height_;
 
     if (width != null && height != null) {
       this.maindiv_.style.width = width + "px";
@@ -1078,7 +1077,7 @@ export default class Zpgraph {
       high = this.numRows() - 1;
 
     while (low <= high) {
-      let idx = (high + low) >> 1;
+      const idx = (high + low) >> 1;
       const x = this.getValue(idx, 0) as number;
       if (x < xVal) {
         low = idx + 1;

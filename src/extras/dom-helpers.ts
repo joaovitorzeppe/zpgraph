@@ -27,8 +27,8 @@ export const div = (
   style?: Record<string, string>,
 ): HTMLDivElement => {
   const el = document.createElement('div');
-  if (className) el.className = className;
-  if (style) setStyle(el, style);
+  if (className) {el.className = className;}
+  if (style) {setStyle(el, style);}
   return el;
 };
 
@@ -87,7 +87,7 @@ export const drag = (el: HTMLElement, opts: DragOptions): (() => void) => {
   let startPosition = 0;
 
   const move = (e: PointerEvent) => {
-    if (e.pointerId !== pointerId) return;
+    if (e.pointerId !== pointerId) {return;}
     const { min, max } = opts.bounds();
     const delta = (horizontal ? e.clientX : e.clientY) - startClient;
     opts.onMove(Math.min(max, Math.max(min, startPosition + delta)));
@@ -95,20 +95,20 @@ export const drag = (el: HTMLElement, opts: DragOptions): (() => void) => {
   };
 
   const end = (e: PointerEvent) => {
-    if (e.pointerId !== pointerId) return;
+    if (e.pointerId !== pointerId) {return;}
     pointerId = -1;
     el.removeEventListener('pointermove', move);
     el.removeEventListener('pointerup', end);
     el.removeEventListener('pointercancel', end);
-    if (opts.onEnd) opts.onEnd();
+    if (opts.onEnd) {opts.onEnd();}
   };
 
   const start = (e: PointerEvent) => {
     // Primary button only, and one drag at a time.
-    if (e.button !== 0 || pointerId !== -1) return;
+    if (e.button !== 0 || pointerId !== -1) {return;}
     pointerId = e.pointerId;
     startClient = horizontal ? e.clientX : e.clientY;
-    if (opts.onStart) opts.onStart();
+    if (opts.onStart) {opts.onStart();}
     // The element may be positioned by its other edge (an annotation sets
     // `bottom`), in which case the laid-out offset is the honest start.
     const styled = parseFloat(horizontal ? el.style.left : el.style.top);
@@ -118,7 +118,7 @@ export const drag = (el: HTMLElement, opts: DragOptions): (() => void) => {
         : el.offsetTop
       : styled;
     // Capture so the drag survives the pointer leaving a thin handle.
-    if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+    if (el.setPointerCapture) {el.setPointerCapture(e.pointerId);}
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
@@ -156,12 +156,12 @@ export const fillTemplate = (
   const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = node.nodeValue;
-    if (text && text.includes('{{')) node.nodeValue = substitute(text);
+    if (text && text.includes('{{')) {node.nodeValue = substitute(text);}
   }
 
   for (const field of clone.querySelectorAll('input, textarea')) {
     const input = field as HTMLInputElement;
-    if (input.value.includes('{{')) input.value = substitute(input.value);
+    if (input.value.includes('{{')) {input.value = substitute(input.value);}
   }
 
   return clone;

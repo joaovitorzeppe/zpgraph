@@ -46,7 +46,7 @@ class PluginCascadeEvent implements PluginEventBase {
   constructor(g: Zpgraph, extra_props?: Record<string, unknown>) {
     // ZpgraphInstance lags a few return types vs the class; cast until aligned.
     this.zpgraph = g as unknown as ZpgraphInstance;
-    if (extra_props) Object.assign(this, extra_props);
+    if (extra_props) {Object.assign(this, extra_props);}
   }
 
   preventDefault() {
@@ -76,6 +76,21 @@ export const removeTrackedEvents_ = (g: Zpgraph): void => {
   g.registeredEvents_ = [];
 };
 
+const removeRecursive = (node: Node)  => {
+  while (node.firstChild) {
+    removeRecursive(node.firstChild);
+    node.firstChild.remove();
+  }
+};
+
+const nullOut = (obj: Record<string, unknown>)  => {
+  for (const n in obj) {
+    if (typeof obj[n] === "object") {
+      obj[n] = null;
+    }
+  }
+};
+
 /**
  * Detach DOM elements in the zpgraph and null out all data references.
  * Calling this when you're done with a zpgraph can dramatically reduce memory
@@ -93,15 +108,8 @@ export const destroy = (g: Zpgraph): void => {
   // Destroy any plugins, in the reverse order that they were registered.
   for (let i = g.plugins_.length - 1; i >= 0; i--) {
     const p = g.plugins_.pop();
-    if (p?.plugin.destroy) p.plugin.destroy();
+    if (p?.plugin.destroy) {p.plugin.destroy();}
   }
-
-  let removeRecursive = function (node: Node) {
-    while (node.hasChildNodes()) {
-      removeRecursive(node.firstChild!);
-      node.removeChild(node.firstChild!);
-    }
-  };
 
   removeTrackedEvents_(g);
 
@@ -122,18 +130,11 @@ export const destroy = (g: Zpgraph): void => {
   g.resizeHandler_ = null;
 
   // A frame already requested would otherwise run against a torn-down chart.
-  for (const handler of g.coalesced_) handler.cancel();
+  for (const handler of g.coalesced_) {handler.cancel();}
   g.coalesced_ = [];
 
   removeRecursive(g.maindiv_);
 
-  let nullOut = function nullOut(obj: Record<string, unknown>) {
-    for (let n in obj) {
-      if (typeof obj[n] === "object") {
-        obj[n] = null;
-      }
-    }
-  };
   // These may not all be necessary, but it can't hurt...
   nullOut(g.layout_ as unknown as Record<string, unknown>);
   nullOut(g.plotter_ as unknown as Record<string, unknown>);
@@ -148,24 +149,24 @@ export const destroy = (g: Zpgraph): void => {
  * @private
  */
 export const setColors_ = (g: Zpgraph): void => {
-  let labels = g.getLabels();
-  if (!labels) return;
-  let num = labels.length - 1;
+  const labels = g.getLabels();
+  if (!labels) {return;}
+  const num = labels.length - 1;
   g.colors_ = [];
   g.colorsMap_ = {};
 
   // These are used for when no custom colors are specified.
-  let sat = g.getNumericOption("colorSaturation") || 1.0;
-  let val = g.getNumericOption("colorValue") || 0.5;
-  let half = Math.ceil(num / 2);
+  const sat = g.getNumericOption("colorSaturation") || 1.0;
+  const val = g.getNumericOption("colorValue") || 0.5;
+  const half = Math.ceil(num / 2);
 
-  let colors = g.getOption("colors") as string[] | undefined;
-  let vis = visibility(g);
+  const colors = g.getOption("colors") as string[] | undefined;
+  const vis = visibility(g);
   for (let i = 0; i < num; i++) {
     if (!vis[i]) {
       continue;
     }
-    let label = labels[i + 1]!;
+    const label = labels[i + 1]!;
     let colorStr = g.attributes_.getForSeries("color", label) as
       | string
       | undefined;
@@ -174,8 +175,8 @@ export const setColors_ = (g: Zpgraph): void => {
         colorStr = colors[i % colors.length]!;
       } else {
         // alternate colors for high contrast.
-        let idx = i % 2 ? half + (i + 1) / 2 : Math.ceil((i + 1) / 2);
-        let hue = (1.0 * idx) / (1 + num);
+        const idx = i % 2 ? half + (i + 1) / 2 : Math.ceil((i + 1) / 2);
+        const hue = (1.0 * idx) / (1 + num);
         colorStr = utils.hsvToRGB(hue, sat, val);
       }
     }
@@ -217,7 +218,7 @@ export const setVisibility = (
   num: VisibilityInput,
   value?: boolean,
 ): void => {
-  let x = visibility(g);
+  const x = visibility(g);
   let numIsObject = false;
 
   if (!Array.isArray(num)) {
@@ -230,9 +231,9 @@ export const setVisibility = (
 
   if (numIsObject) {
     const map = num as Record<string, boolean>;
-    for (let i in map) {
+    for (const i in map) {
       if (Object.hasOwn(map, i)) {
-        let idx = Number(i);
+        const idx = Number(i);
         if (idx < 0 || idx >= x.length) {
           log.warn("Invalid series number in setVisibility: " + i);
         } else {
@@ -280,9 +281,9 @@ export const addXTicks_ = (g: Zpgraph): void => {
     range = g.xAxisExtremes();
   }
 
-  let xAxisOptionsView = g.optionsViewForAxis_("x");
+  const xAxisOptionsView = g.optionsViewForAxis_("x");
   const ticker = xAxisOptionsView("ticker") as Ticker;
-  let xTicks = ticker(
+  const xTicks = ticker(
     range[0]!,
     range[1]!,
     g.plotter_.area.w,
@@ -352,7 +353,7 @@ export const init = (
     resolved.paddingTop !== "0px" ||
     resolved.paddingBottom !== "0px"
   )
-    log.error("Main div contains padding; graph will misbehave");
+    {log.error("Main div contains padding; graph will misbehave");}
 
   // For historical reasons, the 'width' and 'height' options trump all CSS
   // rules _except_ for an explicit 'width' or 'height' on the div.
@@ -419,7 +420,7 @@ export const init = (
     (g.getOption("plugins") as
       | Array<(new () => Plugin) | Plugin>
       | undefined) ?? [];
-  let plugins = Zpgraph.PLUGINS.concat(userPlugins);
+  const plugins = Zpgraph.PLUGINS.concat(userPlugins);
   for (let i = 0; i < plugins.length; i++) {
     // the plugins option may contain either plugin classes or instances.
     // Plugin instances contain an activate method.
@@ -442,8 +443,8 @@ export const init = (
       string,
       (...args: unknown[]) => unknown
     >;
-    for (let eventName in handlers) {
-      if (!Object.hasOwn(handlers, eventName)) continue;
+    for (const eventName in handlers) {
+      if (!Object.hasOwn(handlers, eventName)) {continue;}
       pluginDict.events[eventName] = handlers[eventName]!;
     }
 
@@ -454,10 +455,10 @@ export const init = (
   // Construct a map from event -> ordered list of [callback, plugin].
   for (let i = 0; i < g.plugins_.length; i++) {
     const plugin_dict = g.plugins_[i]!;
-    for (let eventName in plugin_dict.events) {
-      if (!Object.hasOwn(plugin_dict.events, eventName)) continue;
+    for (const eventName in plugin_dict.events) {
+      if (!Object.hasOwn(plugin_dict.events, eventName)) {continue;}
       const callback = plugin_dict.events[eventName];
-      if (!callback) continue;
+      if (!callback) {continue;}
 
       const pair: [Plugin, (...args: unknown[]) => unknown] = [
         plugin_dict.plugin,
@@ -487,18 +488,18 @@ export const cascadeEvents_ = (
   name: string,
   extra_props?: Record<string, unknown>,
 ): boolean => {
-  if (!(name in g.eventListeners_)) return false;
+  if (!(name in g.eventListeners_)) {return false;}
 
   const e = new PluginCascadeEvent(g, extra_props);
 
-  let callback_plugin_pairs = g.eventListeners_[name];
+  const callback_plugin_pairs = g.eventListeners_[name];
   if (callback_plugin_pairs) {
     for (let i = callback_plugin_pairs.length - 1; i >= 0; i--) {
       const pair = callback_plugin_pairs[i]!;
       const plugin = pair[0];
       const callback = pair[1];
       callback.call(plugin, e);
-      if (e.propagationStopped) break;
+      if (e.propagationStopped) {break;}
     }
   }
   return e.defaultPrevented;
@@ -533,7 +534,7 @@ export const start = (g: Zpgraph): void => {
   } else if (datatype === "string") {
     // Heuristic: a newline means it's CSV data. Otherwise it's an URL.
     const text = data as string;
-    let line_delimiter = utils.detectLineDelimiter(text);
+    const line_delimiter = utils.detectLineDelimiter(text);
     if (line_delimiter) {
       g.loadedEvent_(text);
     } else {
@@ -616,12 +617,12 @@ export const updateOptions = (
         (Array.isArray(input_attrs) ? "an array" : typeof input_attrs),
     );
   }
-  if (typeof block_redraw == "undefined") block_redraw = false;
+  if (typeof block_redraw == "undefined") {block_redraw = false;}
 
   // copyUserAttrs_ drops the "file" parameter as a convenience to us.
-  let file = input_attrs.file;
-  let attrs = Zpgraph.copyUserAttrs_(input_attrs);
-  let prevNumAxes = g.attributes_.numAxes();
+  const file = input_attrs.file;
+  const attrs = Zpgraph.copyUserAttrs_(input_attrs);
+  const prevNumAxes = g.attributes_.numAxes();
 
   if ("rollPeriod" in attrs) {
     g.rollPeriod_ = attrs.rollPeriod;
@@ -637,7 +638,7 @@ export const updateOptions = (
   // highlightCircleSize
 
   // Check if this set options will require new points.
-  let requiresNewPoints = utils.isPixelChangingOptionList(
+  const requiresNewPoints = utils.isPixelChangingOptionList(
     g.attr_("labels") as string[],
     attrs,
   );
@@ -649,7 +650,7 @@ export const updateOptions = (
     | { size?: number }
     | undefined;
   if (markers) {
-    if (g.user_attrs_.drawPoints == null) g.user_attrs_.drawPoints = true;
+    if (g.user_attrs_.drawPoints == null) {g.user_attrs_.drawPoints = true;}
     if (markers.size != null && g.user_attrs_.pointSize == null) {
       g.user_attrs_.pointSize = markers.size;
     }
@@ -670,13 +671,13 @@ export const updateOptions = (
 
   g.attributes_.reparseSeries();
 
-  if (prevNumAxes < g.attributes_.numAxes()) g.plotter_.clear();
+  if (prevNumAxes < g.attributes_.numAxes()) {g.plotter_.clear();}
   if (file) {
     // This event indicates that the data is about to change, but hasn't yet.
     cascadeEvents_(g, "dataWillUpdate", {});
 
     g.file_ = file;
-    if (!block_redraw) start(g);
+    if (!block_redraw) {start(g);}
   } else {
     if (!block_redraw) {
       if (requiresNewPoints) {

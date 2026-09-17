@@ -39,11 +39,11 @@ class Unzoom {
   }
 
   willDrawChart(e: ChartDrawPluginEvent) {
-    let g = e.zpgraph;
+    const g = e.zpgraph;
 
     if (this.button_ !== null) {
       // short-circuit: show the button only when we're moused over, and zoomed in.
-      let showButton = g.isZoomed() && this.over_;
+      const showButton = g.isZoomed() && this.over_;
       this.show(showButton);
       return;
     }
@@ -53,16 +53,16 @@ class Unzoom {
     button.textContent = "Reset Zoom";
     button.style.display = "none";
     button.style.position = "absolute";
-    let area = g.plotter_.area;
+    const area = g.plotter_.area;
     button.style.top = area.y + 4 + "px";
     button.style.left = area.x + 4 + "px";
     button.style.zIndex = "11";
-    let parent = g.graphDiv;
-    parent.insertBefore(button, parent.firstChild);
+    const parent = g.graphDiv;
+    parent.prepend(button);
 
-    button.onclick = () => {
+    button.addEventListener("click", () => {
       g.resetZoom();
-    };
+    });
 
     g.addAndTrackEvent(parent, "mouseover", () => {
       if (g.isZoomed()) {
@@ -83,7 +83,7 @@ class Unzoom {
 
   destroy() {
     const button = this.button_;
-    if (button?.parentElement) button.parentElement.removeChild(button);
+    button?.remove();
   }
 }
 

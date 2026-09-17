@@ -34,7 +34,7 @@ class Crosshair {
 
   updateCanvasSize(width: number, height: number) {
     const canvas = this.canvas_!;
-    if (width === canvas.width && height === canvas.height) return;
+    if (width === canvas.width && height === canvas.height) {return;}
     canvas.width = width;
     canvas.height = height;
     canvas.style.width = width + "px";
@@ -64,21 +64,21 @@ class Crosshair {
       return;
     }
 
-    let width = e.zpgraph.width_;
-    let height = e.zpgraph.height_;
+    const width = e.zpgraph.width_;
+    const height = e.zpgraph.height_;
     this.updateCanvasSize(width, height);
 
-    let ctx = this.canvas_!.getContext("2d")!;
+    const ctx = this.canvas_!.getContext("2d")!;
     ctx.clearRect(0, 0, width, height);
     ctx.strokeStyle = this.strokeStyle_;
     ctx.beginPath();
 
     if (this.direction_ === "both" || this.direction_ === "vertical") {
       if (e.zpgraph.selPoints_.length !== 0) {
-        let p = e.zpgraph.selPoints_[0]!;
+        const p = e.zpgraph.selPoints_[0]!;
         if (p.x != null && p.x >= 0 && p.x <= 1) {
           let canvasx = Math.floor(p.canvasx!) + 0.5; // crisper rendering
-          if (canvasx > width) canvasx = width - 0.5;
+          if (canvasx > width) {canvasx = width - 0.5;}
 
           ctx.moveTo(canvasx, 0);
           ctx.lineTo(canvasx, height);
@@ -88,10 +88,10 @@ class Crosshair {
 
     if (this.direction_ === "both" || this.direction_ === "horizontal") {
       for (let i = 0; i < e.zpgraph.selPoints_.length; i++) {
-        let p = e.zpgraph.selPoints_[i]!;
+        const p = e.zpgraph.selPoints_[i]!;
         if (p.y != null && p.y >= 0 && p.y <= 1) {
           let canvasy = Math.floor(p.canvasy!) + 0.5; // crisper rendering
-          if (canvasy > height) canvasy = height - 0.5;
+          if (canvasy > height) {canvasy = height - 0.5;}
 
           ctx.moveTo(0, canvasy);
           ctx.lineTo(width, canvasy);

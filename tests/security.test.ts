@@ -6,6 +6,30 @@ import { mockCanvas, mountDiv, sampleData } from "./helpers";
 
 const XSS = '<img src=x onerror="globalThis.__xss = true">';
 
+const graphWithColor = (color: string) => ({
+  getLabels: () => ["x", "A"],
+  getPropertiesForSeries: () => ({ color, visible: true, axis: 1 }),
+  getOption: (name: string) =>
+    name === "tooltip"
+      ? { show: "always" }
+      : name === "showLabelsOnHighlight"
+        ? true
+        : undefined,
+  getHighlightSeries: () => null,
+  numAxes: () => 1,
+});
+
+const renderAnnotation = (annotation: Record<string, unknown>) => {
+  const el = mountDiv();
+  const g = new Zpgraph(el, sampleData, {
+    labels: ["x", "A", "B"],
+    width: 480,
+    height: 320,
+  });
+  g.setAnnotations([{ series: "A", x: 2, shortText: "a", ...annotation }]);
+  return { el, g };
+};
+
 describe("option merging cannot reach the prototype chain", () => {
   afterEach(() => {
     // Any leak would poison every later test in the run.
@@ -102,19 +126,6 @@ describe("text options reach the DOM as text, not markup", () => {
 });
 
 describe("series colors cannot break out of the legend style attribute", () => {
-  const graphWithColor = (color: string) => ({
-    getLabels: () => ["x", "A"],
-    getPropertiesForSeries: () => ({ color, visible: true, axis: 1 }),
-    getOption: (name: string) =>
-      name === "tooltip"
-        ? { show: "always" }
-        : name === "showLabelsOnHighlight"
-          ? true
-          : undefined,
-    getHighlightSeries: () => null,
-    numAxes: () => 1,
-  });
-
   /** The built-in legend now comes back as nodes rather than as markup. */
   const legendSpan = (color: string) => {
     const fragment = Legend.generateLegendHTML(
@@ -165,17 +176,6 @@ describe("annotation attributes are validated before hitting the DOM", () => {
     document.body.innerHTML = "";
     mockCanvas();
   });
-
-  const renderAnnotation = (annotation: Record<string, unknown>) => {
-    const el = mountDiv();
-    const g = new Zpgraph(el, sampleData, {
-      labels: ["x", "A", "B"],
-      width: 480,
-      height: 320,
-    });
-    g.setAnnotations([{ series: "A", x: 2, shortText: "a", ...annotation }]);
-    return { el, g };
-  };
 
   // setAnnotations requires explicit dimensions alongside an icon.
   const icon = { width: 16, height: 16 };

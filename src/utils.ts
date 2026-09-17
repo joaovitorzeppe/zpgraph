@@ -17,7 +17,7 @@
 
 /*global Zpgraph:false, Node:false */
 
-import * as ZpgraphTickers from "./tickers";
+import { Granularity } from "./granularity";
 import { log } from "./logger";
 import type { DrawPointCallback, InteractionContext, Point } from "./types";
 import type { OptionsGetter } from "./internal-types";
@@ -52,7 +52,7 @@ type ArrayLikeRecord = Record<string, unknown> & {
 };
 
 /** @private */
-export function type(o: unknown): string {
+export const type = (o: unknown): string => {
   return o === null ? "null" : typeof o;
 }
 
@@ -60,7 +60,7 @@ export function type(o: unknown): string {
  * @throws {Error} if series labels (indices 1..) contain duplicates.
  * @param labels Full labels array; index 0 is the x-axis column name.
  */
-export function validateSeriesLabels(labels: string[]) {
+export const validateSeriesLabels = (labels: string[]) => {
   const seen = new Set<string>();
   for (let i = 1; i < labels.length; i++) {
     const name = labels[i]!;
@@ -78,10 +78,16 @@ export function validateSeriesLabels(labels: string[]) {
 export const LOG_SCALE = 10;
 export const LN_TEN = Math.log(LOG_SCALE);
 
+/** Half-pixel up for crisp canvas strokes. */
+export const halfUp = (x: number) => Math.round(x) + 0.5;
+
+/** Half-pixel down for crisp canvas strokes. */
+export const halfDown = (y: number) => Math.round(y) - 0.5;
+
 /**
  * @private
  * @param x * */
-export function log10(x: number): number {
+export const log10 = (x: number): number => {
   return Math.log(x) / LN_TEN;
 }
 
@@ -89,7 +95,7 @@ export function log10(x: number): number {
  * @private
  *
  * @param pct * */
-export function logRangeFraction(r0: number, r1: number, pct: number): number {
+export const logRangeFraction = (r0: number, r1: number, pct: number): number => {
   // Computing the inverse of toPercentXCoord. The function was arrived at with
   // the following steps:
   //
@@ -108,24 +114,24 @@ export function logRangeFraction(r0: number, r1: number, pct: number): number {
   // Use both sides as the exponent in 10^exp and we're done.
   // x = 10 ^ (log(xRange[0]) + (pct * (log(xRange[1]) - log(xRange[0]))))
 
-  let logr0 = log10(r0);
-  let logr1 = log10(r1);
-  let exponent = logr0 + pct * (logr1 - logr0);
-  let value = Math.pow(LOG_SCALE, exponent);
+  const logr0 = log10(r0);
+  const logr1 = log10(r1);
+  const exponent = logr0 + pct * (logr1 - logr0);
+  const value = Math.pow(LOG_SCALE, exponent);
   return value;
 }
 
 /** A dotted line stroke pattern. */
-export let DOTTED_LINE = [2, 2];
+export const DOTTED_LINE = [2, 2];
 /** A dashed line stroke pattern. */
-export let DASHED_LINE = [7, 3];
+export const DASHED_LINE = [7, 3];
 /** A dot dash stroke pattern. */
-export let DOT_DASH_LINE = [7, 2, 2, 2];
+export const DOT_DASH_LINE = [7, 2, 2, 2];
 
 // Directions for panning and zooming. Use bit operations when combined
 // values are possible.
-export let HORIZONTAL = 1;
-export let VERTICAL = 2;
+export const HORIZONTAL = 1;
+export const VERTICAL = 2;
 
 /**
  * Return the 2d context for a zpgraph canvas.
@@ -134,9 +140,9 @@ export let VERTICAL = 2;
  * automated tests.
  * @private
  */
-export function getContext(
+export const getContext = (
   canvas: HTMLCanvasElement,
-): CanvasRenderingContext2D {
+): CanvasRenderingContext2D => {
   const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
   if (!ctx) {
     throw new Error("Zpgraph: this browser has no 2d canvas context.");
@@ -147,8 +153,8 @@ export function getContext(
 /**
  * EventListener options
  */
-function _eventListenerOptions(type: string) {
-  return type === "touchstart" || type === "touchmove"
+const _eventListenerOptions = (eventType: string) => {
+  return eventType === "touchstart" || eventType === "touchmove"
     ? {
         capture: false,
         passive: true,
@@ -164,12 +170,12 @@ function _eventListenerOptions(type: string) {
  *     on the event. The function takes one parameter: the event object.
  * @private
  */
-export function addEvent(
+export const addEvent = (
   elem: EventTarget,
-  type: string,
+  eventType: string,
   fn: EventListenerOrEventListenerObject,
-) {
-  elem.addEventListener(type, fn, _eventListenerOptions(type));
+) => {
+  elem.addEventListener(eventType, fn, _eventListenerOptions(eventType));
 }
 
 /**
@@ -179,12 +185,12 @@ export function addEvent(
  * @param fn The function to call
  *     on the event. The function takes one parameter: the event object.
  */
-export function removeEvent(
+export const removeEvent = (
   elem: EventTarget,
-  type: string,
+  eventType: string,
   fn: EventListenerOrEventListenerObject,
-) {
-  elem.removeEventListener(type, fn, _eventListenerOptions(type));
+) => {
+  elem.removeEventListener(eventType, fn, _eventListenerOptions(eventType));
 }
 
 /**
@@ -192,7 +198,7 @@ export function removeEvent(
  * @param e The event whose normal behavior should be canceled.
  * @private
  */
-export function cancelEvent(e: Event) {
+export const cancelEvent = (e: Event) => {
   e.preventDefault();
   e.stopPropagation();
   return false;
@@ -208,11 +214,11 @@ export function cancelEvent(e: Event) {
  * @return "rgb(r,g,b)" where r, g and b range from 0-255.
  * @private
  */
-export function hsvToRGB(
+export const hsvToRGB = (
   hue: number,
   saturation: number,
   value: number,
-): string {
+): string => {
   let red = 0;
   let green = 0;
   let blue = 0;
@@ -221,11 +227,11 @@ export function hsvToRGB(
     green = value;
     blue = value;
   } else {
-    let i = Math.floor(hue * 6);
-    let f = hue * 6 - i;
-    let p = value * (1 - saturation);
-    let q = value * (1 - saturation * f);
-    let t = value * (1 - saturation * (1 - f));
+    const i = Math.floor(hue * 6);
+    const f = hue * 6 - i;
+    const p = value * (1 - saturation);
+    const q = value * (1 - saturation * f);
+    const t = value * (1 - saturation * (1 - f));
     switch (i) {
       case 1:
         red = q;
@@ -271,7 +277,7 @@ export function hsvToRGB(
  * @private
  * @private
  */
-export function findPos(obj: Element) {
+export const findPos = (obj: Element) => {
   const p = obj.getBoundingClientRect();
   return {
     x: p.left + window.pageXOffset,
@@ -285,7 +291,7 @@ export function findPos(obj: Element) {
  * Taken from MochiKit.Signal
  * @private
  */
-export function pageX(e: PageCoordEvent): number {
+export const pageX = (e: PageCoordEvent): number => {
   return !e.pageX || e.pageX < 0 ? 0 : e.pageX;
 }
 
@@ -295,7 +301,7 @@ export function pageX(e: PageCoordEvent): number {
  * Taken from MochiKit.Signal
  * @private
  */
-export function pageY(e: PageCoordEvent): number {
+export const pageY = (e: PageCoordEvent): number => {
   return !e.pageY || e.pageY < 0 ? 0 : e.pageY;
 }
 
@@ -306,10 +312,10 @@ export function pageY(e: PageCoordEvent): number {
  * @param context Interaction context object.
  * @return The amount by which the drag has moved to the right.
  */
-export function dragGetX_(
+export const dragGetX_ = (
   e: PageCoordEvent,
   context: InteractionContext,
-): number {
+): number => {
   return pageX(e) - context.px;
 }
 
@@ -320,10 +326,10 @@ export function dragGetX_(
  * @param context Interaction context object.
  * @return The amount by which the drag has moved down.
  */
-export function dragGetY_(
+export const dragGetY_ = (
   e: PageCoordEvent,
   context: InteractionContext,
-): number {
+): number => {
   return pageY(e) - context.py;
 }
 
@@ -334,7 +340,7 @@ export function dragGetY_(
  * @return Whether the number is non-zero and not NaN.
  * @private
  */
-export function isNonZeroNonNan(x: unknown): boolean {
+export const isNonZeroNonNan = (x: unknown): boolean => {
   return Boolean(x) && !Number.isNaN(Number(x));
 }
 
@@ -347,15 +353,15 @@ export const isOK = isNonZeroNonNan;
  * @return Whether the point has numeric x and y.
  * @private
  */
-export function isValidPoint(
+export const isValidPoint = (
   p: Partial<Point> | null | undefined,
   opt_allowNaNY?: boolean,
-): boolean {
-  if (!p) return false; // null or undefined object
-  if (p.yval === null) return false; // missing point
-  if (p.x === null || p.x === undefined) return false;
-  if (p.y === null || p.y === undefined) return false;
-  if (isNaN(p.x) || (!opt_allowNaNY && isNaN(p.y))) return false;
+): boolean => {
+  if (!p) {return false;} // null or undefined object
+  if (p.yval === null) {return false;} // missing point
+  if (p.x === null || p.x === undefined) {return false;}
+  if (p.y === null || p.y === undefined) {return false;}
+  if (isNaN(p.x) || (!opt_allowNaNY && isNaN(p.y))) {return false;}
   return true;
 }
 
@@ -377,9 +383,9 @@ export function isValidPoint(
  * @return A string formatted like %g in printf.  The max generated
  *                  string length should be precision + 6 (e.g 1.123e+300).
  */
-export function floatFormat(x: number, opt_precision?: number): string {
+export const floatFormat = (x: number, opt_precision?: number): string => {
   // Avoid invalid precision values; [1, 21] is the valid range.
-  let p = Math.min(Math.max(1, opt_precision || 2), 21);
+  const p = Math.min(Math.max(1, opt_precision || 2), 21);
 
   // This is deceptively simple.  The actual algorithm comes from:
   //
@@ -406,9 +412,9 @@ export function floatFormat(x: number, opt_precision?: number): string {
  * Converts '9' to '09' (useful for dates)
  * @private
  */
-export function zeropad(x: number): string {
-  if (x < 10) return "0" + x;
-  else return "" + x;
+export const zeropad = (x: number): string => {
+  if (x < 10) {return "0" + x;}
+  return "" + x;
 }
 
 /**
@@ -425,7 +431,7 @@ export const DateAccessorsLocal: DateAccessors = {
   getSeconds: (d: Date) => d.getSeconds(),
   getMilliseconds: (d: Date) => d.getMilliseconds(),
   getDay: (d: Date) => d.getDay(),
-  makeDate: function (
+  makeDate(
     y: number,
     m: number,
     d: number,
@@ -452,7 +458,7 @@ export const DateAccessorsUTC: DateAccessors = {
   getSeconds: (d: Date) => d.getUTCSeconds(),
   getMilliseconds: (d: Date) => d.getUTCMilliseconds(),
   getDay: (d: Date) => d.getUTCDay(),
-  makeDate: function (
+  makeDate(
     y: number,
     m: number,
     d: number,
@@ -473,18 +479,18 @@ export const DateAccessorsUTC: DateAccessors = {
  * @return A time of the form "HH:MM" or "HH:MM:SS"
  * @private
  */
-export function hmsString_(
+export const hmsString_ = (
   hh: number,
   mm: number,
   ss: number,
   ms: number,
-): string {
+): string => {
   let ret = zeropad(hh) + ":" + zeropad(mm);
   if (ss) {
     ret += ":" + zeropad(ss);
     if (ms) {
-      let str = "" + ms;
-      ret += "." + ("000" + str).substring(str.length);
+      const str = "" + ms;
+      ret += "." + ("000" + str).slice(str.length);
     }
   }
   return ret;
@@ -498,23 +504,23 @@ export function hmsString_(
  *     "YYYY/MM/DD", "YYYY/MM/DD HH:MM" or "YYYY/MM/DD HH:MM:SS"
  * @private
  */
-export function dateString_(time: number, utc: boolean): string {
-  let accessors = utc ? DateAccessorsUTC : DateAccessorsLocal;
-  let date = new Date(time);
-  let y = accessors.getFullYear(date);
-  let m = accessors.getMonth(date);
-  let d = accessors.getDate(date);
-  let hh = accessors.getHours(date);
-  let mm = accessors.getMinutes(date);
-  let ss = accessors.getSeconds(date);
-  let ms = accessors.getMilliseconds(date);
+export const dateString_ = (time: number, utc: boolean): string => {
+  const accessors = utc ? DateAccessorsUTC : DateAccessorsLocal;
+  const date = new Date(time);
+  const y = accessors.getFullYear(date);
+  const m = accessors.getMonth(date);
+  const d = accessors.getDate(date);
+  const hh = accessors.getHours(date);
+  const mm = accessors.getMinutes(date);
+  const ss = accessors.getSeconds(date);
+  const ms = accessors.getMilliseconds(date);
   // Get a year string:
-  let year = "" + y;
+  const year = "" + y;
   // Get a 0 padded month string
-  let month = zeropad(m + 1); //months are 0-offset, sigh
+  const month = zeropad(m + 1); //months are 0-offset, sigh
   // Get a 0 padded day string
-  let day = zeropad(d);
-  let frac = hh * 3600 + mm * 60 + ss + 1e-3 * ms;
+  const day = zeropad(d);
+  const frac = hh * 3600 + mm * 60 + ss + 1e-3 * ms;
   let ret = year + "/" + month + "/" + day;
   if (frac) {
     ret += " " + hmsString_(hh, mm, ss, ms);
@@ -529,8 +535,8 @@ export function dateString_(time: number, utc: boolean): string {
  * @return The rounded number
  * @private
  */
-export function round_(num: number, places: number): number {
-  let shift = Math.pow(10, places);
+export const round_ = (num: number, places: number): number => {
+  const shift = Math.pow(10, places);
   return Math.round(num * shift) / shift;
 }
 
@@ -557,16 +563,16 @@ export function round_(num: number, places: number): number {
  *
  * @private
  */
-export function lowerBoundX(
+export const lowerBoundX = (
   series: ArrayLike<readonly [number, ...unknown[]]>,
   x: number,
-): number {
+): number => {
   let low = 0;
   let high = series.length;
   while (low < high) {
     const mid = (low + high) >>> 1;
-    if (series[mid]![0] < x) low = mid + 1;
-    else high = mid;
+    if (series[mid]![0] < x) {low = mid + 1;}
+    else {high = mid;}
   }
   return low;
 }
@@ -577,27 +583,27 @@ export function lowerBoundX(
  *
  * @private
  */
-export function upperBoundX(
+export const upperBoundX = (
   series: ArrayLike<readonly [number, ...unknown[]]>,
   x: number,
-): number {
+): number => {
   let low = 0;
   let high = series.length;
   while (low < high) {
     const mid = (low + high) >>> 1;
-    if (series[mid]![0] <= x) low = mid + 1;
-    else high = mid;
+    if (series[mid]![0] <= x) {low = mid + 1;}
+    else {high = mid;}
   }
   return low - 1;
 }
 
-export function binarySearch(
+export const binarySearch = (
   val: number,
   arry: number[],
   abs?: number,
   low?: number,
   high?: number,
-): number {
+): number => {
   if (
     low === null ||
     low === undefined ||
@@ -613,11 +619,11 @@ export function binarySearch(
   if (abs === null || abs === undefined) {
     abs = 0;
   }
-  let validIndex = function (idx: number) {
+  const validIndex = (idx: number)  => {
     return idx >= 0 && idx < arry.length;
   };
-  let mid = parseInt(String((low + high) / 2), 10);
-  let element = arry[mid]!;
+  const mid = parseInt(String((low + high) / 2), 10);
+  const element = arry[mid]!;
   let idx;
   if (element === val) {
     return mid;
@@ -653,8 +659,8 @@ export function binarySearch(
  * @return Milliseconds since epoch.
  * @private
  */
-let _dateParser_re = /-/g;
-export function dateParser(dateStr: string) {
+const _dateParser_re = /-/g;
+export const dateParser = (dateStr: string) => {
   let d;
 
   // Let the system try the format first, with one caveat:
@@ -669,20 +675,20 @@ export function dateParser(dateStr: string) {
     dateStr.search("Z") !== -1
   ) {
     d = dateStrToMillis(dateStr);
-    if (d != null && !isNaN(d)) return d;
+    if (d != null && !isNaN(d)) {return d;}
   }
 
   if (dateStr.search("-") !== -1) {
     // e.g. '2009-7-12' or '2009-07-12'
-    let dateStrSlashed = dateStr.replace(_dateParser_re, "/");
+    const dateStrSlashed = dateStr.replace(_dateParser_re, "/");
     d = dateStrToMillis(dateStrSlashed);
-    if (d != null && !isNaN(d)) return d;
+    if (d != null && !isNaN(d)) {return d;}
   }
 
   // Any format that Date.parse will accept, e.g. "2009/07/12" or
   // "2009/07/12 12:34:56"
   d = dateStrToMillis(dateStr);
-  if (d != null && !isNaN(d)) return d;
+  if (d != null && !isNaN(d)) {return d;}
 
   log.error("Couldn't parse " + dateStr + " as a date");
   return NaN;
@@ -696,7 +702,7 @@ export function dateParser(dateStr: string) {
  * @return millis since epoch
  * @private
  */
-export function dateStrToMillis(str: string): number {
+export const dateStrToMillis = (str: string): number => {
   return new Date(str).getTime();
 }
 
@@ -709,7 +715,7 @@ export function dateStrToMillis(str: string): number {
 const UNSAFE_MERGE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 /** @private */
-function mergeableKeys(o: object): string[] {
+const mergeableKeys = (o: object): string[] => {
   return Object.keys(o).filter((k) => !UNSAFE_MERGE_KEYS.has(k));
 }
 
@@ -719,10 +725,10 @@ function mergeableKeys(o: object): string[] {
  *
  *
  * */
-export function update(
+export const update = (
   self: Record<string, unknown>,
   o: object | null | undefined,
-): Record<string, unknown> {
+): Record<string, unknown> => {
   if (o != null && typeof o === "object") {
     const src = o as Record<string, unknown>;
     for (const k of mergeableKeys(o)) {
@@ -733,12 +739,12 @@ export function update(
 }
 
 // internal: check if o is a DOM node, and we know it’s not null
-let _isNode =
+const _isNode =
   typeof Node !== "undefined" && Node !== null && typeof Node === "object"
-    ? function _isNode(o: unknown) {
+    ? (o: unknown)  => {
         return o instanceof Node;
       }
-    : function _isNode(o: unknown) {
+    : (o: unknown)  => {
         return (
           typeof o === "object" &&
           o !== null &&
@@ -756,10 +762,10 @@ let _isNode =
  *
  * @return * @private
  */
-export function updateDeep(
+export const updateDeep = (
   self: Record<string, unknown>,
   o: object | null | undefined,
-): Record<string, unknown> {
+): Record<string, unknown> => {
   if (typeof o != "undefined" && o !== null) {
     const src = o as Record<string, unknown>;
     for (const k of mergeableKeys(o)) {
@@ -788,8 +794,8 @@ export function updateDeep(
 /**
  * @private
  */
-export function typeArrayLike(o: unknown): string {
-  if (o === null) return "null";
+export const typeArrayLike = (o: unknown): string => {
+  if (o === null) {return "null";}
   const t = typeof o;
   const value = o as ArrayLikeRecord;
   if (
@@ -799,14 +805,14 @@ export function typeArrayLike(o: unknown): string {
     value.nodeType !== 3 &&
     value.nodeType !== 4
   )
-    return "array";
+    {return "array";}
   return t;
 }
 
 /**
  * @private
  */
-export function isArrayLike(o: unknown): boolean {
+export const isArrayLike = (o: unknown): boolean => {
   const t = typeof o;
   const value = o as ArrayLikeRecord;
   return (
@@ -822,7 +828,7 @@ export function isArrayLike(o: unknown): boolean {
 /**
  * @private
  */
-export function isDateLike(o: unknown): boolean {
+export const isDateLike = (o: unknown): boolean => {
   return (
     o !== null &&
     typeof o === "object" &&
@@ -834,7 +840,7 @@ export function isDateLike(o: unknown): boolean {
  * Deep-clone nested arrays (chart data). Uses structuredClone when available.
  * @private
  */
-export function clone(o: unknown[]): unknown[] {
+export const clone = (o: unknown[]): unknown[] => {
   if (typeof structuredClone === "function") {
     return structuredClone(o);
   }
@@ -855,7 +861,7 @@ export function clone(o: unknown[]): unknown[] {
  *
  * @return * @private
  */
-export function createCanvas(): HTMLCanvasElement {
+export const createCanvas = (): HTMLCanvasElement => {
   return document.createElement("canvas");
 }
 
@@ -873,9 +879,9 @@ export function createCanvas(): HTMLCanvasElement {
  * Device pixel ratio for HiDPI canvases.
  * @param context The canvas's 2d context (unused; kept for call-site compat).
  * */
-export function getContextPixelRatio(
+export const getContextPixelRatio = (
   _context?: CanvasRenderingContext2D | null,
-): number {
+): number => {
   return window.devicePixelRatio || 1;
 }
 
@@ -913,7 +919,7 @@ export class Iterator<T = unknown> {
     if (!this.hasNext) {
       return null;
     }
-    let obj = this.peek;
+    const obj = this.peek;
 
     let nextIdx = this.nextIdx_ + 1;
     let found = false;
@@ -949,14 +955,14 @@ export class Iterator<T = unknown> {
  *     returned.  If omitted, all elements are accepted.
  * @private
  */
-export function createIterator<T>(
+export const createIterator = <T>(
   array: T[],
   start: number,
   length: number,
   opt_predicate?: ((array: T[], idx: number) => boolean) | null,
-): Iterator<T> {
+): Iterator<T> => {
   return new Iterator(array, start, length, opt_predicate);
-}
+};
 
 /** Native requestAnimationFrame (modern browsers). */
 export const requestAnimFrame = (callback: FrameRequestCallback): number =>
@@ -981,7 +987,7 @@ export interface Coalesced {
  *
  * @private
  */
-export function coalesceFrames(fn: (...args: unknown[]) => void): Coalesced {
+export const coalesceFrames = (fn: (...args: unknown[]) => void): Coalesced => {
   let handle = 0;
   let pending: unknown[] | null = null;
 
@@ -989,28 +995,28 @@ export function coalesceFrames(fn: (...args: unknown[]) => void): Coalesced {
     handle = 0;
     const args = pending;
     pending = null;
-    if (args) fn(...args);
+    if (args) {fn(...args);}
   };
 
   const wrapped = ((...args: unknown[]) => {
     pending = args;
-    if (!handle) handle = requestAnimFrame(run);
+    if (!handle) {handle = requestAnimFrame(run);}
   }) as Coalesced;
 
   wrapped.flush = () => {
-    if (!handle) return;
+    if (!handle) {return;}
     window.cancelAnimationFrame(handle);
     run();
   };
 
   wrapped.cancel = () => {
-    if (handle) window.cancelAnimationFrame(handle);
+    if (handle) {window.cancelAnimationFrame(handle);}
     handle = 0;
     pending = null;
   };
 
   return wrapped;
-}
+};
 
 /**
  * Call a function at most maxFrames times at an attempted interval of
@@ -1025,37 +1031,37 @@ export function coalesceFrames(fn: (...args: unknown[]) => void): Coalesced {
  * @param cleanupFn A function to call after all repeatFn calls.
  * @private
  */
-export function repeatAndCleanup(
+export const repeatAndCleanup = (
   repeatFn: (frame: number) => void,
   maxFrames: number,
   framePeriodInMillis: number,
   cleanupFn: () => void,
-) {
+) => {
   let frameNumber = 0;
   let previousFrameNumber;
-  let startTime = new Date().getTime();
+  const startTime = new Date().getTime();
   repeatFn(frameNumber);
   if (maxFrames === 1) {
     cleanupFn();
     return;
   }
-  let maxFrameArg = maxFrames - 1;
+  const maxFrameArg = maxFrames - 1;
 
-  (function loop() {
-    if (frameNumber >= maxFrames) return;
-    requestAnimFrame(function () {
+  const loop = () => {
+    if (frameNumber >= maxFrames) {return;}
+    requestAnimFrame(() => {
       // Determine which frame to draw based on the delay so far.  Will skip
       // frames if necessary.
-      let currentTime = new Date().getTime();
-      let delayInMillis = currentTime - startTime;
+      const currentTime = new Date().getTime();
+      const delayInMillis = currentTime - startTime;
       previousFrameNumber = frameNumber;
       frameNumber = Math.floor(delayInMillis / framePeriodInMillis);
-      let frameDelta = frameNumber - previousFrameNumber;
+      const frameDelta = frameNumber - previousFrameNumber;
       // If we predict that the subsequent repeatFn call will overshoot our
       // total frame target, so our last call will cause a stutter, then jump to
       // the last call immediately.  If we're going to cause a stutter, better
       // to do it faster than slower.
-      let predictOvershootStutter = frameNumber + frameDelta > maxFrameArg;
+      const predictOvershootStutter = frameNumber + frameDelta > maxFrameArg;
       if (predictOvershootStutter || frameNumber >= maxFrameArg) {
         repeatFn(maxFrameArg); // Ensure final call with maxFrameArg.
         cleanupFn();
@@ -1067,8 +1073,9 @@ export function repeatAndCleanup(
         loop();
       }
     });
-  })();
-}
+  };
+  loop();
+};
 
 // A whitelist of options that do not change pixel positions.
 const pixelSafeOptions: Record<string, boolean> = {
@@ -1124,10 +1131,10 @@ const pixelSafeOptions: Record<string, boolean> = {
  * @param attrs * @return true if the graph needs new points else false.
  * @private
  */
-export function isPixelChangingOptionList(
+export const isPixelChangingOptionList = (
   labels: string[],
   attrs: Record<string, unknown>,
-): boolean {
+): boolean => {
   // Assume that we do not require new points.
   // This will change to true if we actually do need new points.
 
@@ -1142,8 +1149,8 @@ export function isPixelChangingOptionList(
 
   // Scan through a flat (i.e. non-nested) object of options.
   // Returns true/false depending on whether new points are needed.
-  let scanFlatOptions = function (options: Record<string, unknown>) {
-    for (let property in options) {
+  const scanFlatOptions = (options: Record<string, unknown>)  => {
+    for (const property in options) {
       if (Object.hasOwn(options, property) && !pixelSafeOptions[property]) {
         return true;
       }
@@ -1152,8 +1159,8 @@ export function isPixelChangingOptionList(
   };
 
   // Iterate through the list of updated options.
-  for (let property in attrs) {
-    if (!Object.hasOwn(attrs, property)) continue;
+  for (const property in attrs) {
+    if (!Object.hasOwn(attrs, property)) {continue;}
 
     // Find out of this field is actually a series specific options list.
     if (
@@ -1162,14 +1169,14 @@ export function isPixelChangingOptionList(
     ) {
       // This property value is a list of options for this series.
       if (scanFlatOptions(attrs[property] as Record<string, unknown>))
-        return true;
+        {return true;}
     } else if (property === "series" || property === "axes") {
       // This is twice-nested options list.
       const perSeries = attrs[property] as Record<
         string,
         Record<string, unknown>
       >;
-      for (let series in perSeries) {
+      for (const series in perSeries) {
         if (
           Object.hasOwn(perSeries, series) &&
           scanFlatOptions(perSeries[series]!)
@@ -1180,7 +1187,7 @@ export function isPixelChangingOptionList(
     } else {
       // If this was not a series specific option list,
       // check if it's a pixel-changing property.
-      if (!pixelSafeOptions[property]) return true;
+      if (!pixelSafeOptions[property]) {return true;}
     }
   }
 
@@ -1191,7 +1198,7 @@ export const Circles: {
   DEFAULT: DrawPointCallback;
   [key: string]: DrawPointCallback;
 } = {
-  DEFAULT: function (_g, _name, ctx, canvasx, canvasy, color, radius) {
+  DEFAULT(_g, _name, ctx, canvasx, canvasy, color, radius) {
     ctx.beginPath();
     ctx.fillStyle = color;
     ctx.arc(canvasx, canvasy, radius, 0, 2 * Math.PI, false);
@@ -1204,9 +1211,9 @@ export const Circles: {
  * Determine whether |data| is delimited by CR, CRLF, LF, LFCR.
  * @param data * @return the delimiter that was detected (or null on failure).
  */
-export function detectLineDelimiter(data: string): string | null {
+export const detectLineDelimiter = (data: string): string | null => {
   for (let i = 0; i < data.length; i++) {
-    let code = data.charAt(i);
+    const code = data.charAt(i);
     if (code === "\r") {
       // Might actually be "\r\n".
       if (i + 1 < data.length && data.charAt(i + 1) === "\n") {
@@ -1233,10 +1240,10 @@ export function detectLineDelimiter(data: string): string | null {
  * @return Whether containee is inside (or equal to) container.
  * @private
  */
-export function isNodeContainedBy(
+export const isNodeContainedBy = (
   containee: Node | null,
   container: Node | null,
-): boolean {
+): boolean => {
   if (container === null || containee === null) {
     return false;
   }
@@ -1247,9 +1254,9 @@ export function isNodeContainedBy(
   return containeeNode === container;
 }
 
-let RGBAxRE =
+const RGBAxRE =
   /^#([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})?$/;
-let RGBA_RE =
+const RGBA_RE =
   /^rgba?\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})(?:,\s*([01](?:\.\d+)?))?\)$/;
 
 /**
@@ -1260,7 +1267,7 @@ let RGBA_RE =
  * rgba(123, 45, 67, 0.5)
  * @return parsed {r,g,b,a?} tuple or null.
  */
-function parseRGBA(rgbStr: string) {
+const parseRGBA = (rgbStr: string) => {
   let bits,
     r,
     g,
@@ -1270,14 +1277,14 @@ function parseRGBA(rgbStr: string) {
     r = parseInt(bits[1]!, 16);
     g = parseInt(bits[2]!, 16);
     b = parseInt(bits[3]!, 16);
-    if (bits[4]!) a = parseInt(bits[4]!, 16);
+    if (bits[4]!) {a = parseInt(bits[4]!, 16);}
   } else if ((bits = RGBA_RE.exec(rgbStr))) {
     r = parseInt(bits[1]!, 10);
     g = parseInt(bits[2]!, 10);
     b = parseInt(bits[3]!, 10);
-    if (bits[4]!) a = parseFloat(bits[4]!);
-  } else return null;
-  if (a !== null) return { r: r, g: g, b: b, a: a };
+    if (bits[4]!) {a = parseFloat(bits[4]!);}
+  } else {return null;}
+  if (a !== null) {return { r: r, g: g, b: b, a: a };}
   return { r: r, g: g, b: b };
 }
 
@@ -1288,19 +1295,19 @@ function parseRGBA(rgbStr: string) {
  * @return } Parsed RGB tuple.
  * @private
  */
-export function toRGB_(colorStr: string) {
+export const toRGB_ = (colorStr: string) => {
   // Strategy: First try to parse colorStr directly. This is fast & avoids DOM
   // manipulation.  If that fails (e.g. for named colors like 'red'), then
   // create a hidden DOM element and parse its computed color.
-  let rgb = parseRGBA(colorStr);
-  if (rgb) return rgb;
+  const rgb = parseRGBA(colorStr);
+  if (rgb) {return rgb;}
 
-  let div = document.createElement("div");
+  const div = document.createElement("div");
   div.style.backgroundColor = colorStr;
   div.style.visibility = "hidden";
   document.body.appendChild(div);
-  let rgbStr = window.getComputedStyle(div, null).backgroundColor;
-  document.body.removeChild(div);
+  const rgbStr = window.getComputedStyle(div, null).backgroundColor;
+  div.remove();
   return parseRGBA(rgbStr);
 }
 
@@ -1314,20 +1321,20 @@ export function toRGB_(colorStr: string) {
  * @param opt_line_no The line number from which the string comes.
  * @param opt_line The text of the line from which the string comes.
  */
-export function parseFloat_(
+export const parseFloat_ = (
   x: string,
   opt_line_no?: number,
   opt_line?: string,
-) {
-  let val = parseFloat(x);
-  if (!isNaN(val)) return val;
+) => {
+  const val = parseFloat(x);
+  if (!isNaN(val)) {return val;}
 
   // Try to figure out what happeend.
   // If the value is the empty string, parse it as null.
-  if (/^ *$/.test(x)) return null;
+  if (/^ *$/.test(x)) {return null;}
 
   // If it was actually "NaN", return it as NaN.
-  if (/^ *nan *$/i.test(x)) return NaN;
+  if (/^ *nan *$/i.test(x)) {return NaN;}
 
   // Looks like a parsing error.
   let msg = "Unable to parse '" + x + "' as a number";
@@ -1342,10 +1349,10 @@ export function parseFloat_(
 
 // Label constants for the labelsKMB and labelsKMG2 options.
 // (i.e. '100000' -> '100k')
-let KMB_LABELS_LARGE = ["k", "M", "G", "T", "P", "E", "Z", "Y"];
-let KMB_LABELS_SMALL = ["m", "µ", "n", "p", "f", "a", "z", "y"];
-let KMG2_LABELS_LARGE = ["Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"];
-let KMG2_LABELS_SMALL = [
+const KMB_LABELS_LARGE = ["k", "M", "G", "T", "P", "E", "Z", "Y"];
+const KMB_LABELS_SMALL = ["m", "µ", "n", "p", "f", "a", "z", "y"];
+const KMG2_LABELS_LARGE = ["Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"];
+const KMG2_LABELS_SMALL = [
   "p-10",
   "p-20",
   "p-30",
@@ -1356,8 +1363,8 @@ let KMG2_LABELS_SMALL = [
   "p-80",
 ];
 /* if both are given (legacy/deprecated use only) */
-let KMB2_LABELS_LARGE = ["K", "M", "G", "T", "P", "E", "Z", "Y"];
-let KMB2_LABELS_SMALL = KMB_LABELS_SMALL;
+const KMB2_LABELS_LARGE = ["K", "M", "G", "T", "P", "E", "Z", "Y"];
+const KMB2_LABELS_SMALL = KMB_LABELS_SMALL;
 
 /**
  * @private
@@ -1366,7 +1373,7 @@ let KMB2_LABELS_SMALL = KMB_LABELS_SMALL;
  * @param x The number to be formatted
  * @param opts An options view
  */
-export function numberValueFormatter(x: number, opts: OptionsGetter) {
+export const numberValueFormatter = (x: number, opts: OptionsGetter) => {
   const sigFigs = opts("sigFigs") as number | null;
 
   if (sigFigs !== null) {
@@ -1375,7 +1382,7 @@ export function numberValueFormatter(x: number, opts: OptionsGetter) {
   }
 
   // shortcut 0 so later code does not need to worry about it
-  if (x === 0.0) return "0";
+  if (x === 0.0) {return "0";}
 
   const digits = opts("digitsAfterDecimal") as number;
   const maxNumberWidth = opts("maxNumberWidth") as number;
@@ -1384,7 +1391,7 @@ export function numberValueFormatter(x: number, opts: OptionsGetter) {
   const kmg2 = opts("labelsKMG2") as boolean;
 
   let label;
-  let absx = Math.abs(x);
+  const absx = Math.abs(x);
 
   if (kmb || kmg2) {
     let k = 1000;
@@ -1416,8 +1423,8 @@ export function numberValueFormatter(x: number, opts: OptionsGetter) {
           // guaranteed to hit because absx >= k (Math.pow(k, 1))
           // if immensely large still switch to scientific notation
           if (absx / n >= Math.pow(10, maxNumberWidth))
-            label = x.toExponential(digits);
-          else label = round_(x / n, digits) + k_labels[j]!;
+            {label = x.toExponential(digits);}
+          else {label = round_(x / n, digits) + k_labels[j]!;}
           return label;
         }
       }
@@ -1427,11 +1434,11 @@ export function numberValueFormatter(x: number, opts: OptionsGetter) {
       while (j < m_labels.length) {
         ++j;
         n = Math.pow(k, j);
-        if (absx * n >= 1) break;
+        if (absx * n >= 1) {break;}
       }
       // if _still_ too small, switch to scientific notation instead
-      if (absx * n < Math.pow(10, -digits)) label = x.toExponential(digits);
-      else label = round_(x * n, digits) + m_labels[j - 1]!;
+      if (absx * n < Math.pow(10, -digits)) {label = x.toExponential(digits);}
+      else {label = round_(x * n, digits) + m_labels[j - 1]!;}
       return label;
     }
     // else fall through
@@ -1451,11 +1458,11 @@ export function numberValueFormatter(x: number, opts: OptionsGetter) {
  * variant for use as an axisLabelFormatter.
  * @private
  */
-export function numberAxisLabelFormatter(
+export const numberAxisLabelFormatter = (
   x: number,
   _granularity: number,
   opts: OptionsGetter,
-) {
+) => {
   return numberValueFormatter(x, opts);
 }
 
@@ -1464,7 +1471,7 @@ export function numberAxisLabelFormatter(
  * @private
  * @constant
  */
-let SHORT_MONTH_NAMES_ = [
+const SHORT_MONTH_NAMES_ = [
   "Jan",
   "Feb",
   "Mar",
@@ -1489,15 +1496,15 @@ let SHORT_MONTH_NAMES_ = [
  * @return The date formatted as local time
  * @private
  */
-export function dateAxisLabelFormatter(
+export const dateAxisLabelFormatter = (
   date: Date,
   granularity: number,
   opts: OptionsGetter,
-): string {
+): string => {
   const utc = opts("labelsUTC") as boolean;
   const accessors = utc ? DateAccessorsUTC : DateAccessorsLocal;
 
-  let year = accessors.getFullYear(date),
+  const year = accessors.getFullYear(date),
     month = accessors.getMonth(date),
     day = accessors.getDate(date),
     hours = accessors.getHours(date),
@@ -1505,25 +1512,26 @@ export function dateAxisLabelFormatter(
     secs = accessors.getSeconds(date),
     millis = accessors.getMilliseconds(date);
 
-  if (granularity >= ZpgraphTickers.Granularity.DECADAL) {
+  if (granularity >= Granularity.DECADAL) {
     return "" + year;
-  } else if (granularity >= ZpgraphTickers.Granularity.MONTHLY) {
-    return SHORT_MONTH_NAMES_[month] + "\u00a0" + year;
-  } else {
-    let frac = hours * 3600 + mins * 60 + secs + 1e-3 * millis;
-    if (frac === 0 || granularity >= ZpgraphTickers.Granularity.DAILY) {
-      // e.g. '21 Jan' (%d%b)
-      return zeropad(day) + "\u00a0" + SHORT_MONTH_NAMES_[month];
-    } else if (granularity < ZpgraphTickers.Granularity.SECONDLY) {
-      // e.g. 40.310 (meaning 40 seconds and 310 milliseconds)
-      let str = "" + millis;
-      return zeropad(secs) + "." + ("000" + str).substring(str.length);
-    } else if (granularity > ZpgraphTickers.Granularity.MINUTELY) {
-      return hmsString_(hours, mins, secs, 0);
-    } else {
-      return hmsString_(hours, mins, secs, millis);
-    }
   }
+  if (granularity >= Granularity.MONTHLY) {
+    return SHORT_MONTH_NAMES_[month] + "\u00a0" + year;
+  }
+  const frac = hours * 3600 + mins * 60 + secs + 1e-3 * millis;
+  if (frac === 0 || granularity >= Granularity.DAILY) {
+    // e.g. '21 Jan' (%d%b)
+    return zeropad(day) + "\u00a0" + SHORT_MONTH_NAMES_[month];
+  }
+  if (granularity < Granularity.SECONDLY) {
+    // e.g. 40.310 (meaning 40 seconds and 310 milliseconds)
+    const str = "" + millis;
+    return zeropad(secs) + "." + ("000" + str).slice(str.length);
+  }
+  if (granularity > Granularity.MINUTELY) {
+    return hmsString_(hours, mins, secs, 0);
+  }
+  return hmsString_(hours, mins, secs, millis);
 }
 
 /**
@@ -1533,7 +1541,7 @@ export function dateAxisLabelFormatter(
  * @param opts An options view
  * @private
  */
-export function dateValueFormatter(d: number, opts: OptionsGetter) {
+export const dateValueFormatter = (d: number, opts: OptionsGetter) => {
   return dateString_(d, opts("labelsUTC") as boolean);
 }
 
@@ -1547,8 +1555,8 @@ let deferDOM_handlerCalled = false;
  * @param cb The callback to run once the DOM is ready.
  * @return whether the DOM is currently ready
  */
-function deferDOM_ready(cb: () => void): boolean {
-  if (typeof cb === "function") cb();
+const deferDOM_ready = (cb: () => void): boolean => {
+  if (typeof cb === "function") {cb();}
   return true;
 }
 
@@ -1557,15 +1565,15 @@ function deferDOM_ready(cb: () => void): boolean {
  * @param self the object to update .onDOMready on
  * @private
  */
-export function setupDOMready_(self: {
+export const setupDOMready_ = (self: {
   onDOMready?: (cb: () => void) => boolean;
-}) {
+}) => {
   // only attach if there’s a DOM
   if (typeof document !== "undefined") {
     // called by browser
-    const handler = function deferDOM_handler() {
+    const handler = () => {
       /* execute only once */
-      if (deferDOM_handlerCalled) return;
+      if (deferDOM_handlerCalled) {return;}
       deferDOM_handlerCalled = true;
       /* subsequent calls must not enqueue */
       self.onDOMready = deferDOM_ready;
@@ -1580,15 +1588,15 @@ export function setupDOMready_(self: {
     };
 
     // make callable (mutating, do not copy)
-    self.onDOMready = function deferDOM_initial(cb: () => void) {
+    self.onDOMready = (cb: () => void) => {
       /* if possible, skip all that */
       if (document.readyState === "complete") {
         self.onDOMready = deferDOM_ready;
         return deferDOM_ready(cb);
       }
       // onDOMready, after setup, before DOM is ready
-      const enqfn = function deferDOM_enqueue(cb: () => void) {
-        if (typeof cb === "function") deferDOM_callbacks!.push(cb);
+      const enqfn = (queuedCb: () => void) => {
+        if (typeof queuedCb === "function") {deferDOM_callbacks!.push(queuedCb);}
         return false;
       };
       /* subsequent calls will enqueue */
@@ -1609,4 +1617,4 @@ export function setupDOMready_(self: {
       return enqfn(cb);
     };
   }
-}
+};

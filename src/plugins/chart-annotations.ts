@@ -15,8 +15,8 @@ import type {
 import type Zpgraph from "../zpgraph";
 
 const toMs = (v: number | string | Date): number => {
-  if (v instanceof Date) return v.getTime();
-  if (typeof v === "number") return v;
+  if (v instanceof Date) {return v.getTime();}
+  if (typeof v === "number") {return v;}
   const t = Date.parse(v);
   return Number.isFinite(t) ? t : Number(v);
 };
@@ -40,10 +40,10 @@ class chart_annotations {
     if (ann) {
       const ctx = e.drawingContext;
       const area = g.plotter_.area;
-      for (const a of ann.xaxis ?? []) drawXAxis(g, ctx, area, a);
-      for (const a of ann.yaxis ?? []) drawYAxis(g, ctx, area, a);
-      for (const p of ann.points ?? []) drawPoint(g, ctx, p);
-      for (const t of ann.texts ?? []) drawText(g, ctx, t);
+      for (const a of ann.xaxis ?? []) {drawXAxis(g, ctx, area, a);}
+      for (const a of ann.yaxis ?? []) {drawYAxis(g, ctx, area, a);}
+      for (const p of ann.points ?? []) {drawPoint(g, ctx, p);}
+      for (const t of ann.texts ?? []) {drawText(g, ctx, t);}
     }
 
     const markers = g.getOption("eventMarkers") as EventMarker[] | undefined;
@@ -52,7 +52,7 @@ class chart_annotations {
       const area = g.plotter_.area;
       for (const m of markers) {
         const x = g.toDomXCoord(toMs(m.x));
-        if (x == null) continue;
+        if (x == null) {continue;}
         ctx.save();
         ctx.strokeStyle = "#666";
         ctx.lineWidth = 1;
@@ -80,9 +80,9 @@ const drawXAxis = (
   area: { x: number; y: number; w: number; h: number },
   a: AxisAnnotation,
 ) => {
-  if (a.x == null) return;
+  if (a.x == null) {return;}
   const x1 = g.toDomXCoord(toMs(a.x));
-  if (x1 == null) return;
+  if (x1 == null) {return;}
   const x2 = a.x2 != null ? g.toDomXCoord(toMs(a.x2)) : null;
   ctx.save();
   if (x2 != null) {
@@ -120,10 +120,10 @@ const drawYAxis = (
   area: { x: number; y: number; w: number; h: number },
   a: AxisAnnotation,
 ) => {
-  if (a.y == null) return;
+  if (a.y == null) {return;}
   const axisIdx = a.axis === "y2" ? 1 : 0;
   const y1 = g.toDomYCoord(a.y, axisIdx);
-  if (y1 == null) return;
+  if (y1 == null) {return;}
   const y2 = a.y2 != null ? g.toDomYCoord(a.y2, axisIdx) : null;
   ctx.save();
   if (y2 != null) {
@@ -157,7 +157,7 @@ const drawPoint = (
 ) => {
   const x = g.toDomXCoord(toMs(p.x));
   const y = g.toDomYCoord(p.y);
-  if (x == null || y == null) return;
+  if (x == null || y == null) {return;}
   const r = p.markerSize ?? 4;
   ctx.save();
   ctx.fillStyle = p.markerColor ?? "#c45c26";
@@ -180,7 +180,7 @@ const drawText = (
 ) => {
   const x = g.toDomXCoord(toMs(t.x));
   const y = g.toDomYCoord(t.y);
-  if (x == null || y == null) return;
+  if (x == null || y == null) {return;}
   ctx.save();
   ctx.fillStyle = t.color ?? "#333";
   ctx.font = "12px sans-serif";

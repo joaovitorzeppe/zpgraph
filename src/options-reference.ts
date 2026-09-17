@@ -1142,7 +1142,6 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
   // most part, this just means that you should always use double quotes.
 
   // Do a quick sanity check on the options reference.
-  const warn = (msg: string) => log.warn(msg);
   const flds = ["type", "default", "description"];
   const valid_cats =
     // <JSON>
@@ -1169,24 +1168,24 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
       Series: "",
       "Value display/formatting": "",
     }; // </JSON>
-  for (let k in OPTIONS_REFERENCE) {
-    if (!Object.hasOwn(OPTIONS_REFERENCE, k)) continue;
+  for (const k in OPTIONS_REFERENCE) {
+    if (!Object.hasOwn(OPTIONS_REFERENCE, k)) {continue;}
     const op = OPTIONS_REFERENCE[k]!;
     for (const fld of flds) {
       if (!Object.hasOwn(op, fld)) {
-        warn("Option " + k + ' missing "' + fld + '" property');
+        log.warn("Option " + k + ' missing "' + fld + '" property');
       } else if (typeof op[fld] != "string") {
-        warn(k + "." + fld + " must be of type string");
+        log.warn(k + "." + fld + " must be of type string");
       }
     }
-    let labels = op.labels;
+    const labels = op.labels;
     if (!Array.isArray(labels)) {
-      warn('Option "' + k + '" is missing a "labels": [...] option');
+      log.warn('Option "' + k + '" is missing a "labels": [...] option');
     } else {
       for (let i = 0; i < labels.length; i++) {
         const label = labels[i];
         if (label === undefined || !Object.hasOwn(valid_cats, label)) {
-          warn(
+          log.warn(
             'Option "' + k + '" has label "' + label + '", which is invalid.',
           );
         }

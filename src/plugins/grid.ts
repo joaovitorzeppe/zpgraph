@@ -11,6 +11,7 @@
 /*global Zpgraph:false */
 
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
+import { halfDown, halfUp } from "../utils";
 
 /*
 
@@ -40,30 +41,23 @@ class grid {
   willDrawChart(e: ChartDrawPluginEvent) {
     // Draw the new X/Y grid. Lines appear crisper when pixels are rounded to
     // half-integers. This prevents them from drawing in two rows/cols.
-    let g = e.zpgraph;
-    let ctx = e.drawingContext;
-    let layout = g.layout_;
-    let area = e.zpgraph.plotter_.area;
-
-    function halfUp(x: number) {
-      return Math.round(x) + 0.5;
-    }
-    function halfDown(y: number) {
-      return Math.round(y) - 0.5;
-    }
+    const g = e.zpgraph;
+    const ctx = e.drawingContext;
+    const layout = g.layout_;
+    const area = e.zpgraph.plotter_.area;
 
     let x: number;
     let y: number;
     let i: number;
-    let yticks = layout.yticks ?? [];
-    let xticks = layout.xticks ?? [];
+    const yticks = layout.yticks ?? [];
+    const xticks = layout.xticks ?? [];
     // Either y axis can carry a grid on its own: the per-axis drawGrid below
     // decides which ones are drawn.
     if (
       g.getOptionForAxis("drawGrid", "y") ||
       g.getOptionForAxis("drawGrid", "y2")
     ) {
-      let axes = ["y", "y2"];
+      const axes = ["y", "y2"];
       const strokeStyles: string[] = [],
         lineWidths: number[] = [],
         drawGrid: boolean[] = [],
@@ -86,11 +80,11 @@ class grid {
       // One path per axis rather than one per tick: every line on an axis shares
       // a style, so they can all be stroked together.
       for (i = 0; i < axes.length; i++) {
-        if (!drawGrid[i]) continue;
+        if (!drawGrid[i]) {continue;}
         ctx.save();
         if (stroking[i]) {
           if (ctx.setLineDash && strokePattern[i])
-            ctx.setLineDash(strokePattern[i]!);
+            {ctx.setLineDash(strokePattern[i]!);}
         }
         ctx.strokeStyle = strokeStyles[i]!;
         ctx.lineWidth = lineWidths[i]!;
@@ -98,7 +92,7 @@ class grid {
         ctx.beginPath();
         x = halfUp(area.x);
         for (const tick of yticks) {
-          if (!tick.has_tick || tick.axis !== i) continue;
+          if (!tick.has_tick || tick.axis !== i) {continue;}
           y = halfDown(area.y + tick.pos * area.h);
           ctx.moveTo(x, y);
           ctx.lineTo(x + area.w, y);
@@ -118,21 +112,21 @@ class grid {
         | null;
       const xStroking = !!(xStrokePattern && xStrokePattern.length >= 2);
       if (xStroking) {
-        if (ctx.setLineDash) ctx.setLineDash(xStrokePattern);
+        if (ctx.setLineDash) {ctx.setLineDash(xStrokePattern);}
       }
       ctx.strokeStyle = String(g.getOptionForAxis("gridLineColor", "x"));
       ctx.lineWidth = Number(g.getOptionForAxis("gridLineWidth", "x"));
       ctx.beginPath();
       y = halfDown(area.y + area.h);
       for (const tick of xticks) {
-        if (!tick.has_tick) continue;
+        if (!tick.has_tick) {continue;}
         x = halfUp(area.x + tick.pos * area.w);
         ctx.moveTo(x, y);
         ctx.lineTo(x, area.y);
       }
       ctx.stroke();
       if (xStroking) {
-        if (ctx.setLineDash) ctx.setLineDash([]);
+        if (ctx.setLineDash) {ctx.setLineDash([]);}
       }
       ctx.restore();
     }

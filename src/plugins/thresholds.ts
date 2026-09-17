@@ -21,7 +21,7 @@ class thresholds {
   willDrawChart(e: ChartDrawPluginEvent) {
     const g = e.zpgraph;
     const list = g.getOption("thresholds") as ThresholdBand[] | undefined;
-    if (!list || !list.length) return;
+    if (!list || !list.length) {return;}
 
     const ctx = e.drawingContext;
     const area = g.plotter_.area;
@@ -38,7 +38,7 @@ class thresholds {
         (band.y2 != null && band.y != null
           ? Math.max(band.y, band.y2)
           : (band.y2 ?? band.y ?? undefined));
-      if (yLo == null && yHi == null) continue;
+      if (yLo == null && yHi == null) {continue;}
 
       const domLo =
         yLo != null ? g.toDomYCoord(yLo, axisIdx) : null;
@@ -55,7 +55,7 @@ class thresholds {
         if (String(ctx.fillStyle).startsWith("var(")) {
           ctx.fillStyle = "rgba(27,107,147,0.14)";
         }
-        if (band.fillColor) ctx.fillStyle = band.fillColor;
+        if (band.fillColor) {ctx.fillStyle = band.fillColor;}
         ctx.fillRect(area.x, top, area.w, h);
       }
 

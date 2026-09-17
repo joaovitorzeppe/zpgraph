@@ -20,10 +20,10 @@
  * they don't capture mouseup.
  *
  * Usage:
- * element.addEventListener('mousedown', function() {
+ * element.addEventListener('mousedown', ()  => {
  *   const tarper = new IFrameTarp();
  *   tarper.cover();
- *   const mouseUpHandler = function() {
+ *   const mouseUpHandler = ()  => {
  *     ...
  *     window.removeEventListener(mouseUpHandler);
  *     tarper.uncover();
@@ -56,10 +56,7 @@ export default class IFrameTarp {
 
   /** Remove all iframe covers. Call from a mouseup handler. */
   uncover() {
-    for (let i = 0; i < this.tarps.length; i++) {
-      const tarp = this.tarps[i]!;
-      tarp.parentNode!.removeChild(tarp);
-    }
+    this.tarps.forEach((tarp) => tarp.remove());
     this.tarps = [];
   }
 }

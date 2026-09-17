@@ -62,8 +62,11 @@
 /*jshint sub:true */
 /*global Zpgraph:false */
 
+import { Granularity } from "./granularity";
 import * as utils from "./utils";
 import type { AxisLabelFormatter, Ticker } from "./types";
+
+export { Granularity };
 
 type AxisOpts = (name: string) => unknown;
 type TickResult = ReturnType<Ticker>;
@@ -82,36 +85,22 @@ interface TickPlacement {
 
 type DateParts = [number, number, number, number, number, number, number];
 
-export const numericLinearTicks: Ticker = function (
-  a,
-  b,
-  pixels,
-  opts,
-  zpgraph,
-  vals,
-) {
-  let nonLogscaleOpts = function (opt: string) {
-    if (opt === "logscale") return false;
-    return opts(opt);
-  };
-  return numericTicks(a, b, pixels, nonLogscaleOpts, zpgraph, vals);
-};
+export const numericLinearTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) =>
+  numericTicks(
+    a,
+    b,
+    pixels,
+    (opt: string) => (opt === "logscale" ? false : opts(opt)),
+    zpgraph,
+    vals,
+  );
 
-export const numericTicks: Ticker = function (
-  a,
-  b,
-  pixels,
-  opts,
-  zpgraph,
-  vals,
-) {
-  let pixels_per_tick = opts("pixelsPerLabel") as number;
+export const numericTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) => {
+  const pixels_per_tick = opts("pixelsPerLabel") as number;
   const ticks: NumericTick[] = [];
   let i, j, tickV, nTicks;
   if (vals?.length) {
-    for (i = 0; i < vals.length; i++) {
-      ticks.push({ v: vals[i]! });
-    }
+    ticks.push(...vals.map((v) => ({ v })));
   } else {
     if (opts("logscale")) {
       nTicks = Math.floor(pixels / pixels_per_tick);
@@ -128,8 +117,8 @@ export const numericTicks: Ticker = function (
       let lastDisplayed = null;
       if (maxIdx - minIdx >= nTicks / 4) {
         for (let idx = maxIdx; idx >= minIdx; idx--) {
-          let tickValue = PREFERRED_LOG_TICK_VALUES[idx]!;
-          let pixel_coord =
+          const tickValue = PREFERRED_LOG_TICK_VALUES[idx]!;
+          const pixel_coord =
             (Math.log(tickValue / a) / Math.log(b / a)) * pixels;
           const tick: NumericTick = { v: tickValue };
           if (lastDisplayed === null) {
@@ -137,18 +126,16 @@ export const numericTicks: Ticker = function (
               tickValue: tickValue,
               pixel_coord: pixel_coord,
             };
+          } else if (
+            Math.abs(pixel_coord - lastDisplayed.pixel_coord) >=
+            pixels_per_tick
+          ) {
+            lastDisplayed = {
+              tickValue: tickValue,
+              pixel_coord: pixel_coord,
+            };
           } else {
-            if (
-              Math.abs(pixel_coord - lastDisplayed.pixel_coord) >=
-              pixels_per_tick
-            ) {
-              lastDisplayed = {
-                tickValue: tickValue,
-                pixel_coord: pixel_coord,
-              };
-            } else {
-              tick.label = "";
-            }
+            tick.label = "";
           }
           ticks.push(tick);
         }
@@ -163,7 +150,7 @@ export const numericTicks: Ticker = function (
       // Try labels every 1, 2, 5, 10, 20, 50, 100, etc.
       // Calculate the resulting tick spacing (i.e. this.height_ / nTicks).
       // The first spacing greater than pixelsPerYLabel is what we use.
-      let kmg2 = opts("labelsKMG2");
+      const kmg2 = opts("labelsKMG2");
       let mults, base;
       if (kmg2) {
         mults = [1, 2, 4, 8, 16, 32, 64, 128, 256];
@@ -175,17 +162,17 @@ export const numericTicks: Ticker = function (
 
       // Get the maximum number of permitted ticks based on the
       // graph's pixel size and pixels_per_tick setting.
-      let max_ticks = Math.ceil(pixels / pixels_per_tick);
+      const max_ticks = Math.ceil(pixels / pixels_per_tick);
 
       // Now calculate the data unit equivalent of this tick spacing.
       // Use abs() since graphs may have a reversed Y axis.
-      let units_per_tick = Math.abs(b - a) / max_ticks;
+      const units_per_tick = Math.abs(b - a) / max_ticks;
 
       // Based on this, get a starting scale which is the largest
       // integer power of the chosen base (10 or 16) that still remains
       // below the requested pixels_per_tick spacing.
-      let base_power = Math.floor(Math.log(units_per_tick) / Math.log(base));
-      let base_scale = Math.pow(base, base_power);
+      const base_power = Math.floor(Math.log(units_per_tick) / Math.log(base));
+      const base_scale = Math.pow(base, base_power);
 
       // Now try multiples of the starting scale until we find one
       // that results in tick marks spaced sufficiently far apart.
@@ -202,12 +189,16 @@ export const numericTicks: Ticker = function (
         high_val = Math.ceil(b / scale) * scale;
         nTicks = Math.abs(high_val - low_val) / scale;
         spacing = pixels / nTicks;
-        if (spacing > pixels_per_tick) break;
+        if (spacing > pixels_per_tick) {
+          break;
+        }
       }
 
       // Construct the set of ticks.
       // Allow reverse y-axis if it's explicitly requested.
-      if (low_val > high_val) scale *= -1;
+      if (low_val > high_val) {
+        scale *= -1;
+      }
       for (i = 0; i <= nTicks; i++) {
         tickV = low_val + i * scale;
         ticks.push({ v: tickV });
@@ -215,85 +206,32 @@ export const numericTicks: Ticker = function (
     }
   }
 
-  let formatter = opts("axisLabelFormatter") as AxisLabelFormatter;
+  const formatter = opts("axisLabelFormatter") as AxisLabelFormatter;
 
   // Add labels to the ticks.
-  for (i = 0; i < ticks.length; i++) {
-    if (ticks[i]!.label !== undefined) continue; // Use current label.
-    ticks[i]!.label = formatter.call(zpgraph, ticks[i]!.v, 0, opts, zpgraph);
+  for (const tick of ticks) {
+    if (tick.label !== undefined) {
+      continue;
+    } // Use current label.
+    tick.label = formatter.call(zpgraph, tick.v, 0, opts, zpgraph);
   }
 
   return ticks as TickResult;
 };
 
-export const integerTicks: Ticker = function (
-  a,
-  b,
-  pixels,
-  opts,
-  zpgraph,
-  vals,
-) {
-  let allTicks = numericTicks(a, b, pixels, opts, zpgraph, vals);
-  return allTicks.filter(function (tick) {
-    return tick.v % 1 === 0;
-  });
+export const integerTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) =>
+  numericTicks(a, b, pixels, opts, zpgraph, vals).filter(
+    (tick) => tick.v % 1 === 0,
+  );
+
+export const dateTicker: Ticker = (a, b, pixels, opts, zpgraph, _vals) => {
+  const chosen = pickDateTickGranularity(a, b, pixels, opts);
+  // chosen < 0 can happen if self.width_ is zero.
+  return chosen >= 0 ? getDateAxis(a, b, chosen, opts, zpgraph) : [];
 };
-
-export const dateTicker: Ticker = function (
-  a,
-  b,
-  pixels,
-  opts,
-  zpgraph,
-  _vals,
-) {
-  let chosen = pickDateTickGranularity(a, b, pixels, opts);
-
-  if (chosen >= 0) {
-    return getDateAxis(a, b, chosen, opts, zpgraph);
-  } else {
-    // this can happen if self.width_ is zero.
-    return [];
-  }
-};
-
-// Time granularity enumeration
-export const Granularity = {
-  MILLISECONDLY: 0,
-  TWO_MILLISECONDLY: 1,
-  FIVE_MILLISECONDLY: 2,
-  TEN_MILLISECONDLY: 3,
-  FIFTY_MILLISECONDLY: 4,
-  HUNDRED_MILLISECONDLY: 5,
-  FIVE_HUNDRED_MILLISECONDLY: 6,
-  SECONDLY: 7,
-  TWO_SECONDLY: 8,
-  FIVE_SECONDLY: 9,
-  TEN_SECONDLY: 10,
-  THIRTY_SECONDLY: 11,
-  MINUTELY: 12,
-  TWO_MINUTELY: 13,
-  FIVE_MINUTELY: 14,
-  TEN_MINUTELY: 15,
-  THIRTY_MINUTELY: 16,
-  HOURLY: 17,
-  TWO_HOURLY: 18,
-  SIX_HOURLY: 19,
-  DAILY: 20,
-  TWO_DAILY: 21,
-  WEEKLY: 22,
-  MONTHLY: 23,
-  QUARTERLY: 24,
-  BIANNUAL: 25,
-  ANNUAL: 26,
-  DECADAL: 27,
-  CENTENNIAL: 28,
-  NUM_GRANULARITIES: 29,
-} as const;
 
 // Date components enumeration (in the order of the arguments in Date)
-let DateField = {
+const DateField = {
   DATEFIELD_Y: 0,
   DATEFIELD_M: 1,
   DATEFIELD_D: 2,
@@ -317,167 +255,77 @@ let DateField = {
  *
  * >}
  */
-const TICK_PLACEMENT: TickPlacement[] = [];
-TICK_PLACEMENT[Granularity.MILLISECONDLY] = {
-  datefield: DateField.DATEFIELD_MS,
-  step: 1,
-  spacing: 1,
-};
-TICK_PLACEMENT[Granularity.TWO_MILLISECONDLY] = {
-  datefield: DateField.DATEFIELD_MS,
-  step: 2,
-  spacing: 2,
-};
-TICK_PLACEMENT[Granularity.FIVE_MILLISECONDLY] = {
-  datefield: DateField.DATEFIELD_MS,
-  step: 5,
-  spacing: 5,
-};
-TICK_PLACEMENT[Granularity.TEN_MILLISECONDLY] = {
-  datefield: DateField.DATEFIELD_MS,
-  step: 10,
-  spacing: 10,
-};
-TICK_PLACEMENT[Granularity.FIFTY_MILLISECONDLY] = {
-  datefield: DateField.DATEFIELD_MS,
-  step: 50,
-  spacing: 50,
-};
-TICK_PLACEMENT[Granularity.HUNDRED_MILLISECONDLY] = {
-  datefield: DateField.DATEFIELD_MS,
-  step: 100,
-  spacing: 100,
-};
-TICK_PLACEMENT[Granularity.FIVE_HUNDRED_MILLISECONDLY] = {
-  datefield: DateField.DATEFIELD_MS,
-  step: 500,
-  spacing: 500,
-};
-TICK_PLACEMENT[Granularity.SECONDLY] = {
-  datefield: DateField.DATEFIELD_SS,
-  step: 1,
-  spacing: 1000 * 1,
-};
-TICK_PLACEMENT[Granularity.TWO_SECONDLY] = {
-  datefield: DateField.DATEFIELD_SS,
-  step: 2,
-  spacing: 1000 * 2,
-};
-TICK_PLACEMENT[Granularity.FIVE_SECONDLY] = {
-  datefield: DateField.DATEFIELD_SS,
-  step: 5,
-  spacing: 1000 * 5,
-};
-TICK_PLACEMENT[Granularity.TEN_SECONDLY] = {
-  datefield: DateField.DATEFIELD_SS,
-  step: 10,
-  spacing: 1000 * 10,
-};
-TICK_PLACEMENT[Granularity.THIRTY_SECONDLY] = {
-  datefield: DateField.DATEFIELD_SS,
-  step: 30,
-  spacing: 1000 * 30,
-};
-TICK_PLACEMENT[Granularity.MINUTELY] = {
-  datefield: DateField.DATEFIELD_MM,
-  step: 1,
-  spacing: 1000 * 60,
-};
-TICK_PLACEMENT[Granularity.TWO_MINUTELY] = {
-  datefield: DateField.DATEFIELD_MM,
-  step: 2,
-  spacing: 1000 * 60 * 2,
-};
-TICK_PLACEMENT[Granularity.FIVE_MINUTELY] = {
-  datefield: DateField.DATEFIELD_MM,
-  step: 5,
-  spacing: 1000 * 60 * 5,
-};
-TICK_PLACEMENT[Granularity.TEN_MINUTELY] = {
-  datefield: DateField.DATEFIELD_MM,
-  step: 10,
-  spacing: 1000 * 60 * 10,
-};
-TICK_PLACEMENT[Granularity.THIRTY_MINUTELY] = {
-  datefield: DateField.DATEFIELD_MM,
-  step: 30,
-  spacing: 1000 * 60 * 30,
-};
-TICK_PLACEMENT[Granularity.HOURLY] = {
-  datefield: DateField.DATEFIELD_HH,
-  step: 1,
-  spacing: 1000 * 3600,
-};
-TICK_PLACEMENT[Granularity.TWO_HOURLY] = {
-  datefield: DateField.DATEFIELD_HH,
-  step: 2,
-  spacing: 1000 * 3600 * 2,
-};
-TICK_PLACEMENT[Granularity.SIX_HOURLY] = {
-  datefield: DateField.DATEFIELD_HH,
-  step: 6,
-  spacing: 1000 * 3600 * 6,
-};
-TICK_PLACEMENT[Granularity.DAILY] = {
-  datefield: DateField.DATEFIELD_D,
-  step: 1,
-  spacing: 1000 * 86400,
-};
-TICK_PLACEMENT[Granularity.TWO_DAILY] = {
-  datefield: DateField.DATEFIELD_D,
-  step: 2,
-  spacing: 1000 * 86400 * 2,
-};
-TICK_PLACEMENT[Granularity.WEEKLY] = {
-  datefield: DateField.DATEFIELD_D,
-  step: 7,
-  spacing: 1000 * 604800,
-};
-TICK_PLACEMENT[Granularity.MONTHLY] = {
-  datefield: DateField.DATEFIELD_M,
-  step: 1,
-  spacing: 1000 * 7200 * 365.2425,
-}; // 1e3 * 60 * 60 * 24 * 365.2425 / 12
-TICK_PLACEMENT[Granularity.QUARTERLY] = {
-  datefield: DateField.DATEFIELD_M,
-  step: 3,
-  spacing: 1000 * 21600 * 365.2425,
-}; // 1e3 * 60 * 60 * 24 * 365.2425 / 4
-TICK_PLACEMENT[Granularity.BIANNUAL] = {
-  datefield: DateField.DATEFIELD_M,
-  step: 6,
-  spacing: 1000 * 43200 * 365.2425,
-}; // 1e3 * 60 * 60 * 24 * 365.2425 / 2
-TICK_PLACEMENT[Granularity.ANNUAL] = {
-  datefield: DateField.DATEFIELD_Y,
-  step: 1,
-  spacing: 1000 * 86400 * 365.2425,
-}; // 1e3 * 60 * 60 * 24 * 365.2425 * 1
-TICK_PLACEMENT[Granularity.DECADAL] = {
-  datefield: DateField.DATEFIELD_Y,
-  step: 10,
-  spacing: 1000 * 864000 * 365.2425,
-}; // 1e3 * 60 * 60 * 24 * 365.2425 * 10
-TICK_PLACEMENT[Granularity.CENTENNIAL] = {
-  datefield: DateField.DATEFIELD_Y,
-  step: 100,
-  spacing: 1000 * 8640000 * 365.2425,
-}; // 1e3 * 60 * 60 * 24 * 365.2425 * 100
+// Index order matches Granularity.* (shared with utils via ./granularity).
+const TICK_PLACEMENT: TickPlacement[] = [
+  { datefield: DateField.DATEFIELD_MS, step: 1, spacing: 1 }, // MILLISECONDLY
+  { datefield: DateField.DATEFIELD_MS, step: 2, spacing: 2 }, // TWO_MILLISECONDLY
+  { datefield: DateField.DATEFIELD_MS, step: 5, spacing: 5 }, // FIVE_MILLISECONDLY
+  { datefield: DateField.DATEFIELD_MS, step: 10, spacing: 10 }, // TEN_MILLISECONDLY
+  { datefield: DateField.DATEFIELD_MS, step: 50, spacing: 50 }, // FIFTY_MILLISECONDLY
+  { datefield: DateField.DATEFIELD_MS, step: 100, spacing: 100 }, // HUNDRED_MILLISECONDLY
+  { datefield: DateField.DATEFIELD_MS, step: 500, spacing: 500 }, // FIVE_HUNDRED_MILLISECONDLY
+  { datefield: DateField.DATEFIELD_SS, step: 1, spacing: 1000 * 1 }, // SECONDLY
+  { datefield: DateField.DATEFIELD_SS, step: 2, spacing: 1000 * 2 }, // TWO_SECONDLY
+  { datefield: DateField.DATEFIELD_SS, step: 5, spacing: 1000 * 5 }, // FIVE_SECONDLY
+  { datefield: DateField.DATEFIELD_SS, step: 10, spacing: 1000 * 10 }, // TEN_SECONDLY
+  { datefield: DateField.DATEFIELD_SS, step: 30, spacing: 1000 * 30 }, // THIRTY_SECONDLY
+  { datefield: DateField.DATEFIELD_MM, step: 1, spacing: 1000 * 60 }, // MINUTELY
+  { datefield: DateField.DATEFIELD_MM, step: 2, spacing: 1000 * 60 * 2 }, // TWO_MINUTELY
+  { datefield: DateField.DATEFIELD_MM, step: 5, spacing: 1000 * 60 * 5 }, // FIVE_MINUTELY
+  { datefield: DateField.DATEFIELD_MM, step: 10, spacing: 1000 * 60 * 10 }, // TEN_MINUTELY
+  { datefield: DateField.DATEFIELD_MM, step: 30, spacing: 1000 * 60 * 30 }, // THIRTY_MINUTELY
+  { datefield: DateField.DATEFIELD_HH, step: 1, spacing: 1000 * 3600 }, // HOURLY
+  { datefield: DateField.DATEFIELD_HH, step: 2, spacing: 1000 * 3600 * 2 }, // TWO_HOURLY
+  { datefield: DateField.DATEFIELD_HH, step: 6, spacing: 1000 * 3600 * 6 }, // SIX_HOURLY
+  { datefield: DateField.DATEFIELD_D, step: 1, spacing: 1000 * 86400 }, // DAILY
+  { datefield: DateField.DATEFIELD_D, step: 2, spacing: 1000 * 86400 * 2 }, // TWO_DAILY
+  { datefield: DateField.DATEFIELD_D, step: 7, spacing: 1000 * 604800 }, // WEEKLY
+  // 1e3 * 60 * 60 * 24 * 365.2425 / 12
+  { datefield: DateField.DATEFIELD_M, step: 1, spacing: 1000 * 7200 * 365.2425 }, // MONTHLY
+  // 1e3 * 60 * 60 * 24 * 365.2425 / 4
+  {
+    datefield: DateField.DATEFIELD_M,
+    step: 3,
+    spacing: 1000 * 21600 * 365.2425,
+  }, // QUARTERLY
+  // 1e3 * 60 * 60 * 24 * 365.2425 / 2
+  {
+    datefield: DateField.DATEFIELD_M,
+    step: 6,
+    spacing: 1000 * 43200 * 365.2425,
+  }, // BIANNUAL
+  // 1e3 * 60 * 60 * 24 * 365.2425 * 1
+  {
+    datefield: DateField.DATEFIELD_Y,
+    step: 1,
+    spacing: 1000 * 86400 * 365.2425,
+  }, // ANNUAL
+  // 1e3 * 60 * 60 * 24 * 365.2425 * 10
+  {
+    datefield: DateField.DATEFIELD_Y,
+    step: 10,
+    spacing: 1000 * 864000 * 365.2425,
+  }, // DECADAL
+  // 1e3 * 60 * 60 * 24 * 365.2425 * 100
+  {
+    datefield: DateField.DATEFIELD_Y,
+    step: 100,
+    spacing: 1000 * 8640000 * 365.2425,
+  }, // CENTENNIAL
+];
 
 /**
  * This is a list of human-friendly values at which to show tick marks on a log
  * scale. It is k * 10^n, where k=1..9 and n=-39..+39, so:
  * ..., 1, 2, 3, 4, 5, ..., 9, 10, 20, 30, ..., 90, 100, 200, 300, ...
  * NOTE: this assumes that utils.LOG_SCALE = 10.
-
  */
-let PREFERRED_LOG_TICK_VALUES = (function () {
+const PREFERRED_LOG_TICK_VALUES = (() => {
   const vals: number[] = [];
   for (let power = -39; power <= 39; power++) {
-    let range = Math.pow(10, power);
+    const range = Math.pow(10, power);
     for (let mult = 1; mult <= 9; mult++) {
-      let val = range * mult;
-      vals.push(val);
+      vals.push(range * mult);
     }
   }
   return vals;
@@ -493,36 +341,20 @@ let PREFERRED_LOG_TICK_VALUES = (function () {
  * @return The appropriate axis granularity for this chart. See the
  *     enumeration of possible values in tickers.js.
  */
-export const pickDateTickGranularity = function (
+export const pickDateTickGranularity = (
   a: number,
   b: number,
   pixels: number,
   opts: AxisOpts,
-): number {
-  let pixels_per_tick = opts("pixelsPerLabel") as number;
+): number => {
+  const pixels_per_tick = opts("pixelsPerLabel") as number;
   for (let i = 0; i < Granularity.NUM_GRANULARITIES; i++) {
-    let num_ticks = numDateTicks(a, b, i);
+    const num_ticks = Math.round((b - a) / TICK_PLACEMENT[i]!.spacing);
     if (pixels / num_ticks >= pixels_per_tick) {
       return i;
     }
   }
   return -1;
-};
-
-/**
- * Compute the number of ticks on a date axis for a given granularity.
- * @param start_time
- * @param end_time
- * @param granularity (one of the granularities enumerated above)
- * @return (Approximate) number of ticks that would result.
- */
-let numDateTicks = function (
-  start_time: number,
-  end_time: number,
-  granularity: number,
-) {
-  let spacing = TICK_PLACEMENT[granularity]!.spacing;
-  return Math.round((1.0 * (end_time - start_time)) / spacing);
 };
 
 /**
@@ -533,28 +365,28 @@ let numDateTicks = function (
  * @param opts Function mapping from option name -&gt; value.
  * @param dg
  * @return */
-export const getDateAxis = function (
+export const getDateAxis = (
   start_time: number,
   end_time: number,
   granularity: number,
   opts: AxisOpts,
   dg: unknown,
-): TickResult {
-  let formatter = opts("axisLabelFormatter") as AxisLabelFormatter;
-  let utc = opts("labelsUTC");
-  let accessors = utc ? utils.DateAccessorsUTC : utils.DateAccessorsLocal;
+): TickResult => {
+  const formatter = opts("axisLabelFormatter") as AxisLabelFormatter;
+  const utc = opts("labelsUTC");
+  const accessors = utc ? utils.DateAccessorsUTC : utils.DateAccessorsLocal;
 
-  let placement = TICK_PLACEMENT[granularity]!;
-  let datefield = placement.datefield;
-  let step = placement.step;
-  let spacing = placement.spacing;
+  const placement = TICK_PLACEMENT[granularity]!;
+  const datefield = placement.datefield;
+  const step = placement.step;
+  const spacing = placement.spacing;
 
   // Choose a nice tick position before the initial instant.
   // Currently, this code deals properly with the existent daily granularities:
   // DAILY (with step of 1) and WEEKLY (with step of 7 but specially handled).
   // Other daily granularities (say TWO_DAILY) should also be handled specially
   // by setting the start_date_offset to 0.
-  let start_date = new Date(start_time);
+  const start_date = new Date(start_time);
   const date_array: DateParts = [0, 0, 0, 0, 0, 0, 0];
   date_array[DateField.DATEFIELD_Y] = accessors.getFullYear(start_date);
   date_array[DateField.DATEFIELD_M] = accessors.getMonth(start_date);

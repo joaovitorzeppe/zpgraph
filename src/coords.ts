@@ -12,7 +12,6 @@
  * the plot area.
  */
 
-import { computeYAxisRanges, gatherDatasets } from "./render";
 import * as utils from "./utils";
 import type Zpgraph from "./zpgraph";
 
@@ -30,7 +29,7 @@ export const xAxisRange = (g: Zpgraph): [number, number] => {
  * Returns the lower- and upper-bound x-axis values of the data set.
  */
 export const xAxisExtremes = (g: Zpgraph): [number, number] => {
-  let pad = g.getNumericOption("xRangePad") / g.plotter_.area.w;
+  const pad = g.getNumericOption("xRangePad") / g.plotter_.area.w;
   if (g.numRows() === 0) {
     return [0 - pad, 1 + pad];
   }
@@ -38,26 +37,11 @@ export const xAxisExtremes = (g: Zpgraph): [number, number] => {
   let right = g.rawData_[g.rawData_.length - 1]![0] as number;
   if (pad) {
     // Must keep this in sync with layout _evaluateLimits()
-    let range = right - left;
+    const range = right - left;
     left -= range * pad;
     right += range * pad;
   }
   return [left, right];
-};
-
-/**
- * Returns the lower- and upper-bound y-axis values for each axis. These are
- * the ranges you'll get if you double-click to zoom out or call resetZoom().
- * The return value is an array of [low, high] tuples, one for each y-axis.
- */
-export const yAxisExtremes = (g: Zpgraph) => {
-  const packed = gatherDatasets(g, g.rolledSeries_, null);
-  const { extremes } = packed;
-  const saveAxes = g.axes_;
-  computeYAxisRanges(g, extremes);
-  const newAxes = g.axes_;
-  g.axes_ = saveAxes;
-  return newAxes.map((axis) => axis.extremeRange!);
 };
 
 /**
@@ -70,7 +54,7 @@ export const yAxisRange = (
   g: Zpgraph,
   idx?: number,
 ): [number, number] | null => {
-  if (typeof idx == "undefined") idx = 0;
+  if (typeof idx == "undefined") {idx = 0;}
   if (idx < 0 || idx >= g.axes_.length) {
     return null;
   }
@@ -84,13 +68,8 @@ export const yAxisRange = (
  * zooming, panning, calls to updateOptions, etc.
  * Returns an array of [bottom, top] pairs, one for each y-axis.
  */
-export const yAxisRanges = (g: Zpgraph) => {
-  const ret: Array<[number, number] | null> = [];
-  for (let i = 0; i < g.axes_.length; i++) {
-    ret.push(yAxisRange(g, i));
-  }
-  return ret;
-};
+export const yAxisRanges = (g: Zpgraph) =>
+  g.axes_.map((_, i) => yAxisRange(g, i));
 
 /**
  * Convert from data coordinates to canvas/div X/Y coordinates.
@@ -121,8 +100,8 @@ export const toDomXCoord = (g: Zpgraph, x: number | null) => {
     return null;
   }
 
-  let area = g.plotter_.area;
-  let xRange = xAxisRange(g);
+  const area = g.plotter_.area;
+  const xRange = xAxisRange(g);
   return area.x + ((x - xRange[0]) / (xRange[1] - xRange[0])) * area.w;
 };
 
@@ -133,12 +112,12 @@ export const toDomXCoord = (g: Zpgraph, x: number | null) => {
  * returns a single value or null if y is null.
  */
 export const toDomYCoord = (g: Zpgraph, y: number | null, axis?: number) => {
-  let pct = g.toPercentYCoord(y, axis);
+  const pct = g.toPercentYCoord(y, axis);
 
   if (pct === null) {
     return null;
   }
-  let area = g.plotter_.area;
+  const area = g.plotter_.area;
   return area.y + pct * area.h;
 };
 
@@ -170,15 +149,15 @@ export const toDataXCoord = (g: Zpgraph, x: number | null) => {
     return null;
   }
 
-  let area = g.plotter_.area;
-  let xRange = xAxisRange(g);
+  const area = g.plotter_.area;
+  const xRange = xAxisRange(g);
 
   if (!g.attributes_.getForAxis("logscale", "x")) {
     return xRange[0] + ((x - area.x) / area.w) * (xRange[1] - xRange[0]);
-  } else {
-    let pct = (x - area.x) / area.w;
-    return utils.logRangeFraction(xRange[0], xRange[1], pct);
   }
+    const pct = (x - area.x) / area.w;
+    return utils.logRangeFraction(xRange[0], xRange[1], pct);
+  
 };
 
 /**
@@ -192,20 +171,20 @@ export const toDataYCoord = (g: Zpgraph, y: number | null, axis?: number) => {
     return null;
   }
 
-  let area = g.plotter_.area;
-  if (typeof axis == "undefined") axis = 0;
+  const area = g.plotter_.area;
+  if (typeof axis == "undefined") {axis = 0;}
   const yRange = yAxisRange(g, axis)!;
   const y0 = yRange[0]!;
   const y1 = yRange[1]!;
 
   if (!g.attributes_.getForAxis("logscale", axis)) {
     return y0 + ((area.y + area.h - y) / area.h) * (y1 - y0);
-  } else {
+  }
     // Computing the inverse of toDomCoord.
-    let pct = (y - area.y) / area.h;
+    const pct = (y - area.y) / area.h;
     // Note reversed yRange, y1 is on top with pct==0.
     return utils.logRangeFraction(y1, y0, pct);
-  }
+  
 };
 
 /**
@@ -232,17 +211,17 @@ export const toPercentYCoord = (
   if (y === null) {
     return null;
   }
-  if (typeof axis == "undefined") axis = 0;
+  if (typeof axis == "undefined") {axis = 0;}
 
   const yRange = yAxisRange(g, axis)!;
   const y0 = yRange[0]!;
   const y1 = yRange[1]!;
 
   let pct;
-  let logscale = g.attributes_.getForAxis("logscale", axis);
+  const logscale = g.attributes_.getForAxis("logscale", axis);
   if (logscale) {
-    let logr0 = utils.log10(y0);
-    let logr1 = utils.log10(y1);
+    const logr0 = utils.log10(y0);
+    const logr1 = utils.log10(y1);
     pct = (logr1 - utils.log10(y)) / (logr1 - logr0);
   } else {
     // yRange[1] - y is unit distance from the bottom.
@@ -271,13 +250,13 @@ export const toPercentXCoord = (g: Zpgraph, x: number | null) => {
     return null;
   }
 
-  let xRange = xAxisRange(g);
+  const xRange = xAxisRange(g);
   let pct;
-  let logscale = g.attributes_.getForAxis("logscale", "x");
+  const logscale = g.attributes_.getForAxis("logscale", "x");
   if (logscale === true) {
     // logscale can be null so we test for true explicitly.
-    let logr0 = utils.log10(xRange[0]);
-    let logr1 = utils.log10(xRange[1]);
+    const logr0 = utils.log10(xRange[0]);
+    const logr1 = utils.log10(xRange[1]);
     pct = (utils.log10(x) - logr0) / (logr1 - logr0);
   } else {
     // x - xRange[0] is unit distance from the left.
@@ -296,10 +275,10 @@ export const toPercentXCoord = (g: Zpgraph, x: number | null) => {
 export const eventToDomCoords = (g: Zpgraph, event: MouseEvent) => {
   if (event.offsetX && event.offsetY) {
     return [event.offsetX, event.offsetY];
-  } else {
-    let eventElementPos = utils.findPos(g.mouseEventElement_);
-    let canvasx = utils.pageX(event) - eventElementPos.x;
-    let canvasy = utils.pageY(event) - eventElementPos.y;
-    return [canvasx, canvasy];
   }
+    const eventElementPos = utils.findPos(g.mouseEventElement_);
+    const canvasx = utils.pageX(event) - eventElementPos.x;
+    const canvasy = utils.pageY(event) - eventElementPos.y;
+    return [canvasx, canvasy];
+  
 };

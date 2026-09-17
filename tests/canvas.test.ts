@@ -16,6 +16,14 @@ const lineData = [
   [4, 25],
 ];
 
+const chart = (data: unknown[], opts: Record<string, unknown> = {}) =>
+  new Zpgraph(mountDiv(), data as never, {
+    labels: ["x", "A"],
+    width: 480,
+    height: 320,
+    ...opts,
+  }) as unknown as Record<string, any>;
+
 describe("line plotter", () => {
   let canvas: ReturnType<typeof recordingCanvas>;
 
@@ -23,14 +31,6 @@ describe("line plotter", () => {
     document.body.innerHTML = "";
     canvas = recordingCanvas();
   });
-
-  const chart = (data: unknown[], opts: Record<string, unknown> = {}) =>
-    new Zpgraph(mountDiv(), data as never, {
-      labels: ["x", "A"],
-      width: 480,
-      height: 320,
-      ...opts,
-    }) as unknown as Record<string, any>;
 
   it("starts a path and strokes one segment per gap-free pair of points", () => {
     const g = chart(lineData);

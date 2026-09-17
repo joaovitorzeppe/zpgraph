@@ -17,11 +17,11 @@ import type {
 const makeOptions = (seriesOptions: Record<string, any> = {}) =>
   ({
     get: (name: string) => {
-      if (name === 'labels') return ['x', 'A', 'B'];
+      if (name === 'labels') {return ['x', 'A', 'B'];}
       return null;
     },
     getForSeries: (name: string) =>
-      Object.prototype.hasOwnProperty.call(seriesOptions, name)
+      Object.hasOwn(seriesOptions, name)
         ? seriesOptions[name]
         : false,
   }) as unknown as OptionsManagerLike;
@@ -47,10 +47,10 @@ describe('BarsHandler', () => {
     // Each bars flavour brings its own extractSeries and rollingAverage, and
     // since they are abstract a subclass that forgets one no longer compiles.
     const proto = BarsHandler.prototype;
-    expect(Object.prototype.hasOwnProperty.call(proto, 'extractSeries')).toBe(
+    expect(Object.hasOwn(proto, 'extractSeries')).toBe(
       false,
     );
-    expect(Object.prototype.hasOwnProperty.call(proto, 'rollingAverage')).toBe(
+    expect(Object.hasOwn(proto, 'rollingAverage')).toBe(
       false,
     );
   });

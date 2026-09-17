@@ -26,7 +26,7 @@ export const applyLocale = (
   locale: LocalePack,
 ): void => {
   const opts: Partial<ZpgraphOptions> = {};
-  if (locale.labelsUTC != null) opts.labelsUTC = locale.labelsUTC;
+  if (locale.labelsUTC != null) {opts.labelsUTC = locale.labelsUTC;}
   // Decimal formatting is handled by digitsAfterDecimal / floatFormat;
   // expose pack on the instance for custom tickers.
   (g as { locale_?: LocalePack }).locale_ = locale;

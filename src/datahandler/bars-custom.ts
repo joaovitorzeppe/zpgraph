@@ -23,7 +23,7 @@ class CustomBarsHandler extends BarsHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = new Array(rawData.length);
+    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
     let x, y, point;
     const logScale = seriesOption<boolean>(options, i, 'logscale');
     for (let j = 0; j < rawData.length; j++) {
@@ -78,7 +78,7 @@ class CustomBarsHandler extends BarsHandler {
         count += 1;
       }
       if (i - rollPeriod >= 0) {
-        let prev = originalData[i - rollPeriod]!;
+        const prev = originalData[i - rollPeriod]!;
         if (prev[1]! !== null && !isNaN(prev[1]!)) {
           low -= (prev[2]! as number[])[0]!;
           mid -= prev[1]!;
