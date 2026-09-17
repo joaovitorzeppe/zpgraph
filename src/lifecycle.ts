@@ -17,6 +17,8 @@ import OptionsManager from "./options";
 import { createDragInterface, createInterface } from "./dom";
 import { parseArray, parseCSV, parseDataTable } from "./parser";
 import { predraw, renderGraph } from "./render";
+import { applyTheme } from "./themes";
+import { applyRootClassNames } from "./class-names";
 import * as utils from "./utils";
 import type { DataHandlerLike, PluginRegistration } from "./internal-types";
 import type Zpgraph from "./zpgraph";
@@ -378,6 +380,8 @@ export const init = (
 
   // Create the containing DIV and other interactive elements
   createInterface(g);
+  applyTheme(g);
+  applyRootClassNames(g);
 
   // Activate plugins.
   g.plugins_ = [];
@@ -624,6 +628,13 @@ export const updateOptions = (
   );
 
   utils.updateDeep(g.user_attrs_ as Record<string, unknown>, attrs);
+
+  if ("theme" in attrs) {
+    applyTheme(g);
+  }
+  if ("classNames" in attrs) {
+    applyRootClassNames(g);
+  }
 
   g.attributes_.reparseSeries();
 

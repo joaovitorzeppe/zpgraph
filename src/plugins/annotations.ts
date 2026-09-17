@@ -13,6 +13,7 @@
 import type { AnnotatedPoint, ChartDrawPluginEvent } from "../internal-types";
 import type { Annotation, AnnotationHandler } from "../types";
 import type { ZpgraphInstance } from "../internal-types";
+import { getChartClassNames, safeCssClasses, withClassNames } from "../class-names";
 
 /**
 Current bits of jankiness:
@@ -125,6 +126,7 @@ class annotations {
         // camelCase class names are deprecated.
         className += " zpgraph-default-annotation zpgraph-default-annotation";
       }
+      className = withClassNames(className, getChartClassNames(g).annotation);
       if (Object.hasOwn(a, "cssClass")) {
         const extra = safeCssClasses(a.cssClass);
         if (extra.length) className += " " + extra.join(" ");
@@ -218,17 +220,9 @@ class annotations {
   }
 }
 
-// Annotations are frequently built from application data, so both of these
+// Annotations are frequently built from application data, so icon URLs
 // reach the DOM from the same place untrusted values do.
-const SAFE_CSS_CLASS = /^[a-zA-Z_-][\w-]*$/;
 const SAFE_ICON_URL = /^(https?:\/\/|\/|\.\/|\.\.\/|data:image\/)/i;
-
-/** @private */
-const safeCssClasses = function (cssClass: unknown): string[] {
-  return typeof cssClass === "string"
-    ? cssClass.split(/\s+/).filter((c) => SAFE_CSS_CLASS.test(c))
-    : [];
-};
 
 /** @private */
 const isSafeIconUrl = function (url: unknown): boolean {

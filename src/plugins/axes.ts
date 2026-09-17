@@ -23,6 +23,7 @@ Options left to make axis-friendly.
 
 import { log } from "../logger";
 import * as utils from "../utils";
+import { getChartClassNames, withClassNames } from "../class-names";
 import type {
   ChartDrawPluginEvent,
   LayoutPluginEvent,
@@ -198,11 +199,13 @@ class axes {
       let labelStyle =
         labelStyles[prec_axis === "y2" ? "y2" : (axis as "x" | "y" | "y2")];
       utils.update(div.style as unknown as Record<string, unknown>, labelStyle);
-      inner_div.className =
+      inner_div.className = withClassNames(
         "zpgraph-axis-label" +
-        " zpgraph-axis-label-" +
-        axis +
-        (prec_axis ? " zpgraph-axis-label-" + prec_axis : "");
+          " zpgraph-axis-label-" +
+          axis +
+          (prec_axis ? " zpgraph-axis-label-" + prec_axis : ""),
+        getChartClassNames(g).axisLabel,
+      );
       // textContent, not innerHTML: tick labels come out of axisLabelFormatter,
       // which callers override with formatters that interpolate their own data.
       inner_div.textContent = txt;

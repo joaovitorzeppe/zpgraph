@@ -24,6 +24,7 @@ export type {
   AxisLabelFormatter,
   AxisName,
   AxisOptions,
+  ChartClassNames,
   Data,
   DataArray,
   DrawPointCallback,
@@ -43,6 +44,15 @@ export type {
 
 export { setLogger } from "./logger";
 export type { Logger } from "./logger";
+
+export { themes, applyTheme } from "./themes";
+export type { ChartTheme } from "./themes";
+
+export {
+  safeCssClasses,
+  withClassNames,
+  applyRootClassNames,
+} from "./class-names";
 
 export * as utils from "./public-utils";
 export * as tickers from "./tickers";

@@ -777,6 +777,20 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         description:
           "A value representing the farthest a graph may be panned, in percent of the display. For example, a value of 0.1 means that the graph can only be panned 10% passed the edges of the displayed values. null means no bounds.",
       },
+      theme: {
+        default: "null",
+        labels: ["Overall display"],
+        type: "string",
+        description:
+          'Chart chrome theme: "light" or "dark". Sets data-theme on the chart root and adjusts axis/grid/highlight/range-selector colors. Series colors are unchanged.',
+      },
+      classNames: {
+        default: "null",
+        labels: ["Overall display"],
+        type: "object",
+        description:
+          "Extra CSS classes on chart DOM nodes (root, legend, axisLabel, annotation, title, xlabel, ylabel, y2label). Concatenated after the built-in zpgraph-* classes. Tailwind utilities are allowed.",
+      },
       title: {
         labels: ["Chart labels"],
         type: "string",

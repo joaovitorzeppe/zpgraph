@@ -208,8 +208,10 @@ describe("annotation attributes are validated before hitting the DOM", () => {
     const { el, g } = renderAnnotation({ cssClass: 'ok-one "><script> bad!' });
     const node = el.querySelector(".zpgraph-annotation")!;
     expect(node.classList.contains("ok-one")).toBe(true);
+    expect(node.classList.contains("bad!")).toBe(true); // Tailwind !important ok
     expect(el.querySelector("script")).toBeNull();
-    expect(node.className).not.toContain("!");
+    expect(node.className).not.toContain("<");
+    expect(node.className).not.toContain('"');
     g.destroy();
   });
 

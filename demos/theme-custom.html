@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Custom theme colors · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+  <style>
+    body {
+      background: #0b1220;
+      color: #e2e8f0;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 960px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .panel h2 {
+      font-size: 1.1rem;
+      margin: 0 0 0.35rem;
+    }
+
+    .panel p {
+      margin: 0 0 0.75rem;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    /* Left chart: warm/amber chrome via CSS tokens */
+    #chart-css .zpgraph {
+      --zp-legend-bg: #3b1d0f;
+      --zp-legend-fg: #ffedd5;
+      --zp-legend-shadow: 0 8px 24px rgba(234, 88, 12, 0.35);
+      --zp-legend-padding: 0.65rem 0.9rem;
+      --zp-legend-radius: 8px;
+      --zp-axis-label: #fdba74;
+      --zp-annotation-bg: #1c1008;
+      --zp-annotation-border: #c2410c;
+    }
+
+    /* Right chart: cool/violet chrome via CSS tokens (pairs with option overrides) */
+    #chart-opts .zpgraph {
+      --zp-legend-bg: #2e1065;
+      --zp-legend-fg: #ede9fe;
+      --zp-legend-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+      --zp-legend-padding: 0.65rem 0.9rem;
+      --zp-legend-radius: 8px;
+      --zp-axis-label: #c4b5fd;
+      --zp-annotation-bg: #1e1b4b;
+      --zp-annotation-border: #7c3aed;
+    }
+
+    code.block {
+      display: block;
+      white-space: pre-wrap;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 6px;
+      padding: 0.65rem 0.8rem;
+      font-size: 0.78rem;
+      margin-bottom: 0.75rem;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Custom theme colors</h1>
+  <p class="lede">
+    Built-in <code>theme: "dark"</code> is a starting point. Override DOM chrome
+    with CSS variables, and canvas chrome with option keys (user values win over
+    the preset).
+  </p>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>CSS variables</h2>
+      <p>Warm amber chrome + lime / magenta series.</p>
+      <code class="block">.zpgraph {
+  --zp-legend-bg: #3b1d0f;
+  --zp-legend-fg: #ffedd5;
+  --zp-axis-label: #fdba74;
+}
+colors: ["#a3e635", "#e879f9"]</code>
+      <div id="chart-css" class="chart"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Options override</h2>
+      <p>Violet chrome + gold / cyan series; custom grid/axis strokes.</p>
+      <code class="block">theme: "dark",
+colors: ["#fbbf24", "#22d3ee"],
+gridLineColor: "#7c3aed",
+axisLineColor: "#a78bfa"</code>
+      <div id="chart-opts" class="chart"></div>
+    </section>
+  </div>
+
+  <script type="module">
+    import Zpgraph, { themes } from 'zpgraph';
+    import { makeSeries } from './helpers.js';
+
+    const data = makeSeries({ points: 80, series: 2 });
+
+    new Zpgraph(document.getElementById('chart-css'), data, {
+      labels: ['Date', 'Alpha', 'Beta'],
+      legend: 'always',
+      animatedZooms: true,
+      title: 'CSS tokens',
+      ylabel: 'Value',
+      theme: 'dark',
+      colors: ['#a3e635', '#e879f9'],
+    });
+
+    new Zpgraph(document.getElementById('chart-opts'), data, {
+      labels: ['Date', 'Alpha', 'Beta'],
+      legend: 'always',
+      animatedZooms: true,
+      title: 'Canvas overrides',
+      ylabel: 'Value',
+      theme: 'dark',
+      ...themes.dark,
+      colors: ['#fbbf24', '#22d3ee'],
+      gridLineColor: '#7c3aed',
+      axisLineColor: '#a78bfa',
+      highlightSeriesBackgroundColor: '#1e1b4b',
+      strokeBorderColor: '#1e1b4b',
+    });
+  </script>
+</body>
+
+</html>

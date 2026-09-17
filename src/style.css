@@ -8,20 +8,50 @@
 
 /**
  * Default styles for the zpgraphs charting library.
+ * Chrome colors/layout use CSS variables on `.zpgraph` so apps can theme
+ * via `[data-theme="dark"]` on an ancestor or on `.zpgraph` itself, or
+ * override individual tokens.
  */
+
+.zpgraph {
+  --zp-legend-bg: #ffffff;
+  --zp-legend-fg: #000000;
+  --zp-legend-shadow: none;
+  --zp-legend-padding: 0;
+  --zp-legend-radius: 0;
+  --zp-legend-font-size: 14px;
+  --zp-axis-label: #000000;
+  --zp-axis-label-font-size: inherit;
+  --zp-axis-label-opacity: 1;
+  --zp-axis-label-y-padding-end: 0;
+  --zp-annotation-bg: #ffffff;
+  --zp-annotation-border: #000000;
+  --zp-focus-ring: #1a1a1a;
+}
+
+[data-theme="dark"] .zpgraph,
+.zpgraph[data-theme="dark"] {
+  --zp-legend-bg: #000000;
+  --zp-legend-fg: #ffffff;
+  --zp-legend-shadow: rgba(255, 255, 255, 0.4) 0 0 10px 1px;
+  --zp-axis-label: #e8e8e8;
+  --zp-annotation-bg: #141414;
+  --zp-annotation-border: #434343;
+  --zp-focus-ring: #e8e8e8;
+}
 
 .zpgraph:focus {
   outline: none;
 }
 
 .zpgraph:focus-visible {
-  outline: 2px solid #1a1a1a;
+  outline: 2px solid var(--zp-focus-ring);
   outline-offset: 2px;
 }
 
 .zpgraph-legend {
   position: absolute;
-  font-size: 14px;
+  font-size: var(--zp-legend-font-size);
   z-index: 10;
   width: 250px; /* labelsDivWidth */
   /*
@@ -30,7 +60,11 @@
   top: 0px;
   right: 2px;
   */
-  background: white;
+  padding: var(--zp-legend-padding);
+  border-radius: var(--zp-legend-radius);
+  background: var(--zp-legend-bg);
+  color: var(--zp-legend-fg);
+  box-shadow: var(--zp-legend-shadow);
   line-height: normal;
   text-align: left;
   overflow: hidden;
@@ -80,18 +114,23 @@
 /* This class only applies to annotations without icons */
 /* Old class name: .zpgraphDefaultAnnotation */
 .zpgraph-default-annotation {
-  border: 1px solid black;
-  background-color: white;
+  border: 1px solid var(--zp-annotation-border);
+  background-color: var(--zp-annotation-bg);
   text-align: center;
 }
 
 .zpgraph-axis-label {
   /* position: absolute; */
-  /* font-size: 14px; */
   z-index: 10;
   line-height: normal;
   overflow: hidden;
-  color: black; /* replaces old axisLabelColor option */
+  color: var(--zp-axis-label);
+  font-size: var(--zp-axis-label-font-size);
+  opacity: var(--zp-axis-label-opacity);
+}
+
+.zpgraph-axis-label-y {
+  padding-right: var(--zp-axis-label-y-padding-end);
 }
 
 .zpgraph-title {

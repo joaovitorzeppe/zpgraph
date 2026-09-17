@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Theme · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+  <style>
+    body.page-dark {
+      background: #121212;
+      color: #e8e8e8;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .toolbar button {
+      font: inherit;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Theme</h1>
+  <p class="lede">
+    Toggle light/dark. DOM chrome (legend, axis labels) uses CSS variables;
+    canvas chrome (grid, axes) comes from the <code>theme</code> option.
+  </p>
+  <div class="toolbar">
+    <button type="button" id="btn-light">Light</button>
+    <button type="button" id="btn-dark">Dark</button>
+  </div>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import { makeSeries } from './helpers.js';
+
+    const g = new Zpgraph(document.getElementById('chart'), makeSeries({ points: 90, series: 2 }), {
+      labels: ['Date', 'Alpha', 'Beta'],
+      legend: 'always',
+      title: 'Themed timeseries',
+      ylabel: 'Value',
+      animatedZooms: true,
+      theme: 'light',
+      colors: ['#1b6b93', '#c45c26'],
+    });
+
+    const setTheme = (theme) => {
+      document.body.classList.toggle('page-dark', theme === 'dark');
+      g.updateOptions({ theme });
+    };
+
+    document.getElementById('btn-light').onclick = () => setTheme('light');
+    document.getElementById('btn-dark').onclick = () => setTheme('dark');
+  </script>
+</body>
+
+</html>

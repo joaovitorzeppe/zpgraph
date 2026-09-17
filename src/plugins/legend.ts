@@ -22,6 +22,7 @@ Current bits of jankiness:
 
 import type { OptionsGetter, ZpgraphInstance } from "../internal-types";
 import type { Point, ValueFormatter } from "../types";
+import { getChartClassNames, withClassNames } from "../class-names";
 
 interface LegendPluginEvent {
   zpgraph: ZpgraphInstance;
@@ -105,7 +106,10 @@ class Legend {
       }
     } else {
       div = document.createElement("div");
-      div.className = "zpgraph-legend";
+      div.className = withClassNames(
+        "zpgraph-legend",
+        getChartClassNames(g).legend,
+      );
       // The values under the cursor are the chart's readable content: announce
       // them when they change, without interrupting whatever is being read.
       div.setAttribute("aria-live", "polite");
@@ -242,6 +246,11 @@ class Legend {
 
     // Don't touch a user-specified labelsDiv.
     if (!this.is_generated_div_) return;
+
+    div.className = withClassNames(
+      "zpgraph-legend",
+      getChartClassNames(e.zpgraph).legend,
+    );
 
     e.zpgraph.graphDiv.appendChild(div);
     // synchronise this with Legend.prototype.select above

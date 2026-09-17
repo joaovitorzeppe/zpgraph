@@ -12,6 +12,21 @@
 
 import type Zpgraph from "./zpgraph";
 
+/**
+ * Extra CSS classes merged onto chart DOM nodes (Tailwind-friendly).
+ * Always concatenated after the built-in `zpgraph-*` classes.
+ */
+export type ChartClassNames = {
+  root?: string;
+  legend?: string;
+  axisLabel?: string;
+  annotation?: string;
+  title?: string;
+  xlabel?: string;
+  ylabel?: string;
+  y2label?: string;
+};
+
 export type DataArray = Array<Array<number | number[] | Date | null>>;
 
 export type Data =
@@ -312,6 +327,13 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
   includeZero?: boolean;
   stackedGraph?: boolean;
   stackedGraphNaNFill?: "all" | "inside" | "none";
+  /** DOM + canvas chrome theme. Sets `data-theme` on the chart root. */
+  theme?: "light" | "dark";
+  /**
+   * Extra CSS classes on chart DOM nodes (concatenated after `zpgraph-*`).
+   * Useful for Tailwind utilities. See `ChartClassNames`.
+   */
+  classNames?: ChartClassNames;
   errorBars?: boolean;
   fractions?: boolean;
   customBars?: boolean;

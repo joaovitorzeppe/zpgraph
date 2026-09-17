@@ -16,6 +16,7 @@ import type {
   PlotArea,
 } from "../internal-types";
 import type { ZpgraphInstance } from "../internal-types";
+import { getChartClassNames, withClassNames } from "../class-names";
 
 class chart_labels {
   title_div_: HTMLElement | null = null;
@@ -67,7 +68,10 @@ class chart_labels {
         g.getNumericOption("titleHeight") - 8 + "px";
 
       let class_div = document.createElement("div");
-      class_div.className = "zpgraph-label zpgraph-title";
+      class_div.className = withClassNames(
+        "zpgraph-label zpgraph-title",
+        getChartClassNames(g).title,
+      );
       class_div.textContent = g.getStringOption("title");
       this.title_div_.appendChild(class_div);
       div.appendChild(this.title_div_);
@@ -80,7 +84,10 @@ class chart_labels {
         g.getNumericOption("xLabelHeight") - 2 + "px";
 
       let class_div = document.createElement("div");
-      class_div.className = "zpgraph-label zpgraph-xlabel";
+      class_div.className = withClassNames(
+        "zpgraph-label zpgraph-xlabel",
+        getChartClassNames(g).xlabel,
+      );
       class_div.textContent = g.getStringOption("xlabel");
       this.xlabel_div_.appendChild(class_div);
       div.appendChild(this.xlabel_div_);
@@ -97,7 +104,10 @@ class chart_labels {
         g,
         y_rect,
         1, // primary (left) y-axis
-        "zpgraph-label zpgraph-ylabel",
+        withClassNames(
+          "zpgraph-label zpgraph-ylabel",
+          getChartClassNames(g).ylabel,
+        ),
         g.getStringOption("ylabel"),
       );
       div.appendChild(this.ylabel_div_);
@@ -110,7 +120,10 @@ class chart_labels {
         g,
         y2_rect,
         2, // secondary (right) y-axis
-        "zpgraph-label zpgraph-y2label",
+        withClassNames(
+          "zpgraph-label zpgraph-y2label",
+          getChartClassNames(g).y2label,
+        ),
         g.getStringOption("y2label"),
       );
       div.appendChild(this.y2label_div_);
