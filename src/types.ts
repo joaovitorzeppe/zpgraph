@@ -72,9 +72,23 @@ export type NoDataOptions = {
   text?: string;
 };
 
+export type TooltipPosition =
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
+
 export type TooltipOptions = {
-  shared?: boolean;
   theme?: "light" | "dark";
+  /**
+   * Corner for fixed legend modes (`onmouseover` / `always`).
+   * Ignored when `legend: "follow"`. Default `top-right`.
+   * Top corners sit above the plot when there is room (avoids covering series).
+   */
+  position?: TooltipPosition;
+  /** Extra px from the chosen corner (positive = right / down). */
+  offsetX?: number;
+  offsetY?: number;
 };
 
 export type FillGradient = {

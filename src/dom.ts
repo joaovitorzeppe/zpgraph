@@ -489,16 +489,25 @@ export const createDragInterface = (g: Zpgraph) => {
     },
   };
 
-  const interactionModel = g.getOption("interactionModel") as InteractionModel &
+  const initialModel = g.getOption("interactionModel") as InteractionModel &
     Record<string, unknown>;
 
   // Self is the graph.
   let self = g;
 
-  // Function that binds the graph and context to the handler.
-  let bindHandler = function (handler: ChartInteractionHandler) {
+  // Resolve handler from the *current* interactionModel on each event.
+  // updateOptions({ interactionModel }) must take effect without recreate
+  // (toolbar pan, etc.).
+  let bindHandler = function (eventName: string) {
     return function (event: Event) {
-      handler(
+      const model = g.getOption("interactionModel") as
+        | (InteractionModel & Record<string, unknown>)
+        | null
+        | undefined;
+      if (!model) return;
+      const handler = model[eventName];
+      if (typeof handler !== "function") return;
+      (handler as ChartInteractionHandler)(
         event,
         self as unknown as ZpgraphInstance,
         context as InteractionContext,
@@ -508,11 +517,11 @@ export const createDragInterface = (g: Zpgraph) => {
 
   let coalescedMoves: utils.Coalesced[] = [];
 
-  for (let eventName in interactionModel) {
-    if (!Object.hasOwn(interactionModel, eventName)) continue;
-    let bound: utils.Coalesced | ((event: Event) => void) = bindHandler(
-      interactionModel[eventName] as ChartInteractionHandler,
-    );
+  for (let eventName in initialModel) {
+    if (!Object.hasOwn(initialModel, eventName)) continue;
+    if (typeof initialModel[eventName] !== "function") continue;
+    let bound: utils.Coalesced | ((event: Event) => void) =
+      bindHandler(eventName);
     // A move redraws the whole chart, and a finger or a mouse produces far
     // more of them than there are frames to show them in.
     if (eventName === "touchmove" || eventName === "mousemove") {
@@ -540,7 +549,7 @@ export const createDragInterface = (g: Zpgraph) => {
 
   // If the user releases the mouse button during a drag, but not over the
   // canvas, then it doesn't count as a zooming action.
-  if (!interactionModel.willDestroyContextMyself) {
+  if (!initialModel.willDestroyContextMyself) {
     let mouseUpHandler = function (_event: Event) {
       context.destroy();
     };

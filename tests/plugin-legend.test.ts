@@ -161,6 +161,22 @@ describe("Legend plugin", () => {
     g.destroy();
   });
 
+  it("honors tooltip.position for fixed legend modes", () => {
+    const { g, legend } = makeChart({
+      legend: "onmouseover",
+      tooltip: { position: "top-left", offsetX: 8, offsetY: 2 },
+    });
+    stubLayoutMetrics(legend, { width: 80, height: 24 });
+    g.setSelection(1);
+
+    expect(parseFloat(legend.style.left)).toBeGreaterThanOrEqual(0);
+    expect(parseFloat(legend.style.top)).toBeGreaterThanOrEqual(0);
+    const area = g.plotter_.area;
+    expect(parseFloat(legend.style.left)).toBeCloseTo(area.x + 8, 0);
+
+    g.destroy();
+  });
+
   it("hides the div entirely when legend is 'never'", () => {
     const { g, legend } = makeChart({ legend: "never" });
 

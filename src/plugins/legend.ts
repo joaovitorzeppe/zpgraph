@@ -21,7 +21,12 @@ Current bits of jankiness:
 /*global Zpgraph:false */
 
 import type { OptionsGetter, ZpgraphInstance } from "../internal-types";
-import type { Point, ValueFormatter } from "../types";
+import type {
+  Point,
+  TooltipOptions,
+  TooltipPosition,
+  ValueFormatter,
+} from "../types";
 import { getChartClassNames, withClassNames } from "../class-names";
 
 interface LegendPluginEvent {
@@ -74,6 +79,50 @@ type LegendFormatterFn = (
   this: LegendChart,
   data: LegendBuildData,
 ) => string | DocumentFragment | Node;
+
+const ABOVE_PLOT_GAP = 4;
+
+/**
+ * Place generated legend for fixed modes (onmouseover / always).
+ * Top corners prefer sitting above the plot so series stay visible.
+ */
+const placeFixedLegend = (
+  g: ZpgraphInstance,
+  div: HTMLElement,
+): void => {
+  const area = g.plotter_.area;
+  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
+  const position: TooltipPosition = tip?.position ?? "top-right";
+  const ox = tip?.offsetX ?? 0;
+  const oy = tip?.offsetY ?? 0;
+  const w = div.offsetWidth;
+  const h = div.offsetHeight;
+
+  let left = area.x;
+  let top = area.y;
+
+  switch (position) {
+    case "top-left":
+      left = area.x + ox;
+      top = Math.max(0, area.y - h - ABOVE_PLOT_GAP) + oy;
+      break;
+    case "top-right":
+      left = area.x + area.w - w - 1 + ox;
+      top = Math.max(0, area.y - h - ABOVE_PLOT_GAP) + oy;
+      break;
+    case "bottom-left":
+      left = area.x + ox;
+      top = area.y + area.h - h + oy;
+      break;
+    case "bottom-right":
+      left = area.x + area.w - w - 1 + ox;
+      top = area.y + area.h - h + oy;
+      break;
+  }
+
+  div.style.left = `${left}px`;
+  div.style.top = `${top}px`;
+};
 
 /**
  * Creates the legend, which appears when the user hovers over the chart.
@@ -194,12 +243,11 @@ class Legend {
 
       div.style.left = yAxisLabelWidth + leftLegend + "px";
       div.style.top = topLegend + "px";
-    } else if (legendMode === "onmouseover" && this.is_generated_div_) {
-      // synchronise this with Legend.prototype.predraw below
-      let area = e.zpgraph.plotter_.area;
-      let labelsDivWidth = div.offsetWidth;
-      div.style.left = area.x + area.w - labelsDivWidth - 1 + "px";
-      div.style.top = area.y + "px";
+    } else if (
+      (legendMode === "onmouseover" || legendMode === "always") &&
+      this.is_generated_div_
+    ) {
+      placeFixedLegend(e.zpgraph, div);
     }
   }
 
@@ -253,11 +301,7 @@ class Legend {
     );
 
     e.zpgraph.graphDiv.appendChild(div);
-    // synchronise this with Legend.prototype.select above
-    let area = e.zpgraph.plotter_.area;
-    let labelsDivWidth = div.offsetWidth;
-    div.style.left = area.x + area.w - labelsDivWidth - 1 + "px";
-    div.style.top = area.y + "px";
+    placeFixedLegend(e.zpgraph, div);
   }
 
   destroy() {

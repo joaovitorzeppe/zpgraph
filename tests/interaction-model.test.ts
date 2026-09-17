@@ -419,4 +419,25 @@ describe("interaction models", () => {
 
     g.destroy();
   });
+
+  it("updateOptions interactionModel is used on next mousedown", () => {
+    document.body.innerHTML = "";
+    mockCanvas();
+    const first = vi.fn();
+    const second = vi.fn();
+    const g = makeChart({ interactionModel: { mousedown: first } });
+
+    g.updateOptions({ interactionModel: { mousedown: second } });
+    g.mouseEventElement_.dispatchEvent(
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        clientX: 100,
+        clientY: 100,
+      }),
+    );
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalled();
+
+    g.destroy();
+  });
 });

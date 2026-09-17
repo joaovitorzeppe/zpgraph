@@ -1094,7 +1094,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Legend"],
         type: "Object",
         description:
-          "Tooltip hints (shared, theme). The legend plugin renders the hover tooltip.",
+          "Tooltip hints: theme, position (top-left|top-right|bottom-left|bottom-right), offsetX/offsetY. Fixed legend modes use position; top corners sit above the plot when room allows.",
       },
       responsive: {
         default: "null",

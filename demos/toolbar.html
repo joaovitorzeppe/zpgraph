@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Toolbar · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+  <style>
+    .panel {
+      margin-bottom: 1.75rem;
+    }
+
+    .panel h2 {
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 0 0 0.25rem;
+    }
+
+    .panel .hint {
+      margin: 0 0 0.65rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .chart.sm {
+      height: 260px;
+    }
+
+    code {
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Toolbar options</h1>
+  <p class="lede">
+    Default icons, text variant, i18n labels, custom SVG strings, and
+    <code>() =&gt; Node</code> icons.
+  </p>
+
+  <section class="panel">
+    <h2>1 · Default icons</h2>
+    <p class="hint"><code>toolbar: true</code> — SVG defaults, top-right.</p>
+    <div id="c-default" class="chart sm"></div>
+  </section>
+
+  <section class="panel">
+    <h2>2 · Text variant + PT labels</h2>
+    <p class="hint"><code>variant: "text"</code> + <code>labels</code> / <code>titles</code>.</p>
+    <div id="c-text" class="chart sm"></div>
+  </section>
+
+  <section class="panel">
+    <h2>3 · Subset + top-left</h2>
+    <p class="hint"><code>tools</code> + <code>position: "top-left"</code>.</p>
+    <div id="c-subset" class="chart sm"></div>
+  </section>
+
+  <section class="panel">
+    <h2>4 · Custom SVG / HTML strings</h2>
+    <p class="hint"><code>icons</code> as SVG markup (or plain text).</p>
+    <div id="c-svg" class="chart sm"></div>
+  </section>
+
+  <section class="panel">
+    <h2>5 · Custom DOM Nodes</h2>
+    <p class="hint"><code>icons: {"{"} pan: () =&gt; Node {"}"}</code>.</p>
+    <div id="c-node" class="chart sm"></div>
+  </section>
+
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import { makeSeries } from './helpers.js';
+
+    const data = makeSeries({ points: 60, series: 1, seed: 4 });
+    const base = {
+      labels: ['Date', 'Alpha'],
+      legend: 'onmouseover',
+      colors: ['#1b6b93'],
+      animatedZooms: true,
+      strokeWidth: 1.5,
+    };
+
+    new Zpgraph(document.getElementById('c-default'), data, {
+      ...base,
+      toolbar: true,
+    });
+
+    new Zpgraph(document.getElementById('c-text'), data, {
+      ...base,
+      toolbar: {
+        variant: 'text',
+        position: 'top-right',
+        tools: ['zoomin', 'zoomout', 'pan', 'reset', 'downloadPng', 'downloadCsv'],
+        labels: {
+          zoomin: 'Aproximar',
+          zoomout: 'Afastar',
+          pan: 'Mover',
+          reset: 'Resetar',
+          downloadPng: 'PNG',
+          downloadCsv: 'CSV',
+        },
+        titles: {
+          zoomin: 'Zoom in',
+          zoomout: 'Zoom out',
+          pan: 'Pan chart',
+          reset: 'Reset zoom',
+          downloadPng: 'Download PNG',
+          downloadCsv: 'Download CSV',
+        },
+      },
+    });
+
+    new Zpgraph(document.getElementById('c-subset'), data, {
+      ...base,
+      toolbar: {
+        position: 'top-left',
+        tools: ['pan', 'reset', 'downloadPng'],
+      },
+    });
+
+    const svgPan =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 5h-2v5h5V10l5 3-5 3v-2h-5v5h2l-3 5-3-5h2v-5H6v2l-5-3 5-3v2h5V7H9l3-5z"/></svg>';
+    const svgReset =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+
+    new Zpgraph(document.getElementById('c-svg'), data, {
+      ...base,
+      toolbar: {
+        tools: ['pan', 'reset', 'downloadCsv'],
+        icons: {
+          pan: svgPan,
+          reset: svgReset,
+          downloadCsv: 'CSV',
+        },
+        titles: {
+          pan: 'Custom pan SVG',
+          reset: 'Custom reset SVG',
+          downloadCsv: 'Plain-text icon',
+        },
+      },
+    });
+
+    const makeBadge = (label, bg) => () => {
+      const el = document.createElement('span');
+      el.textContent = label;
+      el.style.cssText =
+        `display:inline-flex;align-items:center;justify-content:center;` +
+        `min-width:1.4rem;height:1.1rem;padding:0 4px;border-radius:2px;` +
+        `font:700 10px/1 ui-sans-serif,system-ui;color:#fff;background:${bg}`;
+      return el;
+    };
+
+    new Zpgraph(document.getElementById('c-node'), data, {
+      ...base,
+      toolbar: {
+        tools: ['zoomin', 'zoomout', 'pan', 'reset'],
+        icons: {
+          zoomin: makeBadge('+', '#1b6b93'),
+          zoomout: makeBadge('−', '#4a5a6a'),
+          pan: makeBadge('✥', '#c45c26'),
+          reset: makeBadge('↺', '#2a9d8f'),
+        },
+      },
+    });
+  </script>
+</body>
+
+</html>
