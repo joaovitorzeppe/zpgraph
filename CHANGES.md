@@ -1,5 +1,10 @@
 # Changes
 
+## 0.3.0
+
+- Fix various bugs
+- Added extra functionalities
+
 ## 0.2.0
 
 - Fix various bugs
