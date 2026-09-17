@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 const shared = {
-  target: "es2020" as const,
+  target: "es2023" as const,
   sourcemap: true,
   treeshake: true,
   define: {
