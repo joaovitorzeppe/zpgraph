@@ -25,7 +25,7 @@ zpgraph keeps that interaction model and rebuilds the stack for today:
 
 - **TypeScript end-to-end** — `ZpgraphOptions`, `Point`, plugins and callbacks are
   typed. A typo in an option name is a compile error, not a silent noop.
-- **Modern package surface** — ESM + CJS + browser IIFE, separate CSS import,
+- **Modern package surface** — ESM + CJS + browser IIFE,
   optional extras under `zpgraph/extras/*`.
 - **Interaction that scales** — drag-zoom, pan, animated zooms, range selector,
   keyboard selection, Shift+arrows for pan/zoom.
@@ -103,14 +103,13 @@ The [`demos/`](https://github.com/joaovitorzeppe/zpgraph/tree/main/demos) folder
 - Live **dynamic update** (append a point every second)
 - **Error bars** (`[value, stddev]`)
 - **Per-series** stroke / points / fill
-- Gallery index with one-click links to every example
+- And more!
 
 ---
 
 ## Typed by default
 
-zpgraph ships with declaration files. Options are a closed interface — no
-`[key: string]: any` escape hatch — so editors catch mistakes early:
+zpgraph ships with declaration files.
 
 ```ts
 import Zpgraph, { type ZpgraphOptions } from "zpgraph";
@@ -126,9 +125,6 @@ const opts = {
 
 new Zpgraph(el, data, opts);
 ```
-
-`typescript/no-explicit-any` is enforced on library sources. You get IntelliSense
-for series options, axes, plugins and the public chart API.
 
 ---
 
