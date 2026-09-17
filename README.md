@@ -54,10 +54,7 @@ const g = new Zpgraph("chart", data, {
 });
 ```
 
-CSS inject automatic on chart create (`ensureZpgraphStyles`). Optional still:
-`import "zpgraph/style.css"` if prefer bundler-managed stylesheet.
-
-Browser IIFE (CSS injected by the script):
+Browser IIFE:
 
 ```html
 <script src="node_modules/zpgraph/dist/zpgraph.min.global.js"></script>
@@ -67,8 +64,7 @@ Browser IIFE (CSS injected by the script):
 
 ## Gallery
 
-Screenshots from the live demos. Run them yourself with
-`npm run build && npx serve .` → open [`/demos/`](https://github.com/joaovitorzeppe/zpgraph/tree/main/core/demos).
+Screenshots from the live demos. Open [`demos/`](https://github.com/joaovitorzeppe/zpgraph/tree/main/demos).
 
 <table>
   <tr>
@@ -122,7 +118,7 @@ Screenshots from the live demos. Run them yourself with
 
 ### More demos
 
-The [`demos/`](https://github.com/joaovitorzeppe/zpgraph/tree/main/core/demos) folder also includes:
+The [`demos/`](https://github.com/joaovitorzeppe/zpgraph/tree/main/demos) folder also includes:
 
 - Live **dynamic update** (append a point every second)
 - **Error bars** (`[value, stddev]`)
@@ -172,11 +168,10 @@ for series options, axes, plugins and the public chart API.
 
 ## Package surface
 
-| Export              | Purpose                                         |
-| ------------------- | ----------------------------------------------- |
-| `zpgraph`           | Chart class, plugins, types, `utils`, `tickers` |
-| `zpgraph/style.css` | Chart CSS (optional; also auto-injected)        |
-| `zpgraph/extras/*`  | Optional plugins (crosshair, synchronizer, …)   |
+| Export             | Purpose                                         |
+| ------------------ | ----------------------------------------------- |
+| `zpgraph`          | Chart class, plugins, types, `utils`, `tickers` |
+| `zpgraph/extras/*` | Optional plugins (crosshair, synchronizer, …)   |
 
 `utils` is a documented subset (stroke patterns, shapes, default formatters).
 Internals such as `toRGB_` are not part of the public surface.
@@ -204,7 +199,6 @@ page.
 | -------------------------- | ------------------------- |
 | `import … from 'dygraphs'` | `import … from 'zpgraph'` |
 | `new Dygraph(...)`         | `new Zpgraph(...)`        |
-| `dygraph.css`              | `zpgraph/style.css`       |
 | Classes `dygraph-*`        | `zpgraph-*`               |
 | Event prop `e.dygraph`     | `e.zpgraph`               |
 
@@ -224,7 +218,11 @@ npm run build
 npx serve .   # → /demos/
 ```
 
-Vanilla library first. Framework wrappers will live as sibling packages later.
+Vanilla library first.
+
+| Framework | package                                                          |
+| --------- | ---------------------------------------------------------------- |
+| React     | [react-zpgraph](https://github.com/joaovitorzeppe/react-zpgraph) |
 
 ## License
 
