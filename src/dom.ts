@@ -278,6 +278,26 @@ export const keyDown = (g: Zpgraph, e: KeyboardEvent) => {
       g.resetZoom();
       e.preventDefault();
       return;
+    case "Enter":
+    case " ": {
+      const selRow = g.keyboardRow_ ?? g.getSelection();
+      if (selRow == null || selRow < 0) return;
+      let point: (typeof g.layout_.points)[number][number] | undefined;
+      for (const pts of g.layout_.points) {
+        point = pts.find((p) => p.idx === selRow) ?? pts[selRow];
+        if (point) break;
+      }
+      const cb = g.getFunctionOption("pointClickCallback");
+      if (point && cb) {
+        (cb as (ev: MouseEvent, p: unknown) => void).call(
+          g,
+          new MouseEvent("click", { bubbles: true }),
+          point,
+        );
+      }
+      e.preventDefault();
+      return;
+    }
     default:
       return;
   }

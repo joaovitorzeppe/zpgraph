@@ -1062,6 +1062,100 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         description:
           "Custom DataHandler. This is an advanced customisation. See <a href='datahandler-proposal.pdf'><tt>docs/datahandler-proposal.pdf</tt></a>.",
       },
+      thresholds: {
+        default: "null",
+        labels: ["Annotations"],
+        type: "Array of threshold bands",
+        description:
+          "Horizontal threshold lines/bands drawn behind the series (y / yRange / fillColor).",
+      },
+      toolbar: {
+        default: "false",
+        labels: ["Interactive Elements"],
+        type: "boolean or Object",
+        description:
+          "Built-in toolbar (zoomin, zoomout, pan, reset, downloadPng, downloadCsv, copyCsv).",
+      },
+      noData: {
+        default: "{ text: 'No data' }",
+        labels: ["Overall display"],
+        type: "Object or false",
+        description:
+          "Empty-state overlay when the chart has zero rows. Set false to disable.",
+      },
+      loading: {
+        default: "false",
+        labels: ["Overall display"],
+        type: "boolean",
+        description: "Shows a loading overlay over the chart.",
+      },
+      tooltip: {
+        default: "null",
+        labels: ["Legend"],
+        type: "Object",
+        description:
+          "Tooltip hints (shared, theme). The legend plugin renders the hover tooltip.",
+      },
+      responsive: {
+        default: "null",
+        labels: ["Overall display"],
+        type: "Array of {breakpoint, options}",
+        description:
+          "ApexCharts-style breakpoint overrides applied on container resize.",
+      },
+      fillGradient: {
+        default: "null",
+        labels: ["Data Line display"],
+        type: "Object",
+        description:
+          "Linear fill gradient under the series when fillGraph is true ({from,to,opacityFrom,opacityTo}).",
+      },
+      states: {
+        default: "null",
+        labels: ["Interactive Elements"],
+        type: "Object",
+        description:
+          "Hover state mapping (dimOthers) onto highlightSeriesBackgroundAlpha.",
+      },
+      forecast: {
+        default: "null",
+        labels: ["Data Line display"],
+        type: "Object",
+        description:
+          "Draw the last N points of each series with a dashed forecast style.",
+      },
+      dataLabels: {
+        default: "null",
+        labels: ["Value display/formatting"],
+        type: "Object",
+        description:
+          "Optional point value labels (enabled, formatter, filter.every / minDistancePx).",
+      },
+      markers: {
+        default: "null",
+        labels: ["Data Line display"],
+        type: "Object",
+        description: "Sugar for drawPoints/pointSize ({size, strokeWidth, shape}).",
+      },
+      chartAnnotations: {
+        default: "null",
+        labels: ["Annotations"],
+        type: "Object",
+        description:
+          "Apex-style region annotations: xaxis, yaxis, points, texts.",
+      },
+      eventMarkers: {
+        default: "null",
+        labels: ["Annotations"],
+        type: "Array",
+        description: "Vertical event markers at given x values.",
+      },
+      strokeDashArray: {
+        default: "null",
+        labels: ["Data Line display"],
+        type: "array of integers",
+        description: "Alias of strokePattern (ApexCharts naming).",
+      },
     }; // </JSON>
   // NOTE: in addition to parsing as JS, this snippet is expected to be valid
   // JSON. This assumption cannot be checked in JS, but it will be checked when

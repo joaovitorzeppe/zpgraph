@@ -42,6 +42,8 @@
 
 import ZpgraphLayout from "./layout";
 import { log } from "./logger";
+import { toCsv, toPng, type ToCsvOptions, type ToPngOptions } from "./export-chart";
+import { applyResponsiveOptions } from "./responsive";
 import type {
   Annotation,
   AxisName,
@@ -700,6 +702,16 @@ export default class Zpgraph {
     resetZoom(this);
   }
 
+  /** PNG data URL of the main chart canvas. */
+  toPng(opts?: ToPngOptions) {
+    return toPng(this, opts);
+  }
+
+  /** CSV dump of the current raw data. */
+  toCsv(opts?: ToCsvOptions) {
+    return toCsv(this, opts);
+  }
+
   doAnimatedZoom(
     oldXRange: [number, number] | null,
     newXRange: [number, number] | null,
@@ -950,6 +962,7 @@ export default class Zpgraph {
       // any resize needs to be followed by a redraw.
       resizeElements(this);
       predraw(this);
+      applyResponsiveOptions(this);
     }
 
     this.resize_lock = false;

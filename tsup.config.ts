@@ -24,6 +24,7 @@ export default defineConfig([
       "extras/super-annotations": "src/extras/super-annotations.ts",
       "extras/synchronizer": "src/extras/synchronizer.ts",
       "extras/unzoom": "src/extras/unzoom.ts",
+      "extras/locale": "src/extras/locale.ts",
     },
     format: ["esm", "cjs"],
     // Declarations come from `tsc -p tsconfig.build.json`, not from tsup:

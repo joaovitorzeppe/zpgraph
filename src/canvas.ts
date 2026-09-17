@@ -623,11 +623,26 @@ export default class ZpgraphCanvasRenderer {
     let drawPointCallback =
       (g.getOption("drawPointCallback", setName) as DrawPointCallback | null) ||
       utils.Circles.DEFAULT;
-    let strokePattern = g.getOption("strokePattern", setName) as
-      | number[]
-      | null;
+    let strokePattern = (g.getOption("strokePattern", setName) ??
+      g.getOption("strokeDashArray", setName)) as number[] | null;
     let drawPoints = g.getBooleanOption("drawPoints", setName);
     let pointSize = g.getNumericOption("pointSize", setName);
+    const markers = g.getOption("markers") as
+      | { size?: number }
+      | undefined;
+    if (markers) {
+      drawPoints = true;
+      if (markers.size != null) pointSize = markers.size;
+    }
+
+    const forecast = g.getOption("forecast") as
+      | {
+          count: number;
+          dashPattern?: number[];
+          strokeWidth?: number;
+          opacity?: number;
+        }
+      | undefined;
 
     if (borderWidth && strokeWidth) {
       ZpgraphCanvasRenderer._drawStyledLine(
@@ -650,6 +665,27 @@ export default class ZpgraphCanvasRenderer {
       drawPointCallback,
       pointSize,
     );
+
+    if (forecast && forecast.count > 0 && e.points.length > forecast.count) {
+      const cut = e.points.length - forecast.count;
+      const forecastEvent = {
+        ...e,
+        points: e.points.slice(cut - 1),
+      };
+      const ctx = e.drawingContext;
+      ctx.save();
+      ctx.globalAlpha = forecast.opacity ?? 0.7;
+      ZpgraphCanvasRenderer._drawStyledLine(
+        forecastEvent,
+        e.color,
+        forecast.strokeWidth ?? strokeWidth,
+        forecast.dashPattern ?? [4, 4],
+        false,
+        drawPointCallback,
+        pointSize,
+      );
+      ctx.restore();
+    }
   }
 
   /**
@@ -994,7 +1030,26 @@ export default class ZpgraphCanvasRenderer {
       let rgb = utils.toRGB_(color)!;
       let err_color =
         "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + fillAlpha + ")";
-      ctx.fillStyle = err_color;
+      const fillGradient = (g.getOption("fillGradient", setName) ??
+        g.getOption("fillGradient")) as
+        | {
+            from: string;
+            to: string;
+            opacityFrom?: number;
+            opacityTo?: number;
+          }
+        | undefined
+        | null;
+      if (fillGradient) {
+        const grad = ctx.createLinearGradient(0, area.y, 0, area.y + area.h);
+        const o0 = fillGradient.opacityFrom ?? fillAlpha;
+        const o1 = fillGradient.opacityTo ?? 0;
+        grad.addColorStop(0, withAlpha(fillGradient.from, o0));
+        grad.addColorStop(1, withAlpha(fillGradient.to, o1));
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = err_color;
+      }
       ctx.beginPath();
       let last_x,
         is_first = true;
@@ -1099,3 +1154,9 @@ export default class ZpgraphCanvasRenderer {
     }
   }
 }
+
+const withAlpha = (color: string, alpha: number): string => {
+  const rgb = utils.toRGB_(color);
+  if (!rgb) return color;
+  return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
+};

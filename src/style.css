@@ -156,3 +156,72 @@
   text-align: center;
   transform: rotate(-90deg);
 }
+
+.zpgraph {
+  --zp-threshold-fill: rgba(27, 107, 147, 0.14);
+  --zp-toolbar-bg: rgba(255, 255, 255, 0.92);
+  --zp-toolbar-border: rgba(0, 0, 0, 0.12);
+  --zp-status-fg: #666666;
+}
+
+[data-theme="dark"] .zpgraph,
+.zpgraph[data-theme="dark"] {
+  --zp-toolbar-bg: rgba(20, 20, 20, 0.92);
+  --zp-toolbar-border: rgba(255, 255, 255, 0.16);
+  --zp-status-fg: #b0b0b0;
+}
+
+.zpgraph-toolbar {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--zp-toolbar-bg);
+  border: 1px solid var(--zp-toolbar-border);
+  border-radius: 4px;
+}
+
+.zpgraph-toolbar-top-right {
+  top: 8px;
+  right: 8px;
+}
+
+.zpgraph-toolbar-top-left {
+  top: 8px;
+  left: 8px;
+}
+
+.zpgraph-toolbar-btn {
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+  border: 1px solid var(--zp-toolbar-border);
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+}
+
+.zpgraph-toolbar-btn.is-active {
+  font-weight: 600;
+  outline: 1px solid currentColor;
+}
+
+.zpgraph-status {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--zp-status-fg);
+  background: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  font-size: 14px;
+}
+
+[data-theme="dark"] .zpgraph-status,
+.zpgraph[data-theme="dark"] .zpgraph-status {
+  background: rgba(0, 0, 0, 0.45);
+}

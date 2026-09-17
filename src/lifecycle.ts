@@ -644,6 +644,23 @@ export const updateOptions = (
 
   utils.updateDeep(g.user_attrs_ as Record<string, unknown>, attrs);
 
+  // Sugar: markers / states map onto existing draw/highlight options.
+  const markers = g.user_attrs_.markers as
+    | { size?: number }
+    | undefined;
+  if (markers) {
+    if (g.user_attrs_.drawPoints == null) g.user_attrs_.drawPoints = true;
+    if (markers.size != null && g.user_attrs_.pointSize == null) {
+      g.user_attrs_.pointSize = markers.size;
+    }
+  }
+  const states = g.user_attrs_.states as
+    | { hover?: { dimOthers?: boolean } }
+    | undefined;
+  if (states?.hover?.dimOthers && g.user_attrs_.highlightSeriesOpts == null) {
+    g.user_attrs_.highlightSeriesOpts = { strokeWidth: 2 };
+  }
+
   if ("theme" in attrs) {
     applyTheme(g);
   }

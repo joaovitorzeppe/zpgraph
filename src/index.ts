@@ -21,22 +21,38 @@ export { default as Zpgraph } from "./zpgraph";
 export type {
   Annotation,
   AnnotationHandler,
+  AxisAnnotation,
   AxisLabelFormatter,
   AxisName,
   AxisOptions,
+  ChartAnnotations,
   ChartClassNames,
+  ChartStates,
   Data,
   DataArray,
+  DataLabelsOptions,
   DrawPointCallback,
+  EventMarker,
+  FillGradient,
+  ForecastOptions,
   InteractionContext,
   InteractionModel,
   LegendData,
+  MarkersOptions,
+  NoDataOptions,
   PerSeriesOptions,
   Plotter,
   PlotterEvent,
   Plugin,
   Point,
+  PointAnnotation,
+  ResponsiveRule,
+  TextAnnotation,
+  ThresholdBand,
   Ticker,
+  ToolbarOptions,
+  ToolbarTool,
+  TooltipOptions,
   ValueFormatter,
   ZpgraphElement,
   ZpgraphOptions,
@@ -47,6 +63,9 @@ export type { Logger } from "./logger";
 
 export { themes, applyTheme } from "./themes";
 export type { ChartTheme } from "./themes";
+
+export { toPng, toCsv } from "./export-chart";
+export type { ToPngOptions, ToCsvOptions } from "./export-chart";
 
 export {
   safeCssClasses,
@@ -63,3 +82,8 @@ export { default as AnnotationsPlugin } from "./plugins/annotations";
 export { default as ChartLabelsPlugin } from "./plugins/chart-labels";
 export { default as GridPlugin } from "./plugins/grid";
 export { default as RangeSelectorPlugin } from "./plugins/range-selector";
+export { default as ThresholdsPlugin } from "./plugins/thresholds";
+export { default as ChartAnnotationsPlugin } from "./plugins/chart-annotations";
+export { default as DataLabelsPlugin } from "./plugins/data-labels";
+export { default as ToolbarPlugin } from "./plugins/toolbar";
+export { default as StatusOverlayPlugin } from "./plugins/status-overlay";

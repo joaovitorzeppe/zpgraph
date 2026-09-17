@@ -20,10 +20,15 @@ import BarsHandler from "./datahandler/bars";
 
 import AnnotationsPlugin from "./plugins/annotations";
 import AxesPlugin from "./plugins/axes";
+import ChartAnnotationsPlugin from "./plugins/chart-annotations";
 import ChartLabelsPlugin from "./plugins/chart-labels";
+import DataLabelsPlugin from "./plugins/data-labels";
 import GridPlugin from "./plugins/grid";
 import LegendPlugin from "./plugins/legend";
 import RangeSelectorPlugin from "./plugins/range-selector";
+import StatusOverlayPlugin from "./plugins/status-overlay";
+import ThresholdsPlugin from "./plugins/thresholds";
+import ToolbarPlugin from "./plugins/toolbar";
 
 type ZpgraphStaticsTarget = Record<string, unknown> & {
   new (div: unknown, data: unknown, opts?: unknown): unknown;
@@ -70,6 +75,11 @@ export const registerZpgraphStatics = (Zpgraph: unknown): void => {
     RangeSelectorPlugin, // Has to be before ChartLabels so that its callbacks are called after ChartLabels' callbacks.
     ChartLabelsPlugin,
     AnnotationsPlugin,
+    ThresholdsPlugin,
+    ChartAnnotationsPlugin,
+    DataLabelsPlugin,
+    ToolbarPlugin,
+    StatusOverlayPlugin,
     GridPlugin,
   ];
 
@@ -92,6 +102,11 @@ export const registerZpgraphStatics = (Zpgraph: unknown): void => {
     ChartLabels: ChartLabelsPlugin,
     Grid: GridPlugin,
     RangeSelector: RangeSelectorPlugin,
+    Thresholds: ThresholdsPlugin,
+    ChartAnnotations: ChartAnnotationsPlugin,
+    DataLabels: DataLabelsPlugin,
+    Toolbar: ToolbarPlugin,
+    StatusOverlay: StatusOverlayPlugin,
   };
 
   Z.DataHandlers = {

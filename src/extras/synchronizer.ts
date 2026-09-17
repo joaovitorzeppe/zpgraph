@@ -48,6 +48,8 @@ interface SyncOptions {
   selection: boolean;
   zoom: boolean;
   range: boolean;
+  /** When true, sync dateWindow from the first chart that has showRangeSelector. */
+  brush: boolean;
 }
 
 interface StoredCallbacks {
@@ -218,6 +220,7 @@ const synchronize = function synchronize(/* zpgraph..., opts */) {
     selection: true,
     zoom: true,
     range: true,
+    brush: false,
   };
   let zpgraph: ZpgraphInstance[] | null = [];
   let prevCallbacks: StoredCallbacks[] | null = [];
@@ -294,6 +297,10 @@ const synchronize = function synchronize(/* zpgraph..., opts */) {
         }
 
         // Listen for draw, highlight, unhighlight callbacks.
+        if (syncOpts.brush) {
+          // Brush = keep dateWindow in sync (range selector on any chart drives others).
+          syncOpts.zoom = true;
+        }
         if (syncOpts.zoom) {
           attachZoomHandlers(charts, syncOpts, callbacks!);
         }

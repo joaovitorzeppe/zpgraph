@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thresholds · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Thresholds + toolbar</h1>
+  <p class="lede">
+    Built-in threshold bands, toolbar, forecast dash, and chartAnnotations.
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import Zpgraph from 'zpgraph';
+    import { makeSeries } from './helpers.js';
+
+    new Zpgraph(document.getElementById('chart'), makeSeries({ points: 80, series: 1, seed: 2 }), {
+      labels: ['Date', 'Temp'],
+      legend: 'always',
+      ylabel: '°C',
+      colors: ['#c45c26'],
+      animatedZooms: true,
+      toolbar: true,
+      fillGraph: true,
+      fillGradient: { from: '#c45c26', to: '#c45c26', opacityFrom: 0.35, opacityTo: 0 },
+      forecast: { count: 8 },
+      thresholds: [
+        { y: 16, y2: 24, fillColor: 'rgba(27,107,147,0.14)', color: '#1b6b93', label: 'Target' },
+      ],
+      chartAnnotations: {
+        xaxis: [{ x: makeSeries({ points: 80, series: 1, seed: 2 })[40][0], label: 'Mid' }],
+      },
+      eventMarkers: [{ x: makeSeries({ points: 80, series: 1, seed: 2 })[55][0], label: 'Event' }],
+      dataLabels: { enabled: true, filter: { every: 12, minDistancePx: 48 } },
+    });
+  </script>
+</body>
+
+</html>

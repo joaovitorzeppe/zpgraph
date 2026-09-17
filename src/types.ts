@@ -25,6 +25,118 @@ export type ChartClassNames = {
   xlabel?: string;
   ylabel?: string;
   y2label?: string;
+  toolbar?: string;
+  noData?: string;
+  loading?: string;
+};
+
+/** Horizontal or filled threshold band drawn behind series. */
+export type ThresholdBand = {
+  y?: number;
+  y2?: number;
+  yRange?: [number, number];
+  axis?: "y1" | "y2";
+  color?: string;
+  fillColor?: string;
+  strokeWidth?: number;
+  label?: string;
+  labelPosition?: "left" | "right";
+};
+
+export type ToolbarTool =
+  | "zoomin"
+  | "zoomout"
+  | "pan"
+  | "reset"
+  | "downloadPng"
+  | "downloadCsv"
+  | "copyCsv";
+
+export type ToolbarOptions = {
+  tools?: ToolbarTool[];
+  position?: "top-right" | "top-left";
+};
+
+export type NoDataOptions = {
+  text?: string;
+};
+
+export type TooltipOptions = {
+  shared?: boolean;
+  theme?: "light" | "dark";
+};
+
+export type FillGradient = {
+  from: string;
+  to: string;
+  opacityFrom?: number;
+  opacityTo?: number;
+};
+
+export type ChartStates = {
+  hover?: {
+    filter?: { type: "darken" | "lighten"; value: number };
+    dimOthers?: boolean;
+  };
+};
+
+export type ForecastOptions = {
+  count: number;
+  dashPattern?: number[];
+  strokeWidth?: number;
+  opacity?: number;
+  forecastStartsAt?: number;
+};
+
+export type MarkersOptions = {
+  size?: number;
+  strokeWidth?: number;
+  shape?: "dot" | "square" | "diamond" | "triangle";
+};
+
+export type AxisAnnotation = {
+  x?: number | string | Date;
+  x2?: number | string | Date;
+  y?: number;
+  y2?: number;
+  axis?: "y1" | "y2";
+  borderColor?: string;
+  fillColor?: string;
+  opacity?: number;
+  strokeWidth?: number;
+  label?: string;
+  labelColor?: string;
+};
+
+export type PointAnnotation = {
+  x: number | string | Date;
+  y: number;
+  series?: string;
+  markerSize?: number;
+  markerColor?: string;
+  label?: string;
+};
+
+export type TextAnnotation = {
+  x: number | string | Date;
+  y: number;
+  text: string;
+  color?: string;
+};
+
+export type ChartAnnotations = {
+  xaxis?: AxisAnnotation[];
+  yaxis?: AxisAnnotation[];
+  points?: PointAnnotation[];
+  texts?: TextAnnotation[];
+};
+
+export type EventMarker = {
+  x: number | string | Date;
+  label?: string;
+  icon?: string;
+  cssClass?: string;
+  series?: string;
 };
 
 export type DataArray = Array<Array<number | number[] | Date | null>>;
@@ -54,6 +166,12 @@ export interface Point {
   /** Pixel Y set at render time by the canvas plotter. */
   canvasy?: number;
 }
+
+export type DataLabelsOptions = {
+  enabled?: boolean;
+  formatter?: (y: number | null | undefined, point: Point) => string;
+  filter?: { every?: number; minDistancePx?: number };
+};
 
 export interface Annotation {
   series: string;
@@ -159,6 +277,7 @@ export interface PerSeriesOptions {
   drawPoints?: boolean | null;
   fillAlpha?: number | null;
   fillGraph?: boolean | null;
+  fillGradient?: FillGradient | null;
   highlightCircleSize?: number | null;
   plotter?: Plotter | Plotter[] | null;
   pointSize?: number | null;
@@ -167,6 +286,8 @@ export interface PerSeriesOptions {
   strokeBorderColor?: string | null;
   strokeBorderWidth?: number | null;
   strokePattern?: number[] | null;
+  /** Alias of `strokePattern` (ApexCharts naming). */
+  strokeDashArray?: number[] | null;
   strokeWidth?: number | null;
 }
 
@@ -379,7 +500,28 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
     maxDate: number,
     yRanges: [number, number][],
   ) => void;
+  thresholds?: ThresholdBand[];
+  toolbar?: boolean | ToolbarOptions;
+  noData?: NoDataOptions | false;
+  loading?: boolean;
+  tooltip?: TooltipOptions;
+  responsive?: ResponsiveRule[];
+  fillGradient?: FillGradient;
+  states?: ChartStates;
+  forecast?: ForecastOptions;
+  dataLabels?: DataLabelsOptions;
+  markers?: MarkersOptions;
+  chartAnnotations?: ChartAnnotations;
+  eventMarkers?: EventMarker[];
+  /** Alias of strokePattern when set globally. */
+  strokeDashArray?: number[];
 }
+
+/** Breakpoint overrides merged on container resize (ApexCharts-style). */
+export type ResponsiveRule = {
+  breakpoint: number;
+  options: Partial<ZpgraphOptions>;
+};
 
 /** Argument handed to `legendFormatter`. */
 export interface LegendData {
