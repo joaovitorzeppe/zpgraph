@@ -54,13 +54,13 @@
     "demos/screenshots"
   ],
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.build.json && node scripts/copy-css.mjs",
+    "build": "node scripts/copy-css.mjs && tsup && tsc -p tsconfig.build.json",
     "smoke": "node scripts/smoke-node.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "node scripts/copy-css.mjs && tsc -p tsconfig.json --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "node scripts/copy-css.mjs && vitest run",
+    "test:coverage": "node scripts/copy-css.mjs && vitest run --coverage",
     "test:watch": "vitest",
     "dev": "vitest",
     "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build && npm run smoke"

@@ -13,56 +13,85 @@ export type ToPngOptions = {
 
 export type ToCsvOptions = {
   includeHeader?: boolean;
+  /** Drop hidden series columns (default true). */
+  visibleOnly?: boolean;
+  /** Prefix UTF-8 BOM for Excel (default false; download path enables it). */
+  utf8Bom?: boolean;
 };
 
-/** Rasterize the main chart canvas to a PNG data URL. */
+/**
+ * Rasterize the plot canvas (hidden_) plus interaction overlay (canvas_).
+ * Chart series are drawn on hidden_; canvas_ is cleared each frame for overlays.
+ */
 export const toPng = (g: Zpgraph, opts: ToPngOptions = {}): string => {
-  const src = g.canvas_;
-  if (!src) return "";
+  const plot = g.hidden_ ?? g.canvas_;
+  if (!plot) return "";
 
+  const overlay = g.canvas_;
   const scale = opts.scale ?? 1;
-  if (scale === 1 && !opts.background) {
-    return src.toDataURL("image/png");
-  }
-
-  const w = src.width;
-  const h = src.height;
+  const w = plot.width;
+  const h = plot.height;
   const out = document.createElement("canvas");
   out.width = Math.max(1, Math.round(w * scale));
   out.height = Math.max(1, Math.round(h * scale));
   const ctx = out.getContext("2d");
   if (!ctx) return "";
+
   if (opts.background) {
     ctx.fillStyle = opts.background;
     ctx.fillRect(0, 0, out.width, out.height);
   }
-  ctx.drawImage(src, 0, 0, out.width, out.height);
+  ctx.drawImage(plot, 0, 0, out.width, out.height);
+  if (overlay && overlay !== plot) {
+    ctx.drawImage(overlay, 0, 0, out.width, out.height);
+  }
   return out.toDataURL("image/png");
 };
 
-/** Dump raw chart data as CSV. */
+/** Dump chart data as CSV (UTF-8). */
 export const toCsv = (g: Zpgraph, opts: ToCsvOptions = {}): string => {
   const includeHeader = opts.includeHeader !== false;
-  const labels = g.getLabels() ?? [];
-  const rows: string[] = [];
-  if (includeHeader && labels.length) {
-    rows.push(labels.map(escapeCsv).join(","));
+  const visibleOnly = opts.visibleOnly !== false;
+  const visibility = g.visibility() ?? [];
+  const allLabels = g.getLabels() ?? [];
+
+  const colIdx: number[] = [0];
+  for (let c = 1; c < allLabels.length; c++) {
+    if (!visibleOnly || visibility[c - 1] !== false) colIdx.push(c);
   }
+
+  const rows: string[] = [];
+  if (includeHeader && colIdx.length) {
+    rows.push(colIdx.map((c) => escapeCsv(allLabels[c] ?? "")).join(","));
+  }
+
   const n = g.numRows();
-  const cols = g.numColumns();
   for (let r = 0; r < n; r++) {
     const cells: string[] = [];
-    for (let c = 0; c < cols; c++) {
-      const v = g.getValue(r, c);
-      if (v == null) cells.push("");
-      else if (v instanceof Date) cells.push(escapeCsv(v.toISOString()));
-      else if (typeof v === "number") cells.push(String(v));
-      else if (Array.isArray(v)) cells.push(escapeCsv(v.join(";")));
-      else cells.push(escapeCsv(String(v)));
+    for (const c of colIdx) {
+      cells.push(formatCsvCell(g.getValue(r, c)));
     }
     rows.push(cells.join(","));
   }
-  return rows.join("\n");
+
+  const body = rows.join("\n");
+  return opts.utf8Bom ? "\uFEFF" + body : body;
+};
+
+const formatCsvCell = (v: unknown): string => {
+  if (v == null) return "";
+  if (v instanceof Date) {
+    return Number.isFinite(v.getTime()) ? escapeCsv(v.toISOString()) : "";
+  }
+  if (typeof v === "number") {
+    return Number.isFinite(v) ? String(v) : "";
+  }
+  if (Array.isArray(v)) {
+    const nums = v.filter((x) => typeof x === "number" && Number.isFinite(x));
+    return escapeCsv(nums.join(";"));
+  }
+  const s = String(v);
+  return s === "NaN" ? "" : escapeCsv(s);
 };
 
 const escapeCsv = (s: string): string => {

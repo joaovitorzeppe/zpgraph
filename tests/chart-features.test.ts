@@ -43,6 +43,39 @@ describe("export API", () => {
     g.destroy();
   });
 
+  it("toCsv omits hidden series and skips non-finite numbers", () => {
+    const el = mountDiv();
+    const g = new Zpgraph(
+      el,
+      [
+        [1, 10, NaN],
+        [2, 20, 30],
+      ],
+      {
+        labels: ["x", "A", "B"],
+        width: 480,
+        height: 320,
+        visibility: [true, false],
+      },
+    );
+    const csv = g.toCsv({ visibleOnly: true });
+    expect(csv.split("\n")[0]).toBe("x,A");
+    expect(csv).not.toContain("NaN");
+    expect(csv).not.toContain(",B");
+    g.destroy();
+  });
+
+  it("toCsv can prefix UTF-8 BOM", () => {
+    const el = mountDiv();
+    const g = new Zpgraph(el, sampleData, {
+      labels: ["x", "A", "B"],
+      width: 480,
+      height: 320,
+    });
+    expect(g.toCsv({ utf8Bom: true }).startsWith("\uFEFF")).toBe(true);
+    g.destroy();
+  });
+
   it("toPng returns a data URL", () => {
     const el = mountDiv();
     const g = new Zpgraph(el, sampleData, {

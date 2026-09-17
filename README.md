@@ -46,7 +46,6 @@ npm install zpgraph
 
 ```ts
 import Zpgraph from "zpgraph";
-import "zpgraph/style.css";
 
 const g = new Zpgraph("chart", data, {
   labels: ["Date", "Alpha", "Beta"],
@@ -55,8 +54,8 @@ const g = new Zpgraph("chart", data, {
 });
 ```
 
-Stylesheet is a **separate** import on purpose: a CSS side-effect in the package
-entry would break plain Node and SSR.
+CSS inject automatic on chart create (`ensureZpgraphStyles`). Optional still:
+`import "zpgraph/style.css"` if prefer bundler-managed stylesheet.
 
 Browser IIFE (CSS injected by the script):
 
@@ -176,7 +175,7 @@ for series options, axes, plugins and the public chart API.
 | Export              | Purpose                                         |
 | ------------------- | ----------------------------------------------- |
 | `zpgraph`           | Chart class, plugins, types, `utils`, `tickers` |
-| `zpgraph/style.css` | Chart CSS (explicit import)                     |
+| `zpgraph/style.css` | Chart CSS (optional; also auto-injected)        |
 | `zpgraph/extras/*`  | Optional plugins (crosshair, synchronizer, …)   |
 
 `utils` is a documented subset (stroke patterns, shapes, default formatters).

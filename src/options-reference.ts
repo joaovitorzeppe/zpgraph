@@ -1074,7 +1074,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Interactive Elements"],
         type: "boolean or Object",
         description:
-          "Built-in toolbar (zoomin, zoomout, pan, reset, downloadPng, downloadCsv, copyCsv).",
+          "Built-in toolbar. Object: tools, position, labels, titles, icons, variant (icon|text).",
       },
       noData: {
         default: "{ text: 'No data' }",
@@ -1101,7 +1101,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Overall display"],
         type: "Array of {breakpoint, options}",
         description:
-          "ApexCharts-style breakpoint overrides applied on container resize.",
+          "Breakpoint overrides applied on container resize.",
       },
       fillGradient: {
         default: "null",
@@ -1142,7 +1142,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Annotations"],
         type: "Object",
         description:
-          "Apex-style region annotations: xaxis, yaxis, points, texts.",
+          "Region annotations: xaxis, yaxis, points, texts.",
       },
       eventMarkers: {
         default: "null",
@@ -1154,7 +1154,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         default: "null",
         labels: ["Data Line display"],
         type: "array of integers",
-        description: "Alias of strokePattern (ApexCharts naming).",
+        description: "Alias of strokePattern.",
       },
     }; // </JSON>
   // NOTE: in addition to parsing as JS, this snippet is expected to be valid

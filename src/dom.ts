@@ -16,6 +16,7 @@ import IFrameTarp from "./iframe-tarp";
 import ZpgraphLayout from "./layout";
 import { log } from "./logger";
 import * as utils from "./utils";
+import { ensureZpgraphStyles } from "./ensure-styles";
 import type {
   ChartInteractionHandler,
   ZpgraphInstance,
@@ -30,6 +31,8 @@ import type Zpgraph from "./zpgraph";
  * @private
  */
 export const createInterface = (g: Zpgraph) => {
+  ensureZpgraphStyles();
+
   // Create the all-enclosing graph div
   let enclosing = g.maindiv_;
 

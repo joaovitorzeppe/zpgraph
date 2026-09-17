@@ -55,6 +55,17 @@ export type ToolbarTool =
 export type ToolbarOptions = {
   tools?: ToolbarTool[];
   position?: "top-right" | "top-left";
+  /** Button label / accessible name overrides (i18n). */
+  labels?: Partial<Record<ToolbarTool, string>>;
+  /** Title/tooltip overrides. Falls back to labels. */
+  titles?: Partial<Record<ToolbarTool, string>>;
+  /**
+   * Custom button content: plain text, SVG/HTML string, or a Node factory.
+   * When set, replaces the default icon (title still comes from titles/labels).
+   */
+  icons?: Partial<Record<ToolbarTool, string | (() => Node)>>;
+  /** `icon` (default) or visible `text` from labels. */
+  variant?: "icon" | "text";
 };
 
 export type NoDataOptions = {
@@ -286,7 +297,7 @@ export interface PerSeriesOptions {
   strokeBorderColor?: string | null;
   strokeBorderWidth?: number | null;
   strokePattern?: number[] | null;
-  /** Alias of `strokePattern` (ApexCharts naming). */
+  /** Alias of `strokePattern`. */
   strokeDashArray?: number[] | null;
   strokeWidth?: number | null;
 }
@@ -517,7 +528,7 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
   strokeDashArray?: number[];
 }
 
-/** Breakpoint overrides merged on container resize (ApexCharts-style). */
+/** Breakpoint overrides merged on container resize. */
 export type ResponsiveRule = {
   breakpoint: number;
   options: Partial<ZpgraphOptions>;
