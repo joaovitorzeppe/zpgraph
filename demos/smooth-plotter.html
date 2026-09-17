@@ -53,7 +53,7 @@
       if (g) g.destroy();
       g = new Zpgraph(document.getElementById('chart'), data, {
         labels: ['Index', 'Straight', 'Smoothed'],
-        legend: 'always',
+        tooltip: { show: 'always' },
         animatedZooms: true,
         gridLineColor: 'rgba(13, 27, 42, 0.12)',
         series: {

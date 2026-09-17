@@ -55,6 +55,7 @@ export type {
   ToolbarTool,
   TooltipOptions,
   TooltipPosition,
+  TooltipShow,
   ValueFormatter,
   ZpgraphElement,
   ZpgraphOptions,

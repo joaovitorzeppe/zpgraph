@@ -25,7 +25,7 @@
 
     new Zpgraph(document.getElementById('chart'), makeSeries({ points: 80, series: 1, seed: 2 }), {
       labels: ['Date', 'Temp'],
-      legend: 'always',
+      tooltip: { show: 'always' },
       ylabel: '°C',
       colors: ['#c45c26'],
       animatedZooms: true,

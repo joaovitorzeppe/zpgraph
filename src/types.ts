@@ -85,26 +85,35 @@ export type NoDataOptions = {
   text?: string;
 };
 
+export type TooltipShow = "never" | "onmouseover" | "always";
+
 export type TooltipPosition =
   | "top-left"
   | "top-right"
   | "bottom-left"
-  | "bottom-right";
+  | "bottom-right"
+  | "follow";
 
 export type TooltipOptions = {
+  /**
+   * When to show the tooltip. `null` / `undefined` = `onmouseover`.
+   */
+  show?: TooltipShow | null;
   theme?: "light" | "dark";
   /**
-   * Corner for fixed legend modes (`onmouseover` / `always`).
-   * Ignored when `legend: "follow"`. Default `top-right`.
-   * Top corners sit above the plot (layout reserves space so series stay clear).
+   * Corner for fixed modes, or `follow` to float near the highlighted point.
+   * Default `top-right`. Top corners sit above the plot (layout may reserve space).
    */
   position?: TooltipPosition;
-  /** Extra px from the chosen corner (positive = right / down). */
+  /**
+   * Extra px from the chosen corner (positive = right / down),
+   * or from the highlighted point when `position: "follow"` (defaults 50 / -50).
+   */
   offsetX?: number;
   offsetY?: number;
   /**
    * Extra top chrome (px) reserved so a top tooltip does not cover the plot.
-   * Default 56 when position is top-left/top-right; 0 otherwise.
+   * Used when position is top-left/top-right.
    */
   reserveTop?: number;
 };
@@ -481,9 +490,6 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
   ylabel?: string | null;
   y2label?: string | null;
   labelsDiv?: HTMLElement | string | null;
-  legend?: "never" | "onmouseover" | "always" | "follow" | null;
-  legendFollowOffsetX?: number;
-  legendFollowOffsetY?: number;
   showRoller?: boolean;
   rollPeriod?: number;
   dateWindow?: [number, number] | null;

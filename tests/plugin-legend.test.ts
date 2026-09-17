@@ -23,8 +23,8 @@ describe("Legend plugin", () => {
     mockCanvas();
   });
 
-  it("creates its own div and fills it when legend is 'always'", () => {
-    const { g, legend } = makeChart({ legend: "always" });
+  it("creates its own div and fills it when tooltip.show is 'always'", () => {
+    const { g, legend } = makeChart({ tooltip: { show: "always" } });
 
     expect(legend).not.toBeNull();
     expect(legend.textContent).toContain("A");
@@ -35,7 +35,7 @@ describe("Legend plugin", () => {
     g.destroy();
   });
 
-  it("stays empty with the default 'onmouseover' legend until something is selected", () => {
+  it("stays empty with default tooltip.show 'onmouseover' until something is selected", () => {
     const { g, legend } = makeChart();
 
     expect(legend.innerHTML).toBe("");
@@ -49,7 +49,7 @@ describe("Legend plugin", () => {
 
   it("separates series with <br /> when labelsSeparateLines is on", () => {
     const { g, legend } = makeChart({
-      legend: "always",
+      tooltip: { show: "always" },
       labelsSeparateLines: true,
     });
 
@@ -59,7 +59,7 @@ describe("Legend plugin", () => {
   });
 
   it("joins series with a space when labelsSeparateLines is off", () => {
-    const { g, legend } = makeChart({ legend: "always" });
+    const { g, legend } = makeChart({ tooltip: { show: "always" } });
 
     expect(legend.innerHTML).not.toContain("<br>");
 
@@ -67,7 +67,7 @@ describe("Legend plugin", () => {
   });
 
   it("marks the highlighted series with the highlight class", () => {
-    const { g, legend } = makeChart({ legend: "always" });
+    const { g, legend } = makeChart({ tooltip: { show: "always" } });
 
     g.setSelection(1, "A");
 
@@ -81,7 +81,7 @@ describe("Legend plugin", () => {
   it("hands the legendFormatter the series data and renders what it returns", () => {
     let seen: LegendData | null = null;
     const { g, legend } = makeChart({
-      legend: "always",
+      tooltip: { show: "always" },
       legendFormatter: (data) => {
         seen = data;
         return `<b>${data.series.map((s) => s.label).join("|")}</b>`;
@@ -101,7 +101,7 @@ describe("Legend plugin", () => {
 
   it("appends a DocumentFragment returned by legendFormatter instead of stringifying it", () => {
     const { g, legend } = makeChart({
-      legend: "always",
+      tooltip: { show: "always" },
       legendFormatter: () => {
         const frag = document.createDocumentFragment();
         const span = document.createElement("span");
@@ -120,7 +120,7 @@ describe("Legend plugin", () => {
 
   it("leaves a series hidden by visibility out of the legend", () => {
     const { g, legend } = makeChart({
-      legend: "always",
+      tooltip: { show: "always" },
       visibility: [true, false],
     });
 
@@ -133,7 +133,7 @@ describe("Legend plugin", () => {
 
   it("keeps a hidden series out of the selection legend too", () => {
     const { g, legend } = makeChart({
-      legend: "always",
+      tooltip: { show: "always" },
       visibility: [true, false],
     });
 
@@ -146,8 +146,8 @@ describe("Legend plugin", () => {
     g.destroy();
   });
 
-  it("positions the legend near the selection when legend is 'follow'", () => {
-    const { g, legend } = makeChart({ legend: "follow" });
+  it("positions the tooltip near the selection when position is 'follow'", () => {
+    const { g, legend } = makeChart({ tooltip: { position: "follow" } });
 
     stubLayoutMetrics(legend, { width: 80, height: 24 });
 
@@ -161,10 +161,9 @@ describe("Legend plugin", () => {
     g.destroy();
   });
 
-  it("honors tooltip.position for fixed legend modes", () => {
+  it("honors tooltip.position for fixed modes", () => {
     const { g, legend } = makeChart({
-      legend: "onmouseover",
-      tooltip: { position: "top-left", offsetX: 8, offsetY: 2 },
+      tooltip: { show: "onmouseover", position: "top-left", offsetX: 8, offsetY: 2 },
     });
     stubLayoutMetrics(legend, { width: 80, height: 24 });
     g.setSelection(1);
@@ -177,8 +176,8 @@ describe("Legend plugin", () => {
     g.destroy();
   });
 
-  it("hides the div entirely when legend is 'never'", () => {
-    const { g, legend } = makeChart({ legend: "never" });
+  it("hides the div entirely when tooltip.show is 'never'", () => {
+    const { g, legend } = makeChart({ tooltip: { show: "never" } });
 
     g.setSelection(1);
     expect(legend.style.display).toBe("none");
@@ -192,7 +191,7 @@ describe("Legend plugin", () => {
     document.body.appendChild(external);
 
     const { el, g } = makeChart({
-      legend: "always",
+      tooltip: { show: "always" },
       labelsDiv: "external-legend",
     });
 

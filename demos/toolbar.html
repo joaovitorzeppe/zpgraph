@@ -92,7 +92,7 @@
     const data = makeSeries({ points: 60, series: 1, seed: 4 });
     const base = {
       labels: ['Date', 'Alpha'],
-      legend: 'onmouseover',
+      tooltip: { show: 'onmouseover' },
       colors: ['#1b6b93'],
       animatedZooms: true,
       strokeWidth: 1.5,

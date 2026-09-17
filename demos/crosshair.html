@@ -27,7 +27,7 @@
 
     new Zpgraph(document.getElementById('chart'), makeSeries({ points: 80, series: 2 }), {
       labels: ['Date', 'A', 'B'],
-      legend: 'always',
+      tooltip: { show: 'always' },
       colors: ['#1b6b93', '#c45c26'],
       animatedZooms: true,
       plugins: [

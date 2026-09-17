@@ -13,7 +13,7 @@ describe("Zpgraph chart smoke", () => {
       labels: ["x", "A", "B"],
       width: 480,
       height: 320,
-      legend: "always",
+      tooltip: { show: "always" },
     });
 
     expect(g.numRows()).toBe(4);

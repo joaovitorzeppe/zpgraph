@@ -106,8 +106,8 @@ describe("series colors cannot break out of the legend style attribute", () => {
     getLabels: () => ["x", "A"],
     getPropertiesForSeries: () => ({ color, visible: true, axis: 1 }),
     getOption: (name: string) =>
-      name === "legend"
-        ? "always"
+      name === "tooltip"
+        ? { show: "always" }
         : name === "showLabelsOnHighlight"
           ? true
           : undefined,
@@ -236,7 +236,7 @@ describe("legendFormatter return contract", () => {
     const el = mountDiv();
     const g = new Zpgraph(el, sampleData, {
       labels: ["x", "A", "B"],
-      legend: "always",
+      tooltip: { show: "always" },
       legendFormatter: () => frag,
     });
     const legend = el.querySelector(".zpgraph-legend")!;
@@ -249,7 +249,7 @@ describe("legendFormatter return contract", () => {
     const el = mountDiv();
     const g = new Zpgraph(el, sampleData, {
       labels: ["x", "A", "B"],
-      legend: "always",
+      tooltip: { show: "always" },
       legendFormatter: () => '<span class="from-app">ok</span>',
     });
     const legend = el.querySelector(".zpgraph-legend")!;

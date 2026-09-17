@@ -12,7 +12,7 @@ describe("ZpgraphOptions rejects unknown keys at compile time", () => {
     const opts = {
       labels: ["x", "A"],
       strokeWidth: 2,
-      legend: "always",
+      tooltip: { show: "always" },
       axes: { y: { valueRange: [0, 10] } },
       series: { A: { color: "#f00" } },
       rangeSelectorAlpha: 0.5,

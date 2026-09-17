@@ -584,27 +584,6 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         description:
           "Whether to hide the legend when the mouse leaves the chart area.",
       },
-      legend: {
-        default: "onmouseover",
-        labels: ["Legend"],
-        type: "string",
-        description:
-          'When to display the legend. By default, it only appears when a user mouses over the chart. Set it to "always" to always display a legend of some sort, "never" to hide it. When set to "follow", legend follows highlighted points.',
-      },
-      legendFollowOffsetX: {
-        default: "50",
-        labels: ["Legend"],
-        type: "integer",
-        description:
-          'Number of pixels to use as horizontal offset from the point for a “floating” legend ("follow" mode). This should be positive (to the right) because the legend flips over to the left side if it’s too wide.',
-      },
-      legendFollowOffsetY: {
-        default: "-50",
-        labels: ["Legend"],
-        type: "integer",
-        description:
-          'Number of pixels to use as vertical offset from the point for a “floating” legend ("follow" mode).',
-      },
       legendFormatter: {
         default: "null",
         labels: ["Legend"],
@@ -1094,7 +1073,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Legend"],
         type: "Object",
         description:
-          "Tooltip hints: theme, position (top-left|top-right|bottom-left|bottom-right), offsetX/offsetY, reserveTop. Fixed legend modes use position; top corners reserve chrome above the plot.",
+          'Tooltip: show (never|onmouseover|always; null/undefined = onmouseover), position (top-left|top-right|bottom-left|bottom-right|follow), offsetX/offsetY, reserveTop, theme. follow floats near the highlighted point; top corners may reserve chrome above the plot.',
       },
       responsive: {
         default: "null",

@@ -68,7 +68,7 @@
 
     const g = new Zpgraph(document.getElementById('chart'), data, {
       labels: ['Date', 'Parabola', 'Sine'],
-      legend: 'always',
+      tooltip: { show: 'always' },
       animatedZooms: true,
       colors: ['#1b6b93', '#c45c26'],
       pointClickCallback: (e, point) => {

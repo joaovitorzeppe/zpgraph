@@ -57,9 +57,6 @@ let DEFAULT_ATTRS = {
   hideOverlayOnMouseOut: true,
   resizable: "no",
 
-  legend: "onmouseover",
-  legendFollowOffsetX: 50,
-  legendFollowOffsetY: -50,
   stepPlot: false,
   xRangePad: 0,
   yRangePad: null,

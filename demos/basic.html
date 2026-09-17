@@ -23,7 +23,7 @@
 
     new Zpgraph(document.getElementById('chart'), makeSeries({ points: 90, series: 2 }), {
       labels: ['Date', 'Alpha', 'Beta'],
-      legend: 'always',
+      tooltip: { show: 'always' },
       title: 'Sample timeseries',
       ylabel: 'Value',
       animatedZooms: true,

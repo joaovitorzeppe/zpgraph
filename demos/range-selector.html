@@ -27,7 +27,7 @@
     new Zpgraph(document.getElementById('chart'), makeCustomBars(90), {
       labels: ['Date', 'New York', 'San Francisco'],
       customBars: true,
-      legend: 'always',
+      tooltip: { show: 'always' },
       title: 'Daily temperatures (custom bars)',
       ylabel: '°F',
       showRangeSelector: true,

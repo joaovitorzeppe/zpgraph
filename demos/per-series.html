@@ -23,7 +23,7 @@
 
     new Zpgraph(document.getElementById('chart'), makeSeries({ points: 70, series: 3, seed: 5 }), {
       labels: ['Date', 'Thick', 'Points', 'Fill'],
-      legend: 'always',
+      tooltip: { show: 'always' },
       colors: ['#1b6b93', '#c45c26', '#2a9d8f'],
       series: {
         Thick: { strokeWidth: 3 },

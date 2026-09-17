@@ -32,7 +32,7 @@
 
     const g = new Zpgraph(document.getElementById('chart'), makeDualAxisData(), {
       labels: ['Date', 'Y1', 'Y2', 'Y3', 'Y4'],
-      legend: 'always',
+      tooltip: { show: 'always' },
       ylabel: 'Primary',
       y2label: 'Secondary',
       colors: ['#1b6b93', '#2a9d8f', '#c45c26', '#e9c46a'],

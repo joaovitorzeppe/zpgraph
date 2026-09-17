@@ -23,7 +23,7 @@
 
     new Zpgraph(document.getElementById('chart'), makeSeries({ points: 100, series: 4, seed: 8 }), {
       labels: ['Date', 'North', 'East', 'South', 'West'],
-      legend: 'always',
+      tooltip: { show: 'always' },
       colors: ['#1b6b93', '#c45c26', '#2a9d8f', '#6d597a'],
       highlightSeriesOpts: {
         strokeWidth: 3,

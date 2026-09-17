@@ -48,7 +48,7 @@
 
     const g = new Zpgraph(document.getElementById('chart'), makeSeries({ points: 90, series: 2 }), {
       labels: ['Date', 'Alpha', 'Beta'],
-      legend: 'always',
+      tooltip: { show: 'always' },
       title: 'Themed timeseries',
       ylabel: 'Value',
       animatedZooms: true,

@@ -24,7 +24,7 @@
     new Zpgraph(document.getElementById('chart'), makeErrorBars(55), {
       labels: ['Date', 'Signal'],
       errorBars: true,
-      legend: 'always',
+      tooltip: { show: 'always' },
       drawPoints: true,
       colors: ['#1b6b93'],
       ylabel: 'Amplitude',

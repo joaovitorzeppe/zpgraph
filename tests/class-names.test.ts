@@ -43,7 +43,7 @@ describe("classNames + CSS class sanitizer", () => {
       labels: ["x", "A", "B"],
       width: 480,
       height: 320,
-      legend: "always",
+      tooltip: { show: "always" },
       classNames: { legend: "rounded-md p-3" },
     });
 

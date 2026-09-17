@@ -49,7 +49,7 @@ import Zpgraph from "zpgraph";
 
 const g = new Zpgraph("chart", data, {
   labels: ["Date", "Alpha", "Beta"],
-  legend: "always",
+  tooltip: { show: "always" },
   animatedZooms: true,
 });
 ```
@@ -137,7 +137,7 @@ import Zpgraph, { type ZpgraphOptions } from "zpgraph";
 
 const opts = {
   labels: ["x", "A"],
-  legend: "always",
+  tooltip: { show: "always" },
   underlayCallback: (ctx, area, g) => {
     // `g` is typed as Zpgraph
     const y = g.toDomYCoord(20);

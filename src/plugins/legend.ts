@@ -87,6 +87,28 @@ type LegendFormatterFn = (
 const ABOVE_PLOT_GAP = 4;
 /** Default top chrome when tooltip.position is top-* (keeps tip off the series). */
 const DEFAULT_TOOLTIP_RESERVE_TOP = 0;
+const DEFAULT_FOLLOW_OFFSET_X = 50;
+const DEFAULT_FOLLOW_OFFSET_Y = -50;
+
+type TooltipShowMode = "never" | "onmouseover" | "always";
+
+type TooltipOptionSource = {
+  getOption(name: string, series?: string): unknown;
+};
+
+const resolveTooltipShow = (g: TooltipOptionSource): TooltipShowMode => {
+  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
+  const show = tip?.show;
+  if (show === "never" || show === "always" || show === "onmouseover") {
+    return show;
+  }
+  return "onmouseover";
+};
+
+const resolveTooltipPosition = (g: TooltipOptionSource): TooltipPosition => {
+  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
+  return tip?.position ?? "top-right";
+};
 
 const isTopTooltip = (position: TooltipPosition) =>
   position === "top-left" || position === "top-right";
@@ -99,7 +121,8 @@ const placeFixedLegend = (g: ZpgraphInstance, div: HTMLElement): void => {
   const area = g.plotter_.area;
   const tip = g.getOption("tooltip") as TooltipOptions | undefined;
   const explicit = tip?.position;
-  const position: TooltipPosition = explicit ?? "top-right";
+  const position: TooltipPosition =
+    explicit && explicit !== "follow" ? explicit : "top-right";
   const ox = tip?.offsetX ?? 0;
   const oy = tip?.offsetY ?? 0;
   const w = div.offsetWidth;
@@ -134,6 +157,38 @@ const placeFixedLegend = (g: ZpgraphInstance, div: HTMLElement): void => {
 
   div.style.left = `${left}px`;
   div.style.top = `${top}px`;
+};
+
+const placeFollowLegend = (
+  g: ZpgraphInstance,
+  div: HTMLElement,
+  points: Point[],
+): void => {
+  if (points.length === 0) return;
+  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
+  const area = g.plotter_.area;
+  const labelsDivWidth = div.offsetWidth;
+  const yAxisLabelWidth = Number(g.getOptionForAxis("axisLabelWidth", "y"));
+  const highlightSeries = g.getHighlightSeries();
+  let point = points[0]!;
+  if (highlightSeries) {
+    point = points.find((p) => p.name === highlightSeries) ?? point;
+  }
+  const followOffsetX = tip?.offsetX ?? DEFAULT_FOLLOW_OFFSET_X;
+  const followOffsetY = tip?.offsetY ?? DEFAULT_FOLLOW_OFFSET_Y;
+  let leftLegend = (point.x ?? 0) * area.w + followOffsetX;
+  const topLegend = (point.y ?? 0) * area.h + followOffsetY;
+
+  if (leftLegend + labelsDivWidth + 1 > area.w) {
+    leftLegend =
+      leftLegend -
+      2 * followOffsetX -
+      labelsDivWidth -
+      (yAxisLabelWidth - area.x);
+  }
+
+  div.style.left = yAxisLabelWidth + leftLegend + "px";
+  div.style.top = topLegend + "px";
 };
 
 const tooltipReserveTop = (g: ZpgraphInstance): number => {
@@ -199,8 +254,8 @@ class Legend {
 
   layout(e: LayoutPluginEvent) {
     const g = e.zpgraph;
-    const legendMode = g.getOption("legend");
-    if (legendMode === "never" || legendMode === "follow") return;
+    if (resolveTooltipShow(g) === "never") return;
+    if (resolveTooltipPosition(g) === "follow") return;
     const px = tooltipReserveTop(g);
     if (px > 0) e.reserveSpaceTop(px);
   }
@@ -213,8 +268,8 @@ class Legend {
     let points = e.selectedPoints;
     let row = e.selectedRow;
 
-    let legendMode = e.zpgraph.getOption("legend");
-    if (legendMode === "never") {
+    const show = resolveTooltipShow(e.zpgraph);
+    if (show === "never") {
       div.style.display = "none";
       return;
     }
@@ -235,46 +290,10 @@ class Legend {
     // must be done now so offsetWidth isn’t 0…
     div.style.display = "";
 
-    if (legendMode === "follow") {
-      if (!points || points.length === 0) return;
-      // create floating legend div
-      const area = e.zpgraph.plotter_.area;
-      const labelsDivWidth = div.offsetWidth;
-      const yAxisLabelWidth = Number(
-        e.zpgraph.getOptionForAxis("axisLabelWidth", "y"),
-      );
-      // find the closest data point by checking the currently highlighted series,
-      // or fall back to using the first data point available
-      const highlightSeries = e.zpgraph.getHighlightSeries();
-      let point = points[0]!;
-      if (highlightSeries) {
-        point = points.find((p) => p.name === highlightSeries) ?? point;
-      }
-      // determine floating [left, top] coordinates of the legend div
-      // within the plotter_ area
-      // offset 50 px to the right and down from the first selection point
-      // 50 px is guess based on mouse cursor size
-      const followOffsetX = e.zpgraph.getNumericOption("legendFollowOffsetX");
-      const followOffsetY = e.zpgraph.getNumericOption("legendFollowOffsetY");
-      let leftLegend = (point.x ?? 0) * area.w + followOffsetX;
-      const topLegend = (point.y ?? 0) * area.h + followOffsetY;
-
-      // if legend floats to end of the chart area, it flips to the other
-      // side of the selection point
-      if (leftLegend + labelsDivWidth + 1 > area.w) {
-        leftLegend =
-          leftLegend -
-          2 * followOffsetX -
-          labelsDivWidth -
-          (yAxisLabelWidth - area.x);
-      }
-
-      div.style.left = yAxisLabelWidth + leftLegend + "px";
-      div.style.top = topLegend + "px";
-    } else if (
-      (legendMode === "onmouseover" || legendMode === "always") &&
-      this.is_generated_div_
-    ) {
+    const position = resolveTooltipPosition(e.zpgraph);
+    if (position === "follow") {
+      placeFollowLegend(e.zpgraph, div, points ?? []);
+    } else if (this.is_generated_div_) {
       placeFixedLegend(e.zpgraph, div);
     }
   }
@@ -283,8 +302,7 @@ class Legend {
     const div = this.legend_div_;
     if (!div) return;
 
-    let legendMode = e.zpgraph.getOption("legend");
-    if (legendMode !== "always") {
+    if (resolveTooltipShow(e.zpgraph) !== "always") {
       // Building the rows would only fill a div nobody can see, and the next
       // select rebuilds them anyway. This runs after every draw, so on a drag it
       // is once per frame.
@@ -452,7 +470,7 @@ class Legend {
     const sepLines = g.getOption("labelsSeparateLines");
 
     if (typeof data.x === "undefined") {
-      if (g.getOption("legend") !== "always") {
+      if (resolveTooltipShow(g) !== "always") {
         return fragment;
       }
 

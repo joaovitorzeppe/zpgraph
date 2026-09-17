@@ -1096,7 +1096,6 @@ const pixelSafeOptions: Record<string, boolean> = {
   labelsKMG2: true,
   labelsSeparateLines: true,
   labelsShowZeroValues: true,
-  legend: true,
   panEdgeFraction: true,
   pixelsPerYLabel: true,
   pointClickCallback: true,
