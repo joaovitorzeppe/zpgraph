@@ -61,7 +61,7 @@ class chart_labels {
     let g = e.zpgraph;
     let div = e.chart_div;
     if (g.getOption("title")) {
-      // QUESTION: should this return an absolutely-positioned div instead?
+      // reserveSpace* returns a PlotArea; createDivInRect wraps it as absolute DOM.
       let title_rect = e.reserveSpaceTop(g.getNumericOption("titleHeight"));
       this.title_div_ = createDivInRect(title_rect);
       this.title_div_.style.fontSize =
@@ -155,8 +155,8 @@ class chart_labels {
   }
 }
 
-// QUESTION: should there be a plugin-utils.js?
-let createDivInRect = function (r: PlotArea) {
+// Local helpers — only chart-labels needs these; no shared plugin-utils yet.
+const createDivInRect = (r: PlotArea) => {
   let div = document.createElement("div");
   div.style.position = "absolute";
   div.style.left = r.x + "px";
@@ -166,15 +166,13 @@ let createDivInRect = function (r: PlotArea) {
   return div;
 };
 
-// Detach and null out any existing nodes.
-
-let createRotatedDiv = function (
+const createRotatedDiv = (
   g: ZpgraphInstance,
   box: PlotArea,
   axis: 1 | 2,
   classes: string,
   text: string,
-) {
+) => {
   let div = document.createElement("div");
   div.style.position = "absolute";
   if (axis === 1) {

@@ -7,6 +7,34 @@
   <title>Annotations · Zpgraph</title>
   <link rel="stylesheet" href="../dist/style.css" />
   <link rel="stylesheet" href="common.css" />
+  <style>
+    /* Round text marker: overrides default border via higher specificity */
+    .zpgraph-annotation.ann-round {
+      border: none;
+      border-radius: 50%;
+      background: #c45c26;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    /* Round PNG icon, no chrome */
+    .zpgraph-annotation.ann-icon-round {
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .zpgraph-annotation.ann-icon-round img,
+    .zpgraph-annotation.ann-icon-round .zpgraph-annotation-icon {
+      display: block;
+      border-radius: 50%;
+    }
+  </style>
   <script type="importmap">
       { "imports": { "zpgraph": "../dist/index.js" } }
     </script>
@@ -15,7 +43,10 @@
 <body>
   <nav class="crumb"><a href="index.html">← Demos</a></nav>
   <h1>Annotations</h1>
-  <p class="lede">Markers attached to series points. Click a point to add one.</p>
+  <p class="lede">
+    Markers on series points: default text, PNG icon (round), SVG icon, and a
+    custom round text style via <code>cssClass</code>. Click a point to add more.
+  </p>
   <div id="chart" class="chart"></div>
   <p class="note" id="log"></p>
   <script type="module">
@@ -24,6 +55,16 @@
 
     const data = makeSeries({ points: 40, series: 2, seed: 3 });
     const start = utcDay(2024, 0, 1);
+
+    // Inline SVG as data URI (also accepted by SAFE_ICON_URL).
+    const svgIcon =
+      'data:image/svg+xml,' +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="8" fill="#1b6b93"/>
+          <path d="M7 10.5l2 2 4-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`,
+      );
 
     const g = new Zpgraph(document.getElementById('chart'), data, {
       labels: ['Date', 'Parabola', 'Sine'],
@@ -47,16 +88,44 @@
     g.setAnnotations([
       {
         series: 'Parabola',
-        x: start + 10 * dayMs,
+        x: start + 6 * dayMs,
         shortText: 'A',
-        text: 'Early peak',
+        text: 'Default text annotation (bordered box)',
+      },
+      {
+        series: 'Parabola',
+        x: start + 14 * dayMs,
+        icon: './assets/pin.png',
+        width: 18,
+        height: 18,
+        cssClass: 'ann-icon-round',
+        text: 'PNG icon — round, no border',
       },
       {
         series: 'Sine',
-        x: start + 25 * dayMs,
-        shortText: 'B',
-        text: 'Mid trough',
+        x: start + 20 * dayMs,
+        icon: svgIcon,
+        width: 20,
+        height: 20,
+        text: 'SVG icon via data:image/svg+xml',
+      },
+      {
+        series: 'Sine',
+        x: start + 28 * dayMs,
+        icon: './assets/flag.svg',
+        width: 20,
+        height: 20,
+        text: 'SVG icon from file path',
         attachAtBottom: true,
+      },
+      {
+        series: 'Parabola',
+        x: start + 32 * dayMs,
+        shortText: 'R',
+        width: 22,
+        height: 22,
+        cssClass: 'ann-round',
+        text: 'Custom cssClass — round, no border',
       },
     ]);
   </script>

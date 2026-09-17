@@ -20,7 +20,12 @@ import { predraw, renderGraph } from "./render";
 import { applyTheme } from "./themes";
 import { applyRootClassNames } from "./class-names";
 import * as utils from "./utils";
-import type { DataHandlerLike, PluginRegistration } from "./internal-types";
+import type {
+  DataHandlerLike,
+  PluginEventBase,
+  PluginRegistration,
+  ZpgraphInstance,
+} from "./internal-types";
 import type Zpgraph from "./zpgraph";
 import type {
   Data,
@@ -30,6 +35,31 @@ import type {
   ZpgraphElement,
   ZpgraphOptions,
 } from "./types";
+
+/** Shared prototype for cascade events — avoids per-call method closures. */
+class PluginCascadeEvent implements PluginEventBase {
+  zpgraph: ZpgraphInstance;
+  cancelable = false;
+  defaultPrevented = false;
+  propagationStopped = false;
+
+  constructor(g: Zpgraph, extra_props?: Record<string, unknown>) {
+    // ZpgraphInstance lags a few return types vs the class; cast until aligned.
+    this.zpgraph = g as unknown as ZpgraphInstance;
+    if (extra_props) Object.assign(this, extra_props);
+  }
+
+  preventDefault() {
+    if (!this.cancelable) {
+      throw new Error("Cannot call preventDefault on non-cancelable event.");
+    }
+    this.defaultPrevented = true;
+  }
+
+  stopPropagation() {
+    this.propagationStopped = true;
+  }
+}
 
 type ZpgraphCtor = typeof import("./zpgraph").default;
 
@@ -459,22 +489,7 @@ export const cascadeEvents_ = (
 ): boolean => {
   if (!(name in g.eventListeners_)) return false;
 
-  // QUESTION: can we use objects & prototypes to speed this up?
-  let e = {
-    zpgraph: g,
-    cancelable: false,
-    defaultPrevented: false,
-    preventDefault: function () {
-      if (!e.cancelable)
-        throw new Error("Cannot call preventDefault on non-cancelable event.");
-      e.defaultPrevented = true;
-    },
-    propagationStopped: false,
-    stopPropagation: function () {
-      e.propagationStopped = true;
-    },
-  };
-  utils.update(e, extra_props);
+  const e = new PluginCascadeEvent(g, extra_props);
 
   let callback_plugin_pairs = g.eventListeners_[name];
   if (callback_plugin_pairs) {

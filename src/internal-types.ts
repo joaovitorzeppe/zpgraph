@@ -236,7 +236,7 @@ export interface ZpgraphInstance {
   xAxisRange(): [number, number];
   xAxisExtremes(): [number, number];
   yAxisRange(idx?: number): [number, number] | null;
-  yAxisRanges(): Array<[number, number]>;
+  yAxisRanges(): Array<[number, number] | null>;
   yAxisExtremes(): Array<[number, number]>;
   toDomCoords(x: number, y: number, axis?: number): [number, number];
   toDomXCoord(x: number | null | undefined): number | null;

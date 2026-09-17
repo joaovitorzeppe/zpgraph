@@ -124,7 +124,7 @@ class annotations {
       let className = "zpgraph-annotation";
       if (!hasIcon) {
         // camelCase class names are deprecated.
-        className += " zpgraph-default-annotation zpgraph-default-annotation";
+        className += " zpgraph-default-annotation";
       }
       className = withClassNames(className, getChartClassNames(g).annotation);
       if (Object.hasOwn(a, "cssClass")) {
@@ -137,9 +137,11 @@ class annotations {
       let height = Object.hasOwn(a, "height") ? (a.height ?? 16) : 16;
       if (hasIcon) {
         let img = document.createElement("img");
+        img.className = "zpgraph-annotation-icon";
         img.src = a.icon ?? "";
         img.width = width;
         img.height = height;
+        img.alt = a.shortText ?? a.text ?? "";
         div.appendChild(img);
       } else if (Object.hasOwn(p.annotation, "shortText")) {
         div.appendChild(document.createTextNode(p.annotation.shortText ?? ""));
