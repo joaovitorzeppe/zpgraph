@@ -1,6 +1,6 @@
 {
   "name": "zpgraph",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Fast, flexible TypeScript charting library — spiritual successor to dygraphs",
   "keywords": [
     "canvas",
@@ -49,8 +49,7 @@
     "LICENSE",
     "NOTICE",
     "README.md",
-    "CHANGES.md",
-    "demos/screenshots"
+    "CHANGES.md"
   ],
   "scripts": {
     "build": "node scripts/copy-css.mjs && tsup && tsc -p tsconfig.build.json",
