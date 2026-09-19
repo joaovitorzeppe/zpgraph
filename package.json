@@ -1,6 +1,6 @@
 {
   "name": "zpgraph",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Fast, flexible TypeScript charting library — spiritual successor to dygraphs",
   "keywords": [
     "canvas",
@@ -24,10 +24,9 @@
   },
   "type": "module",
   "sideEffects": [
-    "**/*.css",
-    "./dist/zpgraph.min.global.js"
+    "**/*.css"
   ],
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "style": "./dist/style.css",
@@ -35,13 +34,13 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "default": "./dist/index.js"
     },
     "./style.css": "./dist/style.css",
     "./extras/*": {
       "types": "./dist/extras/*.d.ts",
       "import": "./dist/extras/*.js",
-      "require": "./dist/extras/*.cjs"
+      "default": "./dist/extras/*.js"
     },
     "./package.json": "./package.json"
   },
