@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/basic.png" alt="Basic timeseries demo" width="920" />
+  <img src="https://cdn.jsdelivr.net/gh/joaovitorzeppe/zpgraph@main/demos/screenshots/basic.png" alt="Basic timeseries demo" width="920" />
 </p>
 
 ---
@@ -57,7 +57,17 @@ const g = new Zpgraph("chart", data, {
 });
 ```
 
-Vanilla HTML (no bundler, no framework):
+Vanilla HTML (no bundler). jsDelivr serves the npm ESM (`+esm`); no IIFE, no photos in the tarball:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/zpgraph@1.2.1/dist/style.css" />
+<script type="module">
+  import Zpgraph from "https://cdn.jsdelivr.net/npm/zpgraph@1.2.1/+esm";
+  new Zpgraph("chart", data, { labels: ["Date", "Alpha"] });
+</script>
+```
+
+Local `node_modules` (same ESM, import map):
 
 ```html
 <script type="importmap">
@@ -78,28 +88,28 @@ Screenshots from the live demos. Open [`demos/`](https://github.com/joaovitorzep
 <table>
   <tr>
     <td width="50%">
-      <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/two-axes.png" alt="Two y-axes" />
+      <img src="https://cdn.jsdelivr.net/gh/joaovitorzeppe/zpgraph@main/demos/screenshots/two-axes.png" alt="Two y-axes" />
       <p><b>Two y-axes</b> — independent scales for mixed magnitudes.</p>
     </td>
     <td width="50%">
-      <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/range-selector.png" alt="Range selector" />
+      <img src="https://cdn.jsdelivr.net/gh/joaovitorzeppe/zpgraph@main/demos/screenshots/range-selector.png" alt="Range selector" />
       <p><b>Range selector</b> — minimap + custom high/low bars.</p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/stacked-fill.png" alt="Stacked fill" />
+      <img src="https://cdn.jsdelivr.net/gh/joaovitorzeppe/zpgraph@main/demos/screenshots/stacked-fill.png" alt="Stacked fill" />
       <p><b>Stacked fill</b> — area stacks with fill under the curve.</p>
     </td>
     <td width="50%">
-      <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/underlay.png" alt="Underlay bands" />
+      <img src="https://cdn.jsdelivr.net/gh/joaovitorzeppe/zpgraph@main/demos/screenshots/underlay.png" alt="Underlay bands" />
       <p><b>Underlay</b> — paint bands behind series with <code>underlayCallback</code>.</p>
     </td>
   </tr>
 </table>
 
 <p align="center">
-  <img src="https://unpkg.com/zpgraph@0.1.0/demos/screenshots/synchronize.png" alt="Synchronized charts" width="920" />
+  <img src="https://cdn.jsdelivr.net/gh/joaovitorzeppe/zpgraph@main/demos/screenshots/synchronize.png" alt="Synchronized charts" width="920" />
   <br />
   <b>Synchronize</b> — linked zoom and selection across charts
   (<code>zpgraph/extras/synchronizer</code>).
