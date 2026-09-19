@@ -57,17 +57,20 @@ const g = new Zpgraph("chart", data, {
 });
 ```
 
-Vanilla HTML (no bundler). jsDelivr serves the npm ESM (`+esm`); no IIFE, no photos in the tarball:
+Vanilla HTML (no bundler). jsDelivr serves the npm ESM (`+esm`);
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/zpgraph@1.2.1/dist/style.css" />
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/zpgraph@1.2.1/dist/style.css"
+/>
 <script type="module">
   import Zpgraph from "https://cdn.jsdelivr.net/npm/zpgraph@1.2.1/+esm";
   new Zpgraph("chart", data, { labels: ["Date", "Alpha"] });
 </script>
 ```
 
-Local `node_modules` (same ESM, import map):
+Local `node_modules`
 
 ```html
 <script type="importmap">
@@ -149,15 +152,15 @@ new Zpgraph(el, data, opts);
 
 ## Features at a glance
 
-| Area          | What you get                                                        |
-| ------------- | ------------------------------------------------------------------- |
-| Data          | Arrays, CSV strings, async `file` via `fetch`, custom data handlers |
-| Series        | Multi-series, stacked, fill, error/custom bars, per-series styles   |
-| Axes          | Dual y-axes, log scales, tickers, formatters                        |
-| Interaction   | Zoom, pan, range selector, touch, keyboard, synchronized charts     |
-| Overlay       | Annotations, underlay/draw callbacks, hairlines / super-annotations |
+| Area          | What you get                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Data          | Arrays, CSV strings, async `file` via `fetch`, custom data handlers                                                 |
+| Series        | Multi-series, stacked, fill, error/custom bars, per-series styles                                                   |
+| Axes          | Dual y-axes, log scales, tickers, formatters                                                                        |
+| Interaction   | Zoom, pan, range selector, touch, keyboard, synchronized charts                                                     |
+| Overlay       | Annotations, underlay/draw callbacks, hairlines / super-annotations                                                 |
 | Accessibility | `role="img"`, live legend, focusable chart, Shift+arrows pan/zoom; optional `keyboard` extra for plain arrows / +/- |
-| Packaging     | ESM, tree-shakeable extras, injectable `setLogger`                  |
+| Packaging     | ESM, tree-shakeable extras, injectable `setLogger`                                                                  |
 
 ---
 
@@ -170,25 +173,25 @@ new Zpgraph(el, data, opts);
 
 ### Extras (`zpgraph/extras/<name>`)
 
-| Extra | Role |
-| --- | --- |
-| `crosshair` | Crosshair on selection |
-| `hairlines` | Clickable vertical markers |
-| `super-annotations` | Draggable annotation cards |
-| `synchronizer` | Linked zoom/selection |
-| `unzoom` | Hover reset button |
-| `rebase` | Percent change from first point |
-| `shapes` | Extra point markers |
-| `smooth-plotter` | Bezier series |
-| `locale` | Locale packs pt/en/es + `applyLocale` |
-| `zoom-limits` | Min/max x-span + clamp to data |
-| `measure` | Two-click Δx/Δy ruler |
-| `keyboard` | Arrows pan / +/- zoom / Esc (focus chart; zoom first to pan) |
-| `brush-select` | Drag range → callback |
-| `url-sync` | `dateWindow` ↔ URL params |
-| `moving-average` | Overlay MA plotter |
-| `fill-between` | Fill band between two series |
-| `span-bands` | X-axis status strips + canvas labels |
+| Extra               | Role                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| `crosshair`         | Crosshair on selection                                       |
+| `hairlines`         | Clickable vertical markers                                   |
+| `super-annotations` | Draggable annotation cards                                   |
+| `synchronizer`      | Linked zoom/selection                                        |
+| `unzoom`            | Hover reset button                                           |
+| `rebase`            | Percent change from first point                              |
+| `shapes`            | Extra point markers                                          |
+| `smooth-plotter`    | Bezier series                                                |
+| `locale`            | Locale packs pt/en/es + `applyLocale`                        |
+| `zoom-limits`       | Min/max x-span + clamp to data                               |
+| `measure`           | Two-click Δx/Δy ruler                                        |
+| `keyboard`          | Arrows pan / +/- zoom / Esc (focus chart; zoom first to pan) |
+| `brush-select`      | Drag range → callback                                        |
+| `url-sync`          | `dateWindow` ↔ URL params                                    |
+| `moving-average`    | Overlay MA plotter                                           |
+| `fill-between`      | Fill band between two series                                 |
+| `span-bands`        | X-axis status strips + canvas labels                         |
 
 `utils` is a documented subset (stroke patterns, shapes, default formatters).
 Internals such as `toRGB_` are not part of the public surface.
@@ -203,16 +206,16 @@ CSS and mental models stay stable.
 Override on `.zpgraph` (or a parent). Canvas paint (series, grid, axis lines)
 stays on options / `theme` — not CSS vars.
 
-| Group | Tokens |
-| --- | --- |
-| Legend / tooltip | `--zp-legend-bg`, `-fg`, `-shadow`, `-padding`, `-radius`, `-font-size` |
-| Axis ticks | `--zp-axis-label`, `-font-size`, `-opacity`, `-y-padding-end` |
-| Title / chart labels | `--zp-title-fg`, `-font-weight`, `--zp-chart-label-fg`, `-opacity` |
-| Annotations | `--zp-annotation-bg`, `-border`, `-fg`, `-padding`, `-font-size` |
-| Status (noData / loading) | `--zp-status-fg`, `-bg`, `-font-size` |
-| Toolbar | `--zp-toolbar-*`, `--zp-toolbar-btn-*` |
-| Focus | `--zp-focus-ring` |
-| Threshold / span / measure | `--zp-threshold-*`, `--zp-span-band-label-*`, `--zp-measure-label-*` |
+| Group                      | Tokens                                                                  |
+| -------------------------- | ----------------------------------------------------------------------- |
+| Legend / tooltip           | `--zp-legend-bg`, `-fg`, `-shadow`, `-padding`, `-radius`, `-font-size` |
+| Axis ticks                 | `--zp-axis-label`, `-font-size`, `-opacity`, `-y-padding-end`           |
+| Title / chart labels       | `--zp-title-fg`, `-font-weight`, `--zp-chart-label-fg`, `-opacity`      |
+| Annotations                | `--zp-annotation-bg`, `-border`, `-fg`, `-padding`, `-font-size`        |
+| Status (noData / loading)  | `--zp-status-fg`, `-bg`, `-font-size`                                   |
+| Toolbar                    | `--zp-toolbar-*`, `--zp-toolbar-btn-*`                                  |
+| Focus                      | `--zp-focus-ring`                                                       |
+| Threshold / span / measure | `--zp-threshold-*`, `--zp-span-band-label-*`, `--zp-measure-label-*`    |
 
 Dark preset: `theme: "dark"` or `[data-theme="dark"]` on an ancestor.
 Example: [`demos/theme-custom.html`](demos/theme-custom.html).
