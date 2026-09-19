@@ -3,7 +3,7 @@
 <p align="center">
   <strong>Fast, typed, interactive timeseries charts for the modern web.</strong><br />
   Spiritual successor to <a href="https://github.com/danvk/dygraphs">dygraphs</a> —
-  same DNA, TypeScript core, ESM/CJS/IIFE builds.
+  same DNA, TypeScript core, ESM builds.
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@ zpgraph keeps that interaction model and rebuilds the stack for today:
 
 - **TypeScript end-to-end** — `ZpgraphOptions`, `Point`, plugins and callbacks are
   typed. A typo in an option name is a compile error, not a silent noop.
-- **Modern package surface** — ESM + CJS + browser IIFE,
+- **Modern package surface** — ESM only,
   optional extras under `zpgraph/extras/*`.
 - **Interaction that scales** — drag-zoom, pan, animated zooms, range selector,
   keyboard selection, Shift+arrows for pan/zoom.
@@ -57,10 +57,16 @@ const g = new Zpgraph("chart", data, {
 });
 ```
 
-Browser IIFE:
+Vanilla HTML (no bundler, no framework):
 
 ```html
-<script src="node_modules/zpgraph/dist/zpgraph.min.global.js"></script>
+<script type="importmap">
+  { "imports": { "zpgraph": "./node_modules/zpgraph/dist/index.js" } }
+</script>
+<script type="module">
+  import Zpgraph from "zpgraph";
+  new Zpgraph("chart", data, { labels: ["Date", "Alpha"] });
+</script>
 ```
 
 ---
@@ -141,7 +147,7 @@ new Zpgraph(el, data, opts);
 | Interaction   | Zoom, pan, range selector, touch, keyboard, synchronized charts     |
 | Overlay       | Annotations, underlay/draw callbacks, hairlines / super-annotations |
 | Accessibility | `role="img"`, live legend, focusable chart, Shift+arrows pan/zoom; optional `keyboard` extra for plain arrows / +/- |
-| Packaging     | ESM / CJS / IIFE, tree-shakeable extras, injectable `setLogger`     |
+| Packaging     | ESM, tree-shakeable extras, injectable `setLogger`                  |
 
 ---
 

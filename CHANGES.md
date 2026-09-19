@@ -1,5 +1,11 @@
 # Changes
 
+## 1.2.0
+
+- ESM-only package (dropped CJS and IIFE builds)
+- Browser without bundler: `<script type="module">` + import map
+- `require('zpgraph')` and `<script src="…/zpgraph.min.global.js">` no longer ship
+
 ## 1.1.0
 
 - New Extras
