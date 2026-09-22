@@ -1,6 +1,6 @@
 {
   "name": "zpgraph",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Fast, flexible TypeScript charting library — spiritual successor to dygraphs",
   "keywords": [
     "canvas",
@@ -52,8 +52,9 @@
     "CHANGES.md"
   ],
   "scripts": {
-    "build": "node scripts/copy-css.mjs && tsdown && tsc -p tsconfig.build.json",
+    "build": "node scripts/copy-css.mjs && tsdown && node scripts/copy-css.mjs && tsc -p tsconfig.build.json && node scripts/fix-dts-extensions.mjs",
     "smoke": "node scripts/smoke-node.mjs",
+    "check:pkg": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./style.css",
     "typecheck": "node scripts/copy-css.mjs && tsc -p tsconfig.json --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -61,13 +62,15 @@
     "test:coverage": "node scripts/copy-css.mjs && vitest run --coverage",
     "test:watch": "vitest",
     "dev": "vitest",
-    "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build && npm run smoke"
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build && npm run check:pkg && npm run smoke"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@types/node": "^26.6.1",
     "@vitest/coverage-v8": "^5.0.1",
     "jsdom": "^30.0.1",
     "oxlint": "^1.83.0",
+    "publint": "^0.3.24",
     "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",

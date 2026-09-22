@@ -1,5 +1,12 @@
 # Changes
 
+## 1.2.2
+
+- Build with `tsdown` instead of `tsup`
+- Package checks: `publint` + `attw` (`npm run check:pkg`)
+- Emit `.d.ts` with `.js` relative import extensions (Node16 ESM)
+- Keep `style.css` in `dist` after clean (copy CSS after bundle)
+
 ## 1.2.1
 
 - Browser without bundler: `<script type="module">` + import map or jsDelivr `+esm`
