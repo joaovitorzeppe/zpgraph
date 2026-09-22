@@ -5,15 +5,16 @@ import shapes from "../src/extras/shapes";
 import smoothPlotter from "../src/extras/smooth-plotter";
 import { synchronize } from "../src/extras/synchronizer";
 import Unzoom from "../src/extras/unzoom";
+import type { ZpgraphOptions } from "../src/types";
 import { mockCanvas, mountDiv, recordingCanvas, sampleData } from "./helpers";
 
-const makeChart = (opts: Record<string, unknown> = {}) =>
+const makeChart = (opts: Partial<ZpgraphOptions> = {}) =>
   new Zpgraph(mountDiv(), sampleData, {
     labels: ["x", "A", "B"],
     width: 480,
     height: 320,
     ...opts,
-  }) as unknown as Record<string, any>;
+  });
 
 describe("shapes extra", () => {
   beforeEach(() => {
@@ -37,16 +38,16 @@ describe("shapes extra", () => {
       fillStyle: "",
     };
 
-    Zpgraph.Circles.CIRCLE!(
+    Reflect.apply(Zpgraph.Circles.CIRCLE!, undefined, [
       null,
       "A",
-      ctx as unknown as CanvasRenderingContext2D,
+      ctx,
       50,
       60,
       "#f00",
       4,
       0,
-    );
+    ]);
 
     expect(ctx.beginPath).toHaveBeenCalled();
     expect(ctx.arc).toHaveBeenCalledWith(50, 60, 4, 0, 2 * Math.PI, false);
@@ -67,16 +68,16 @@ describe("shapes extra", () => {
       fillStyle: "",
     };
 
-    Zpgraph.Circles.SQUARE!(
+    Reflect.apply(Zpgraph.Circles.SQUARE!, undefined, [
       null,
       "B",
-      ctx as unknown as CanvasRenderingContext2D,
+      ctx,
       30,
       40,
       "#0f0",
       6,
       0,
-    );
+    ]);
 
     expect(ctx.beginPath).toHaveBeenCalled();
     expect(ctx.moveTo).toHaveBeenCalled();
@@ -88,8 +89,7 @@ describe("shapes extra", () => {
   it("draws custom shapes through drawPointCallback on a chart", () => {
     mockCanvas();
     const drawPointCallback = vi.fn((...args: unknown[]) => {
-      const shape = Zpgraph.Circles.CIRCLE!;
-      shape(...(args as Parameters<typeof shape>));
+      Reflect.apply(Zpgraph.Circles.CIRCLE!, undefined, args);
     });
 
     const g = makeChart({
@@ -108,7 +108,7 @@ describe("smooth-plotter extra", () => {
   });
 
   it("exports the plotter on Zpgraph.smoothPlotter", () => {
-    expect(smoothPlotter).toBe((Zpgraph as any).smoothPlotter);
+    expect(smoothPlotter).toBe(Reflect.get(Zpgraph, "smoothPlotter"));
     expect(typeof smoothPlotter).toBe("function");
     expect(smoothPlotter.smoothing).toBe(1 / 3);
   });
@@ -145,7 +145,7 @@ describe("synchronizer extra", () => {
   it("syncs selection between charts via highlightCallback", () => {
     const g1 = makeChart();
     const g2 = makeChart();
-    const sync = (synchronize as any)(g1, g2, { zoom: false, selection: true });
+    const sync = synchronize(g1, g2, { zoom: false, selection: true });
 
     g1.setSelection(1, undefined, undefined, true);
 
@@ -160,7 +160,7 @@ describe("synchronizer extra", () => {
   it("syncs zoom between charts", () => {
     const g1 = makeChart();
     const g2 = makeChart();
-    const sync = (synchronize as any)(g1, g2, { zoom: true, selection: false });
+    const sync = synchronize(g1, g2, { zoom: true, selection: false });
 
     g1.updateOptions({ dateWindow: [2, 3] });
 
@@ -174,7 +174,7 @@ describe("synchronizer extra", () => {
   it("accepts an array of charts and detaches cleanly", () => {
     const g1 = makeChart();
     const g2 = makeChart();
-    const sync = (synchronize as any)([g1, g2], {
+    const sync = synchronize([g1, g2], {
       selection: false,
       zoom: true,
     });
@@ -233,14 +233,18 @@ describe("unzoom extra", () => {
     const button = g.graphDiv.querySelector("button");
     expect(button).not.toBe(null);
     expect(button!.textContent).toBe("Reset Zoom");
-    expect((button as HTMLButtonElement).style.display).toBe("none");
+    expect(
+      button instanceof HTMLButtonElement ? button.style.display : "",
+    ).toBe("none");
 
     g.updateOptions({ dateWindow: [2, 3] });
     expect(g.isZoomed()).toBe(true);
 
     g.graphDiv.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
 
-    expect((button as HTMLButtonElement).style.display).not.toBe("none");
+    expect(
+      button instanceof HTMLButtonElement ? button.style.display : "none",
+    ).not.toBe("none");
 
     button!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
@@ -249,7 +253,7 @@ describe("unzoom extra", () => {
 
     expect(document.body.contains(button)).toBe(true);
     g.destroy();
-    expect(document.body.contains(button!)).toBe(false);
+    expect(document.body.contains(button)).toBe(false);
   });
 
   it("hides the button on mouseout", () => {
@@ -257,7 +261,10 @@ describe("unzoom extra", () => {
     const g = makeChart({ plugins: [plugin] });
 
     g.updateOptions({ dateWindow: [2, 3] });
-    const button = g.graphDiv.querySelector("button") as HTMLButtonElement;
+    const button = g.graphDiv.querySelector("button");
+    if (!(button instanceof HTMLButtonElement)) {
+      throw new Error("expected reset button");
+    }
 
     g.graphDiv.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
     expect(button.style.display).not.toBe("none");

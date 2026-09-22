@@ -10,12 +10,7 @@ import type { InteractionContext, InteractionModel } from "../types";
 import type ZpgraphClass from "../zpgraph";
 import * as utils from "../utils";
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { BrushSelect?: typeof BrushSelect };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 export type BrushSelectResult = {
   xRange: [number, number];
@@ -30,6 +25,9 @@ export type BrushSelectOptions = {
   captureY?: boolean;
   fillStyle?: string;
 };
+
+const isInteractionModel = (v: unknown): v is InteractionModel =>
+  typeof v === "object" && v !== null;
 
 /**
  * Opt-in brush tool: when active, drag selects a range and fires onSelect
@@ -56,7 +54,7 @@ class BrushSelect {
   }
 
   activate(g: ZpgraphClass) {
-    this.g_ = g as unknown as ZpgraphInstance;
+    this.g_ = g;
     if (this.active_) {
       this.install_();
     }
@@ -85,7 +83,8 @@ class BrushSelect {
   install_() {
     const g = this.g_!;
     if (this.savedModel_ === undefined) {
-      this.savedModel_ = g.getOption("interactionModel") as InteractionModel;
+      const model = g.getOption("interactionModel");
+      this.savedModel_ = isInteractionModel(model) ? model : null;
     }
     this.brushModel_ = this.buildModel_();
     g.updateOptions({ interactionModel: this.brushModel_ }, true);
@@ -104,65 +103,61 @@ class BrushSelect {
     return {
       mousedown: (
         event: MouseEvent,
-        g: unknown,
+        g: ZpgraphInstance,
         context: InteractionContext,
       ) => {
-        const chart = g as ZpgraphInstance;
         if (event.button && event.button === 2) {
           return;
         }
         context.initializeMouseDown(event, g, context);
-        const drag = context as InteractionContext & {
-          isZooming?: boolean;
-          dragStartX?: number;
-          dragStartY?: number;
-          dragEndX?: number;
-          dragEndY?: number;
-        };
-        drag.isZooming = true;
+        context.isZooming = true;
 
-        const mousemove = utils.coalesceFrames(((moveEvent: MouseEvent) => {
-          drag.dragEndX = utils.dragGetX_(moveEvent, context);
-          drag.dragEndY = utils.dragGetY_(moveEvent, context);
-          const ctx = chart.canvas_ctx_;
-          ctx.clearRect(0, 0, chart.width_, chart.height_);
-          const x0 = Math.min(drag.dragStartX!, drag.dragEndX!);
-          const x1 = Math.max(drag.dragStartX!, drag.dragEndX!);
-          const area = chart.layout_.getPlotArea();
+        const mousemove = utils.coalesceFrames((moveEvent: MouseEvent) => {
+          context.dragEndX = utils.dragGetX_(moveEvent, context);
+          context.dragEndY = utils.dragGetY_(moveEvent, context);
+          const ctx = g.canvas_ctx_;
+          ctx.clearRect(0, 0, g.width_, g.height_);
+          const x0 = Math.min(context.dragStartX!, context.dragEndX);
+          const x1 = Math.max(context.dragStartX!, context.dragEndX);
+          const area = g.layout_.getPlotArea();
           let y0 = area.y;
           let h = area.h;
           if (this.captureY_) {
-            y0 = Math.min(drag.dragStartY!, drag.dragEndY!);
-            h = Math.abs(drag.dragEndY! - drag.dragStartY!);
+            y0 = Math.min(context.dragStartY!, context.dragEndY);
+            h = Math.abs(context.dragEndY - context.dragStartY!);
           }
           ctx.fillStyle = this.fillStyle_;
           ctx.fillRect(x0, y0, x1 - x0, h);
-        }) as (...args: unknown[]) => void);
+        });
 
-        const mouseup = (upEvent: MouseEvent) => {
+        const mouseup: EventListener = (rawUp) => {
+          if (!(rawUp instanceof MouseEvent)) {
+            return;
+          }
+          const upEvent = rawUp;
           mousemove.flush();
-          utils.removeEvent(document, "mousemove", mousemove as EventListener);
-          utils.removeEvent(document, "mouseup", mouseup as EventListener);
-          drag.dragEndX = utils.dragGetX_(upEvent, context);
-          drag.dragEndY = utils.dragGetY_(upEvent, context);
-          chart.canvas_ctx_.clearRect(0, 0, chart.width_, chart.height_);
+          utils.removeEvent(document, "mousemove", mousemove);
+          utils.removeEvent(document, "mouseup", mouseup);
+          context.dragEndX = utils.dragGetX_(upEvent, context);
+          context.dragEndY = utils.dragGetY_(upEvent, context);
+          g.canvas_ctx_.clearRect(0, 0, g.width_, g.height_);
 
-          const xA = chart.toDataXCoord(
-            Math.min(drag.dragStartX!, drag.dragEndX!),
+          const xA = g.toDataXCoord(
+            Math.min(context.dragStartX!, context.dragEndX),
           );
-          const xB = chart.toDataXCoord(
-            Math.max(drag.dragStartX!, drag.dragEndX!),
+          const xB = g.toDataXCoord(
+            Math.max(context.dragStartX!, context.dragEndX),
           );
           if (xA == null || xB == null || Math.abs(xB - xA) < 1e-9) {
             return;
           }
           const result: BrushSelectResult = { xRange: [xA, xB] };
           if (this.captureY_) {
-            const yTop = chart.toDataYCoord(
-              Math.min(drag.dragStartY!, drag.dragEndY!),
+            const yTop = g.toDataYCoord(
+              Math.min(context.dragStartY!, context.dragEndY),
             );
-            const yBot = chart.toDataYCoord(
-              Math.max(drag.dragStartY!, drag.dragEndY!),
+            const yBot = g.toDataYCoord(
+              Math.max(context.dragStartY!, context.dragEndY),
             );
             if (yTop != null && yBot != null) {
               result.yRange = [Math.min(yTop, yBot), Math.max(yTop, yBot)];
@@ -171,19 +166,15 @@ class BrushSelect {
           this.onSelect_(result);
         };
 
-        chart.addAndTrackEvent(
-          document,
-          "mousemove",
-          mousemove as EventListener,
-        );
-        chart.addAndTrackEvent(document, "mouseup", mouseup as EventListener);
+        g.addAndTrackEvent(document, "mousemove", mousemove);
+        g.addAndTrackEvent(document, "mouseup", mouseup);
       },
       // Keep dblclick reset available.
-      dblclick: (_event: MouseEvent, g: unknown) => {
-        (g as ZpgraphInstance).resetZoom();
+      dblclick: (_event: MouseEvent, g: ZpgraphInstance) => {
+        g.resetZoom();
       },
       willDestroyContextMyself: true,
-    } as InteractionModel;
+    };
   }
 
   destroy() {
@@ -194,6 +185,6 @@ class BrushSelect {
   }
 }
 
-Zpgraph.Plugins.BrushSelect = BrushSelect;
+Object.assign(ZpgraphImport.Plugins, { BrushSelect });
 
 export default BrushSelect;

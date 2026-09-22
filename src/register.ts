@@ -30,15 +30,56 @@ import StatusOverlayPlugin from "./plugins/status-overlay";
 import ThresholdsPlugin from "./plugins/thresholds";
 import ToolbarPlugin from "./plugins/toolbar";
 
-type ZpgraphStaticsTarget = Record<string, unknown> & {
-  new (div: unknown, data: unknown, opts?: unknown): unknown;
-  PLUGINS?: unknown[];
-  Plugins?: Record<string, unknown>;
-  DataHandlers?: Record<string, unknown>;
+type DomReadyHost = {
+  onDOMready?: (cb: () => void) => boolean;
 };
 
-export const registerZpgraphStatics = (Zpgraph: unknown): void => {
-  const Z = Zpgraph as ZpgraphStaticsTarget;
+/** Static bag mutated onto the Zpgraph constructor. */
+type ZpgraphStaticsBag = DomReadyHost & {
+  NAME?: string;
+  VERSION?: string;
+  DEFAULT_ROLL_PERIOD?: number;
+  DEFAULT_WIDTH?: number;
+  DEFAULT_HEIGHT?: number;
+  Plotters?: typeof ZpgraphCanvasRenderer._Plotters;
+  addedAnnotationCSS?: boolean;
+  PLUGINS?: unknown[];
+  DOTTED_LINE?: typeof utils.DOTTED_LINE;
+  DASHED_LINE?: typeof utils.DASHED_LINE;
+  DOT_DASH_LINE?: typeof utils.DOT_DASH_LINE;
+  dateAxisLabelFormatter?: typeof utils.dateAxisLabelFormatter;
+  findPos?: typeof utils.findPos;
+  pageX?: typeof utils.pageX;
+  pageY?: typeof utils.pageY;
+  defaultInteractionModel?: typeof ZpgraphInteraction.defaultModel;
+  nonInteractiveModel?: typeof ZpgraphInteraction.nonInteractiveModel_;
+  Circles?: typeof utils.Circles;
+  Plugins?: Record<string, unknown>;
+  DataHandlers?: Record<string, unknown>;
+  startPan?: typeof ZpgraphInteraction.startPan;
+  startZoom?: typeof ZpgraphInteraction.startZoom;
+  movePan?: typeof ZpgraphInteraction.movePan;
+  moveZoom?: typeof ZpgraphInteraction.moveZoom;
+  endPan?: typeof ZpgraphInteraction.endPan;
+  endZoom?: typeof ZpgraphInteraction.endZoom;
+  numericLinearTicks?: typeof ZpgraphTickers.numericLinearTicks;
+  numericTicks?: typeof ZpgraphTickers.numericTicks;
+  integerTicks?: typeof ZpgraphTickers.integerTicks;
+  dateTicker?: typeof ZpgraphTickers.dateTicker;
+  Granularity?: typeof ZpgraphTickers.Granularity;
+  pickDateTickGranularity?: typeof ZpgraphTickers.pickDateTickGranularity;
+  getDateAxis?: typeof ZpgraphTickers.getDateAxis;
+  floatFormat?: typeof utils.floatFormat;
+};
+
+/** Every object can hold the optional onDOMready slot used by setupDOMready_. */
+const isStaticsBag = (_v: object): _v is ZpgraphStaticsBag => true;
+
+export const registerZpgraphStatics = (Zpgraph: object): void => {
+  if (!isStaticsBag(Zpgraph)) {
+    return;
+  }
+  const Z = Zpgraph;
 
   Z.NAME = "Zpgraph";
   Z.VERSION = "0.1.0";
@@ -134,7 +175,5 @@ export const registerZpgraphStatics = (Zpgraph: unknown): void => {
   Z.getDateAxis = ZpgraphTickers.getDateAxis;
   Z.floatFormat = utils.floatFormat;
 
-  utils.setupDOMready_(
-    Z as unknown as Parameters<typeof utils.setupDOMready_>[0],
-  );
+  utils.setupDOMready_(Z);
 };

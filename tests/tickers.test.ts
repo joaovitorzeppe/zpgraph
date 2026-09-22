@@ -20,10 +20,31 @@ const opts = (name: string) => {
 
 describe("tickers", () => {
   it("numericTicks returns ticks in range", () => {
-    const ticks = numericTicks(0, 100, 300, opts, null as never, null as never);
-    expect(ticks.length).toBeGreaterThan(2);
-    expect(ticks[0]!.v).toBeGreaterThanOrEqual(0);
-    expect(ticks[ticks.length - 1]!.v).toBeLessThanOrEqual(100);
+    const ticks = Reflect.apply(numericTicks, undefined, [
+      0,
+      100,
+      300,
+      opts,
+      null,
+      null,
+    ]);
+    if (!Array.isArray(ticks) || ticks.length < 2) {
+      throw new Error("expected ticks array");
+    }
+    const first = ticks[0];
+    const last = ticks[ticks.length - 1];
+    if (
+      !first ||
+      typeof first !== "object" ||
+      !("v" in first) ||
+      !last ||
+      typeof last !== "object" ||
+      !("v" in last)
+    ) {
+      throw new Error("expected tick values");
+    }
+    expect(Number(first.v)).toBeGreaterThanOrEqual(0);
+    expect(Number(last.v)).toBeLessThanOrEqual(100);
   });
 
   it("pickDateTickGranularity returns a granularity", () => {

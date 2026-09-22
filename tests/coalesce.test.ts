@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Zpgraph } from "../src/index";
 import ZpgraphInteraction from "../src/interaction-model";
+import type { InteractionContext } from "../src/types";
 import { coalesceFrames } from "../src/utils";
-import { mockCanvas, mountDiv } from "./helpers";
+import { callProp, mockCanvas, mountDiv } from "./helpers";
 
 /**
  * A drag delivers several events per frame and each one used to repaint the
@@ -23,8 +24,8 @@ const runFrame = () => {
   }
 };
 
-const mouseEvent = (type: string, pageX: number) => {
-  const e: any = new MouseEvent(type, { bubbles: true });
+const mouseEvent = (type: string, pageX: number): MouseEvent => {
+  const e = new MouseEvent(type, { bubbles: true });
   // jsdom leaves pageX at 0; the interaction code reads only this.
   Object.defineProperty(e, "pageX", { value: pageX });
   Object.defineProperty(e, "pageY", { value: 100 });
@@ -97,39 +98,35 @@ describe("a mouse drag", () => {
       width: 480,
       height: 320,
       dateWindow: [10, 20],
-    }) as unknown as Record<string, any>;
+    });
 
   it("repaints once per frame and ends at the last event", () => {
     const g = makeChart();
     runFrame(); // let any frame from construction settle
 
     // The same scratchpad the chart builds for a gesture, minus the DOM tarp.
-    const context: Record<string, any> = {
+    const context: InteractionContext = {
       px: 0,
       py: 0,
       isZooming: false,
       isPanning: false,
       is2DPan: false,
       cancelNextDblclick: false,
-      initializeMouseDown: (event: any, _g: any, ctx: any) => {
-        ctx.dragStartX = event.pageX;
-        ctx.dragStartY = event.pageY;
-        ctx.dragEndX = event.pageX;
-        ctx.dragEndY = event.pageY;
+      initializeMouseDown: (event, _g, ctx) => {
+        const pageX = Reflect.get(event, "pageX");
+        const pageY = Reflect.get(event, "pageY");
+        ctx.dragStartX = typeof pageX === "number" ? pageX : 0;
+        ctx.dragStartY = typeof pageY === "number" ? pageY : 0;
+        ctx.dragEndX = ctx.dragStartX;
+        ctx.dragEndY = ctx.dragStartY;
       },
       destroy: () => {},
       tarp: { cover: () => {}, uncover: () => {} },
     };
 
-    const down: any = mouseEvent("mousedown", 200);
+    const down = mouseEvent("mousedown", 200);
     Object.defineProperty(down, "shiftKey", { value: true }); // shift drag = pan
-    (
-      ZpgraphInteraction.defaultModel.mousedown as (
-        e: MouseEvent,
-        g: unknown,
-        context: unknown,
-      ) => void
-    )(down, g, context);
+    callProp(ZpgraphInteraction.defaultModel, "mousedown", [down, g, context]);
     expect(context.isPanning).toBe(true);
 
     const draw = vi.spyOn(g, "drawGraph_");

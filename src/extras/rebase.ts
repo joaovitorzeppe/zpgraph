@@ -14,15 +14,8 @@ import type { Point } from "../types";
 
 type RebaseBase = "percent" | number;
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown>;
-  DataHandlers: Record<string, unknown> & {
-    RebaseHandler?: typeof RebaseHandler;
-  };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
+ZpgraphImport.DataHandlers = ZpgraphImport.DataHandlers || {};
 
 class RebaseHandler extends DefaultHandler {
   baseOpt: RebaseBase;
@@ -100,7 +93,7 @@ class RebaseHandler extends DefaultHandler {
       const point = {
         x: NaN,
         y: NaN,
-        xval: item[0] as number,
+        xval: item[0],
         yval: yval,
         name: setName,
         idx: i + boundaryIdStart,
@@ -112,7 +105,7 @@ class RebaseHandler extends DefaultHandler {
   }
 }
 
-Zpgraph.DataHandlers.RebaseHandler = RebaseHandler;
+Object.assign(ZpgraphImport.DataHandlers, { RebaseHandler });
 
 const isNumericBase = (v: unknown): v is number =>
   !isNaN(Number(v)) &&
@@ -132,7 +125,7 @@ class Rebase {
 
   activate(_g: ZpgraphClass) {
     if (this.baseOpt_ === null) {
-      return;
+      return undefined;
     }
     return {
       predraw: this.predraw,
@@ -161,7 +154,7 @@ class Rebase {
   }
 }
 
-Zpgraph.Plugins.Rebase = Rebase;
+Object.assign(ZpgraphImport.Plugins, { Rebase });
 
 export default Rebase;
 export { RebaseHandler };

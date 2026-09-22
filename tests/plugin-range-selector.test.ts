@@ -24,14 +24,35 @@ const parts = (el: HTMLElement) => ({
 });
 
 /** The plugin keeps its canvases and contexts private; tests reach in by name. */
-const rangeSelectorOf = (g: Zpgraph) =>
-  (
-    g as unknown as {
-      plugins_: Array<{ plugin: Record<string, unknown> }>;
+const rangeSelectorOf = (g: Zpgraph): object => {
+  const plugins = Reflect.get(g, "plugins_");
+  if (!Array.isArray(plugins)) {
+    throw new Error("expected plugins_");
+  }
+  for (const entry of plugins) {
+    if (!entry || typeof entry !== "object") {
+      continue;
     }
-  ).plugins_
-    .map((entry) => entry.plugin)
-    .find((plugin) => String(plugin) === "RangeSelector Plugin")!;
+    const plugin = Reflect.get(entry, "plugin");
+    if (plugin && typeof plugin === "object" && "fgcanvas_" in plugin) {
+      return plugin;
+    }
+  }
+  throw new Error("range selector not found");
+};
+
+const ctxMock = (ctxHolder: object, key: string): object => {
+  const ctx = Reflect.get(ctxHolder, key);
+  if (!ctx || typeof ctx !== "object") {
+    throw new Error(`expected ${key}`);
+  }
+  return ctx;
+};
+
+const expectCalled = (ctx: object, method: string) => {
+  const fn = Reflect.get(ctx, method);
+  expect(fn).toHaveBeenCalled();
+};
 
 const mouse = (type: string, target: EventTarget, clientX: number) =>
   target.dispatchEvent(
@@ -106,10 +127,9 @@ describe("RangeSelector plugin", () => {
     const { el, g } = makeChart({ showRangeSelector: true });
 
     const { handles } = parts(el);
-    const [left, right] = handles as unknown as [
-      HTMLImageElement,
-      HTMLImageElement,
-    ];
+    expect(handles.length).toBeGreaterThanOrEqual(2);
+    const left = handles[0]!;
+    const right = handles[1]!;
     expect(left.style.visibility).toBe("visible");
     expect(right.style.visibility).toBe("visible");
     expect(parseFloat(left.style.left)).toBeLessThan(
@@ -123,15 +143,12 @@ describe("RangeSelector plugin", () => {
   it("draws the mini plot and the frame into the background canvas", () => {
     const { g } = makeChart({ showRangeSelector: true });
 
-    const ctx = rangeSelectorOf(g).bgcanvas_ctx_ as Record<
-      string,
-      ReturnType<typeof vi.fn>
-    >;
-    expect(ctx.clearRect).toHaveBeenCalled();
-    expect(ctx.stroke).toHaveBeenCalled();
+    const ctx = ctxMock(rangeSelectorOf(g), "bgcanvas_ctx_");
+    expectCalled(ctx, "clearRect");
+    expectCalled(ctx, "stroke");
     // The mini plot is filled with a gradient built from the fill options.
-    expect(ctx.createLinearGradient).toHaveBeenCalled();
-    expect(ctx.fill).toHaveBeenCalled();
+    expectCalled(ctx, "createLinearGradient");
+    expectCalled(ctx, "fill");
 
     g.destroy();
   });
@@ -139,14 +156,11 @@ describe("RangeSelector plugin", () => {
   it("draws the unzoomed frame into the foreground canvas", () => {
     const { g } = makeChart({ showRangeSelector: true });
 
-    const ctx = rangeSelectorOf(g).fgcanvas_ctx_ as Record<
-      string,
-      ReturnType<typeof vi.fn>
-    >;
-    expect(ctx.clearRect).toHaveBeenCalled();
-    expect(ctx.stroke).toHaveBeenCalled();
+    const ctx = ctxMock(rangeSelectorOf(g), "fgcanvas_ctx_");
+    expectCalled(ctx, "clearRect");
+    expectCalled(ctx, "stroke");
     // Nothing is zoomed yet, so no veil is painted over the edges.
-    expect(ctx.fillRect).not.toHaveBeenCalled();
+    expect(Reflect.get(ctx, "fillRect")).not.toHaveBeenCalled();
 
     g.destroy();
   });
@@ -257,9 +271,9 @@ describe("RangeSelector plugin", () => {
 
     g.destroy();
 
-    expect(plugin.bgcanvas_).toBeNull();
-    expect(plugin.fgcanvas_).toBeNull();
-    expect(plugin.leftZoomHandle_).toBeNull();
-    expect(plugin.rightZoomHandle_).toBeNull();
+    expect(Reflect.get(plugin, "bgcanvas_")).toBeNull();
+    expect(Reflect.get(plugin, "fgcanvas_")).toBeNull();
+    expect(Reflect.get(plugin, "leftZoomHandle_")).toBeNull();
+    expect(Reflect.get(plugin, "rightZoomHandle_")).toBeNull();
   });
 });

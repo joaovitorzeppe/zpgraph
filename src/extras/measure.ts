@@ -14,12 +14,7 @@ import type { LabelStyle } from "../types";
 import type ZpgraphClass from "../zpgraph";
 import { div, setStyle } from "./dom-helpers";
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { Measure?: typeof Measure };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 interface ChartClickEvent {
   zpgraph: ZpgraphInstance;
@@ -74,7 +69,7 @@ class Measure {
   }
 
   activate(g: ZpgraphClass) {
-    this.g_ = g as unknown as ZpgraphInstance;
+    this.g_ = g;
     this.label_ = div("zpgraph-measure-label");
     this.label_.dataset.zpLabel = "measure";
     applyLabelStyle(
@@ -247,6 +242,6 @@ class Measure {
   }
 }
 
-Zpgraph.Plugins.Measure = Measure;
+Object.assign(ZpgraphImport.Plugins, { Measure });
 
 export default Measure;

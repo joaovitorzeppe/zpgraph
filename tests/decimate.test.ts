@@ -104,7 +104,7 @@ describe("selection with decimated data", () => {
       width: 480,
       height: 320,
       dateWindow: [2000, 8000],
-    }) as unknown as Record<string, any>;
+    });
 
     const layoutPoints = g.layout_.points[0]!;
     expect(layoutPoints.length).toBeLessThan(8000);
@@ -131,9 +131,13 @@ describe("selection with decimated data", () => {
       width: 480,
       height: 320,
       dateWindow: [1000, 9000],
-    }) as unknown as Record<string, any>;
+    });
 
     const domX = g.toDomXCoord(5000);
+    expect(domX).not.toBeNull();
+    if (domX == null) {
+      throw new Error("expected dom x");
+    }
     const closest = g.findClosestRow(domX);
     expect(
       g.layout_.points[0]!.some((p: { idx?: number }) => p.idx === closest),

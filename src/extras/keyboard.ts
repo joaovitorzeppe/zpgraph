@@ -9,12 +9,7 @@ import type { ZpgraphInstance } from "../internal-types";
 import type ZpgraphClass from "../zpgraph";
 import { panBy, zoomBy } from "./zoom-limits";
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { Keyboard?: typeof Keyboard };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 export type KeyboardOptions = {
   /** Plain arrows pan without Shift. Default true. */
@@ -57,7 +52,7 @@ class Keyboard {
   }
 
   activate(g: ZpgraphClass) {
-    this.g_ = g as unknown as ZpgraphInstance;
+    this.g_ = g;
     this.handler_ = (e: KeyboardEvent) => this.onKey_(e);
     // Capture so we win over core keyDown (point selection on plain arrows).
     g.graphDiv.addEventListener("keydown", this.handler_, true);
@@ -111,6 +106,6 @@ class Keyboard {
   }
 }
 
-Zpgraph.Plugins.Keyboard = Keyboard;
+Object.assign(ZpgraphImport.Plugins, { Keyboard });
 
 export default Keyboard;

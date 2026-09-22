@@ -10,12 +10,7 @@ import ZpgraphImport from "zpgraph";
 import type { ChartDrawPluginEvent } from "../internal-types";
 import type ZpgraphClass from "../zpgraph";
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { Unzoom?: typeof Unzoom };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 /**
  * @fileoverview Plug-in for providing unzoom-on-hover.
@@ -87,6 +82,6 @@ class Unzoom {
   }
 }
 
-Zpgraph.Plugins.Unzoom = Unzoom;
+Object.assign(ZpgraphImport.Plugins, { Unzoom });
 
 export default Unzoom;

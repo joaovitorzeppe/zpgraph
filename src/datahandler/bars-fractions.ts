@@ -14,7 +14,7 @@ import type {
   UnifiedSeries,
 } from "../internal-types";
 import BarsHandler from "./bars";
-import { seriesOption } from "./datahandler";
+import { rawX, rawYArray, seriesBoolean, seriesNumber } from "./datahandler";
 
 class FractionsBarsHandler extends BarsHandler {
   /** @inheritDoc */
@@ -23,14 +23,14 @@ class FractionsBarsHandler extends BarsHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
+    const series: UnifiedSeries = [];
     let x, y, point, num, den, value, stddev, variance;
     const mult = 100.0;
-    const logScale = seriesOption<boolean>(options, i, "logscale");
-    const sigma = seriesOption<number>(options, i, "sigma");
+    const logScale = seriesBoolean(options, i, "logscale");
+    const sigma = seriesNumber(options, i, "sigma");
     for (let j = 0; j < rawData.length; j++) {
-      x = rawData[j]![0] as number;
-      point = rawData[j]![i] as number[] | null;
+      x = rawX(rawData[j]![0]!);
+      point = rawYArray(rawData[j]![i]!);
       if (logScale && point !== null) {
         // On the log scale, points less than zero do not exist.
         // This will create a gap in the chart.
@@ -68,8 +68,8 @@ class FractionsBarsHandler extends BarsHandler {
   ): UnifiedSeries {
     rollPeriod = Math.min(rollPeriod, originalData.length);
     const rollingData: UnifiedSeries = [];
-    const sigma = seriesOption<number>(options, seriesIndex_, "sigma");
-    const wilsonInterval = seriesOption<boolean>(
+    const sigma = seriesNumber(options, seriesIndex_, "sigma");
+    const wilsonInterval = seriesBoolean(
       options,
       seriesIndex_,
       "wilsonInterval",
@@ -80,11 +80,11 @@ class FractionsBarsHandler extends BarsHandler {
     let den = 0; // numerator/denominator
     const mult = 100.0;
     for (i = 0; i < originalData.length; i++) {
-      num += (originalData[i]![2] as number[])[2]!;
-      den += (originalData[i]![2] as number[])[3]!;
+      num += originalData[i]![2]![2]!;
+      den += originalData[i]![2]![3]!;
       if (i - rollPeriod >= 0) {
-        num -= (originalData[i - rollPeriod]![2] as number[])[2]!;
-        den -= (originalData[i - rollPeriod]![2] as number[])[3]!;
+        num -= originalData[i - rollPeriod]![2]![2]!;
+        den -= originalData[i - rollPeriod]![2]![3]!;
       }
 
       const date = originalData[i]![0];

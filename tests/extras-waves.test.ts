@@ -16,15 +16,16 @@ import {
 import { createFillBetweenPlotter } from "../src/extras/fill-between";
 import { applyLocale, packs } from "../src/extras/locale";
 import SpanBands, { writeTextInGraph } from "../src/extras/span-bands";
+import type { ZpgraphOptions } from "../src/types";
 import { mockCanvas, mountDiv, sampleData } from "./helpers";
 
-const makeChart = (opts: Record<string, unknown> = {}) =>
+const makeChart = (opts: Partial<ZpgraphOptions> = {}) =>
   new Zpgraph(mountDiv(), sampleData, {
     labels: ["x", "A", "B"],
     width: 480,
     height: 320,
     ...opts,
-  }) as unknown as Record<string, any>;
+  });
 
 describe("zoom-limits extra", () => {
   beforeEach(() => {
@@ -38,12 +39,12 @@ describe("zoom-limits extra", () => {
     const extremes = g.xAxisExtremes();
     const mid = (extremes[0] + extremes[1]) / 2;
     const tiny: [number, number] = [mid - 0.01, mid + 0.01];
-    const clamped = clampDateWindow(g as any, tiny, { minSpanMs: 2 });
+    const clamped = clampDateWindow(g, tiny, { minSpanMs: 2 });
     expect(clamped[1] - clamped[0]).toBe(2);
     // Extreme zoom-in hits min span → no change once already at min.
     g.updateOptions({ dateWindow: clamped });
-    expect(zoomBy(g as any, 0.01)).toBe(false);
-    expect(panBy(g as any, 0)).toBe(false);
+    expect(zoomBy(g, 0.01)).toBe(false);
+    expect(panBy(g, 0)).toBe(false);
     g.destroy();
   });
 
@@ -74,7 +75,7 @@ describe("measure extra", () => {
     const g = makeChart({ plugins: [measure] });
     expect(measure.toString()).toBe("Measure Plugin");
     measure.click({
-      zpgraph: g as any,
+      zpgraph: g,
       canvasx: 100,
       canvasy: 100,
     });
@@ -129,11 +130,11 @@ describe("keyboard extra", () => {
   it("claims arrows at full zoom without walking selection", () => {
     const kb = new Keyboard();
     const g = makeChart({ plugins: [kb] });
-    expect(g.keyboardRow_).toBeUndefined();
+    expect(Reflect.get(g, "keyboardRow_")).toBeUndefined();
     g.graphDiv.dispatchEvent(
       new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
     );
-    expect(g.keyboardRow_).toBeUndefined();
+    expect(Reflect.get(g, "keyboardRow_")).toBeUndefined();
     expect(g.getSelection()).toBeLessThan(0);
     g.destroy();
   });
@@ -189,12 +190,16 @@ describe("moving-average extra", () => {
   it("exports plotter factory", () => {
     expect(typeof createMovingAveragePlotter).toBe("function");
     expect(typeof movingAveragePlotter).toBe("function");
-    const g = makeChart({
-      plotter: [
-        Zpgraph.Plotters.linePlotter,
-        createMovingAveragePlotter({ period: 3 }),
-      ],
-    });
+    const opts: Partial<ZpgraphOptions> = {
+      labels: ["x", "A", "B"],
+      width: 480,
+      height: 320,
+    };
+    Reflect.set(opts, "plotter", [
+      Zpgraph.Plotters.linePlotter,
+      createMovingAveragePlotter({ period: 3 }),
+    ]);
+    const g = new Zpgraph(mountDiv(), sampleData, opts);
     g.destroy();
   });
 });
@@ -206,12 +211,16 @@ describe("fill-between extra", () => {
   });
 
   it("draws without throwing", () => {
-    const g = makeChart({
-      plotter: [
-        createFillBetweenPlotter({ seriesA: "A", seriesB: "B" }),
-        Zpgraph.Plotters.linePlotter,
-      ],
-    });
+    const opts: Partial<ZpgraphOptions> = {
+      labels: ["x", "A", "B"],
+      width: 480,
+      height: 320,
+    };
+    Reflect.set(opts, "plotter", [
+      createFillBetweenPlotter({ seriesA: "A", seriesB: "B" }),
+      Zpgraph.Plotters.linePlotter,
+    ]);
+    const g = new Zpgraph(mountDiv(), sampleData, opts);
     g.destroy();
   });
 });
@@ -224,8 +233,14 @@ describe("locale packs", () => {
 
   it("applies pt pack and toolbar labels", () => {
     const g = makeChart({ toolbar: true });
-    applyLocale(g as any, packs.pt);
-    expect((g as any).locale_.decimalPoint).toBe(",");
+    applyLocale(g, packs.pt);
+    const locale = Reflect.get(g, "locale_");
+    expect(
+      locale &&
+        typeof locale === "object" &&
+        "decimalPoint" in locale &&
+        locale.decimalPoint,
+    ).toBe(",");
     expect(packs.en.months).toHaveLength(12);
     expect(packs.es.toolbar.zoomin).toBe("Acercar");
     g.destroy();
@@ -259,7 +274,7 @@ describe("span-bands extra", () => {
       textAlign: "",
       textBaseline: "",
     };
-    writeTextInGraph(ctx as any, "hi", 10, 10);
+    Reflect.apply(writeTextInGraph, undefined, [ctx, "hi", 10, 10]);
     expect(ctx.fillText).toHaveBeenCalled();
     g.destroy();
   });

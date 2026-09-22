@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Zpgraph } from "../src/index";
 import ZpgraphCanvasRenderer from "../src/canvas";
+import type { Data, ZpgraphOptions } from "../src/types";
 import { mountDiv, recordingCanvas } from "./helpers";
 
 /**
@@ -9,20 +10,20 @@ import { mountDiv, recordingCanvas } from "./helpers";
  * change that silently stops drawing something shows up.
  */
 
-const lineData = [
+const lineData: Data = [
   [1, 10],
   [2, 20],
   [3, 15],
   [4, 25],
 ];
 
-const chart = (data: unknown[], opts: Record<string, unknown> = {}) =>
-  new Zpgraph(mountDiv(), data as never, {
+const chart = (data: Data, opts: Partial<ZpgraphOptions> = {}) =>
+  new Zpgraph(mountDiv(), data, {
     labels: ["x", "A"],
     width: 480,
     height: 320,
     ...opts,
-  }) as unknown as Record<string, any>;
+  });
 
 describe("line plotter", () => {
   let canvas: ReturnType<typeof recordingCanvas>;
@@ -39,13 +40,13 @@ describe("line plotter", () => {
     expect(canvas.countOf("stroke")).toBeGreaterThan(0);
     // One moveTo opens the series, then a lineTo for each following point.
     const lineTos = canvas.calls.filter((c) => c.op === "lineTo");
-    expect(lineTos.length).toBeGreaterThanOrEqual(lineData.length - 1);
+    expect(lineTos.length).toBeGreaterThanOrEqual(3);
 
     g.destroy();
   });
 
   it("breaks the line at a null value instead of drawing through it", () => {
-    const withGap = [
+    const withGap: Data = [
       [1, 10],
       [2, null],
       [3, 15],
@@ -60,7 +61,7 @@ describe("line plotter", () => {
   });
 
   it("connectSeparatedPoints draws across the gap", () => {
-    const withGap = [
+    const withGap: Data = [
       [1, 10],
       [2, null],
       [3, 15],
@@ -107,38 +108,35 @@ describe("point drawing", () => {
 
   it("drawPoints calls drawPointCallback once per point", () => {
     const drawPointCallback = vi.fn();
-    const g = new Zpgraph(mountDiv(), lineData as never, {
+    const g = new Zpgraph(mountDiv(), lineData, {
       labels: ["x", "A"],
       width: 480,
       height: 320,
       drawPoints: true,
       drawPointCallback,
-    }) as unknown as Record<string, any>;
+    });
 
-    expect(drawPointCallback).toHaveBeenCalledTimes(lineData.length);
+    expect(drawPointCallback).toHaveBeenCalledTimes(4);
     // g, seriesName, ctx, cx, cy, color, pointSize, idx
     expect(drawPointCallback.mock.calls[0]!).toHaveLength(8);
-    expect(drawPointCallback.mock.calls[0]![1]!).toBe("A");
+    expect(drawPointCallback.mock.calls[0]![1]).toBe("A");
 
     g.destroy();
   });
 
   it("an isolated point is drawn even without drawPoints", () => {
     const drawPointCallback = vi.fn();
-    const g = new Zpgraph(
-      mountDiv(),
-      [
-        [1, null],
-        [2, 20],
-        [3, null],
-      ] as never,
-      {
-        labels: ["x", "A"],
-        width: 480,
-        height: 320,
-        drawPointCallback,
-      },
-    ) as unknown as Record<string, any>;
+    const isolated: Data = [
+      [1, null],
+      [2, 20],
+      [3, null],
+    ];
+    const g = new Zpgraph(mountDiv(), isolated, {
+      labels: ["x", "A"],
+      width: 480,
+      height: 320,
+      drawPointCallback,
+    });
 
     expect(drawPointCallback).toHaveBeenCalledTimes(1);
     g.destroy();
@@ -147,13 +145,13 @@ describe("point drawing", () => {
   it("Circles shapes draw an arc", () => {
     const ctx = canvas.ctx;
     canvas.clear();
-    const g = new Zpgraph(mountDiv(), lineData as never, {
+    const g = new Zpgraph(mountDiv(), lineData, {
       labels: ["x", "A"],
       width: 480,
       height: 320,
       drawPoints: true,
       pointSize: 3,
-    }) as unknown as Record<string, any>;
+    });
 
     expect(canvas.countOf("arc")).toBeGreaterThan(0);
     expect(ctx).toBeTruthy();
@@ -170,61 +168,55 @@ describe("fill and error plotters", () => {
   });
 
   it("fillGraph fills the area under the line", () => {
-    const plain = new Zpgraph(mountDiv(), lineData as never, {
+    const plain = new Zpgraph(mountDiv(), lineData, {
       labels: ["x", "A"],
       width: 480,
       height: 320,
-    }) as unknown as Record<string, any>;
+    });
     expect(canvas.countOf("fill")).toBe(0);
     plain.destroy();
 
     canvas.clear();
     document.body.innerHTML = "";
-    const filled = new Zpgraph(mountDiv(), lineData as never, {
+    const filled = new Zpgraph(mountDiv(), lineData, {
       labels: ["x", "A"],
       width: 480,
       height: 320,
       fillGraph: true,
-    }) as unknown as Record<string, any>;
+    });
     expect(canvas.countOf("fill")).toBeGreaterThan(0);
     filled.destroy();
   });
 
   it("errorBars fill a band around the line", () => {
-    const g = new Zpgraph(
-      mountDiv(),
-      [
-        [1, [10, 1]],
-        [2, [20, 2]],
-        [3, [15, 1]],
-      ] as never,
-      {
-        labels: ["x", "A"],
-        width: 480,
-        height: 320,
-        errorBars: true,
-      },
-    ) as unknown as Record<string, any>;
+    const errData: Data = [
+      [1, [10, 1]],
+      [2, [20, 2]],
+      [3, [15, 1]],
+    ];
+    const g = new Zpgraph(mountDiv(), errData, {
+      labels: ["x", "A"],
+      width: 480,
+      height: 320,
+      errorBars: true,
+    });
 
     expect(canvas.countOf("fill")).toBeGreaterThan(0);
     g.destroy();
   });
 
   it("stackedGraph fills every series", () => {
-    const g = new Zpgraph(
-      mountDiv(),
-      [
-        [1, 10, 5],
-        [2, 20, 8],
-        [3, 15, 6],
-      ] as never,
-      {
-        labels: ["x", "A", "B"],
-        width: 480,
-        height: 320,
-        stackedGraph: true,
-      },
-    ) as unknown as Record<string, any>;
+    const stacked: Data = [
+      [1, 10, 5],
+      [2, 20, 8],
+      [3, 15, 6],
+    ];
+    const g = new Zpgraph(mountDiv(), stacked, {
+      labels: ["x", "A", "B"],
+      width: 480,
+      height: 320,
+      stackedGraph: true,
+    });
 
     expect(canvas.countOf("fill")).toBeGreaterThanOrEqual(2);
     g.destroy();
@@ -240,11 +232,11 @@ describe("custom plotters", () => {
   });
 
   it("a plotter option replaces the built-in ones", () => {
-    const builtin = new Zpgraph(mountDiv(), lineData as never, {
+    const builtin = new Zpgraph(mountDiv(), lineData, {
       labels: ["x", "A"],
       width: 480,
       height: 320,
-    }) as unknown as Record<string, any>;
+    });
     // Grid lines are drawn by the grid plugin, so this is not zero.
     const gridAndSeries = canvas.countOf("lineTo");
     builtin.destroy();
@@ -252,17 +244,17 @@ describe("custom plotters", () => {
     canvas.clear();
     document.body.innerHTML = "";
     const plotter = vi.fn();
-    const g = new Zpgraph(mountDiv(), lineData as never, {
+    const g = new Zpgraph(mountDiv(), lineData, {
       labels: ["x", "A"],
       width: 480,
       height: 320,
       plotter,
-    }) as unknown as Record<string, any>;
+    });
 
     expect(plotter).toHaveBeenCalled();
     const e = plotter.mock.calls[0]![0]!;
     expect(e.setName).toBe("A");
-    expect(e.points).toHaveLength(lineData.length);
+    expect(e.points).toHaveLength(4);
     expect(e.plotArea.w).toBeGreaterThan(0);
     // The no-op plotter draws nothing, so only the grid is left.
     expect(canvas.countOf("lineTo")).toBeLessThan(gridAndSeries);
@@ -272,19 +264,16 @@ describe("custom plotters", () => {
 
   it("a per-series plotter only receives that series", () => {
     const seriesPlotter = vi.fn();
-    const g = new Zpgraph(
-      mountDiv(),
-      [
-        [1, 10, 5],
-        [2, 20, 8],
-      ] as never,
-      {
-        labels: ["x", "A", "B"],
-        width: 480,
-        height: 320,
-        series: { B: { plotter: seriesPlotter } },
-      },
-    ) as unknown as Record<string, any>;
+    const multi: Data = [
+      [1, 10, 5],
+      [2, 20, 8],
+    ];
+    const g = new Zpgraph(mountDiv(), multi, {
+      labels: ["x", "A", "B"],
+      width: 480,
+      height: 320,
+      series: { B: { plotter: seriesPlotter } },
+    });
 
     expect(seriesPlotter).toHaveBeenCalled();
     for (const call of seriesPlotter.mock.calls) {

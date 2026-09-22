@@ -49,7 +49,7 @@ export const getChartClassNames = (
   g: Pick<Zpgraph, "getOption">,
 ): ChartClassNames => {
   const value = g.getOption("classNames");
-  return value && typeof value === "object" ? (value as ChartClassNames) : {};
+  return value && typeof value === "object" ? (value) : {};
 };
 
 /** Keep `graphDiv.className` as `zpgraph` + optional `classNames.root`. */

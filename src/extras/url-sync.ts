@@ -8,12 +8,7 @@ import ZpgraphImport from "zpgraph";
 import type { ZpgraphInstance } from "../internal-types";
 import type ZpgraphClass from "../zpgraph";
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { UrlSync?: typeof UrlSync };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 export type UrlSyncOptions = {
   /** Query/hash param for range start. Default "from". */
@@ -72,8 +67,8 @@ class UrlSync {
   g_: ZpgraphInstance | null = null;
   writing_ = false;
   prevZoomCallback_:
-    | ((minX: number, maxX: number, yRanges: Array<[number, number]>) => void)
-    | null = null;
+    | ((...args: unknown[]) => unknown)
+    | undefined = undefined;
 
   constructor(opt_options?: UrlSyncOptions) {
     const opts = opt_options || {};
@@ -92,19 +87,16 @@ class UrlSync {
   }
 
   activate(g: ZpgraphClass) {
-    this.g_ = g as unknown as ZpgraphInstance;
+    this.g_ = g;
     this.applyFromUrl_();
 
-    const existing = g.getFunctionOption("zoomCallback") as
-      | ((minX: number, maxX: number, yRanges: Array<[number, number]>) => void)
-      | null;
-    this.prevZoomCallback_ = existing;
+    this.prevZoomCallback_ = g.getFunctionOption("zoomCallback");
 
     g.updateOptions(
       {
         zoomCallback: (minX, maxX, yRanges) => {
           this.writeToUrl_(minX, maxX, yRanges);
-          this.prevZoomCallback_?.call(g, minX, maxX, yRanges);
+          this.prevZoomCallback_?.(minX, maxX, yRanges);
         },
       },
       true,
@@ -144,7 +136,7 @@ class UrlSync {
       }
     }
     this.writing_ = true;
-    g.updateOptions(attrs as Parameters<ZpgraphInstance["updateOptions"]>[0]);
+    g.updateOptions(attrs);
     this.writing_ = false;
   }
 
@@ -166,13 +158,21 @@ class UrlSync {
     const g = this.g_;
     if (g) {
       if (this.prevZoomCallback_) {
-        g.updateOptions({ zoomCallback: this.prevZoomCallback_ }, true);
+        const prev = this.prevZoomCallback_;
+        g.updateOptions(
+          {
+            zoomCallback: (minX, maxX, yRanges) => {
+              prev(minX, maxX, yRanges);
+            },
+          },
+          true,
+        );
       }
     }
     this.g_ = null;
   }
 }
 
-Zpgraph.Plugins.UrlSync = UrlSync;
+Object.assign(ZpgraphImport.Plugins, { UrlSync });
 
 export default UrlSync;

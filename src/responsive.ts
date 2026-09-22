@@ -4,16 +4,32 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import type { ResponsiveRule, ZpgraphOptions } from "./types";
+import type { ResponsiveRule } from "./types";
 import type Zpgraph from "./zpgraph";
+
+/** Active breakpoint per chart instance (avoids update loops). */
+const breakpointByChart = new WeakMap<object, number>();
+
+const isResponsiveRule = (r: unknown): r is ResponsiveRule => {
+  if (typeof r !== "object" || r === null) {
+    return false;
+  }
+  if (!("breakpoint" in r) || !("options" in r)) {
+    return false;
+  }
+  return typeof r.breakpoint === "number" && typeof r.options === "object";
+};
 
 /**
  * Apply responsive option overrides for the current container width.
  * Tracks the active breakpoint on the instance to avoid update loops.
  */
 export const applyResponsiveOptions = (g: Zpgraph): void => {
-  const rules = g.getOption("responsive") as ResponsiveRule[] | undefined;
-  if (!rules?.length) {
+  const rulesOpt = g.getOption("responsive");
+  const rules = Array.isArray(rulesOpt)
+    ? rulesOpt.filter(isResponsiveRule)
+    : [];
+  if (!rules.length) {
     return;
   }
 
@@ -22,13 +38,11 @@ export const applyResponsiveOptions = (g: Zpgraph): void => {
   const match = sorted.find((rule) => width <= rule.breakpoint);
 
   const key = match ? match.breakpoint : -1;
-  const prev = (g as unknown as { responsiveBreakpoint_: number })
-    .responsiveBreakpoint_;
+  const prev = breakpointByChart.get(g);
   if (prev === key) {
     return;
   }
-  (g as unknown as { responsiveBreakpoint_: number }).responsiveBreakpoint_ =
-    key;
+  breakpointByChart.set(g, key);
 
   if (!match) {
     return;
@@ -36,5 +50,5 @@ export const applyResponsiveOptions = (g: Zpgraph): void => {
 
   // Strip nested responsive to avoid recursion.
   const { responsive: _r, ...rest } = match.options;
-  g.updateOptions(rest as Partial<ZpgraphOptions>, false);
+  g.updateOptions(rest, false);
 };

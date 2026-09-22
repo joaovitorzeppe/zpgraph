@@ -8,10 +8,10 @@ import ZpgraphImport from "zpgraph";
 import type { Plotter, PlotterEvent, Point } from "../types";
 
 type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  fillBetweenPlotter: Plotter;
+  fillBetweenPlotter?: Plotter;
 };
 
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
+const Zpgraph: ZpgraphExtrasHost = ZpgraphImport;
 
 export type FillBetweenOptions = {
   seriesA: string;
@@ -19,8 +19,24 @@ export type FillBetweenOptions = {
   fillColor?: string;
 };
 
-type PlotterEventWithAll = PlotterEvent & {
-  allSeriesPoints?: Point[][];
+const isPointArray = (v: unknown): v is Point[] =>
+  Array.isArray(v) &&
+  (v.length === 0 ||
+    (typeof v[0] === "object" && v[0] !== null && "canvasx" in v[0]));
+
+const readAllSeriesPoints = (e: PlotterEvent): Point[][] | null => {
+  const raw = Reflect.get(e, "allSeriesPoints");
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+  const out: Point[][] = [];
+  for (const entry of raw) {
+    if (!isPointArray(entry)) {
+      return null;
+    }
+    out.push(entry);
+  }
+  return out;
 };
 
 /**
@@ -34,8 +50,7 @@ export const createFillBetweenPlotter = (opts: FillBetweenOptions): Plotter => {
     if (e.seriesIndex !== 0) {
       return;
     }
-    const ev = e as PlotterEventWithAll;
-    const sets = ev.allSeriesPoints;
+    const sets = readAllSeriesPoints(e);
     if (!sets || !e.setNames) {
       return;
     }

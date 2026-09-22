@@ -201,8 +201,8 @@ export const mouseMove = (g: Zpgraph, event: MouseEvent) => {
   }
 
   const canvasCoords = g.eventToDomCoords(event);
-  const canvasx = canvasCoords[0]!;
-  const canvasy = canvasCoords[1]!;
+  const canvasx = canvasCoords[0];
+  const canvasy = canvasCoords[1];
 
   const highlightSeriesOpts = g.getOption("highlightSeriesOpts");
   let selectionChanged = false;
@@ -239,7 +239,7 @@ export const mouseMove = (g: Zpgraph, event: MouseEvent) => {
  */
 export const getLeftBoundary = (g: Zpgraph, setIdx: number) => {
   if (g.boundaryIds_[setIdx]) {
-    return g.boundaryIds_[setIdx]![0];
+    return g.boundaryIds_[setIdx][0];
   }
   for (const ids of g.boundaryIds_) {
     if (ids !== undefined) {
@@ -310,7 +310,7 @@ export const updateSelection = (g: Zpgraph, opt_animFraction?: number) => {
     ctx.clearRect(0, 0, g.width_, g.height_);
     let alpha = 1.0 - g.getNumericOption("highlightSeriesBackgroundAlpha");
     const backgroundColor = utils.toRGB_(
-      g.getOption("highlightSeriesBackgroundColor") as string,
+      g.getStringOption("highlightSeriesBackgroundColor"),
     );
 
     if (alpha) {
@@ -344,9 +344,13 @@ export const updateSelection = (g: Zpgraph, opt_animFraction?: number) => {
   } else if (g.previousVerticalX_ >= 0) {
     // Determine the maximum highlight circle size.
     let maxCircleSize = 0;
-    const labels = g.attr_("labels") as string[];
+    const labels = g.getLabels() ?? [];
     for (i = 1; i < labels.length; i++) {
-      const r = g.getNumericOption("highlightCircleSize", labels[i]!);
+      const label = labels[i];
+      if (typeof label !== "string") {
+        continue;
+      }
+      const r = g.getNumericOption("highlightCircleSize", label);
       if (r > maxCircleSize) {
         maxCircleSize = r;
       }
@@ -487,7 +491,7 @@ export const setSelection = (
     if (opt_trigger_highlight_callback) {
       const callback = g.getFunctionOption("highlightCallback");
       if (callback) {
-        const event = {} as MouseEvent;
+        const event = new MouseEvent("highlight");
         callback.call(
           g,
           event,
@@ -508,8 +512,9 @@ export const setSelection = (
  * @private
  */
 export const mouseOut = (g: Zpgraph, event: MouseEvent) => {
-  if (g.getFunctionOption("unhighlightCallback")) {
-    g.getFunctionOption("unhighlightCallback").call(g, event);
+  const unhighlightCallback = g.getFunctionOption("unhighlightCallback");
+  if (unhighlightCallback) {
+    unhighlightCallback.call(g, event);
   }
 
   if (g.getBooleanOption("hideOverlayOnMouseOut") && !g.lockedSet_) {

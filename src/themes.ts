@@ -35,16 +35,24 @@ export const themes = {
   },
 } as const satisfies Record<ChartTheme, Partial<ZpgraphOptions>>;
 
-const THEME_KEYS = Object.keys(themes.light) as Array<
-  keyof (typeof themes)["light"]
->;
+const THEME_KEYS = [
+  "axisLineColor",
+  "gridLineColor",
+  "highlightSeriesBackgroundColor",
+  "strokeBorderColor",
+  "rangeSelectorPlotStrokeColor",
+  "rangeSelectorPlotFillGradientColor",
+  "rangeSelectorPlotFillColor",
+  "rangeSelectorBackgroundStrokeColor",
+  "rangeSelectorForegroundStrokeColor",
+] as const satisfies ReadonlyArray<keyof (typeof themes)["light"]>;
 
 /**
  * Sets `data-theme` on graphDiv and paints canvas chrome from `themes[theme]`.
  * Keys already present in `user_attrs_` win (user override).
  */
 export const applyTheme = (g: Zpgraph): void => {
-  const theme = (g.user_attrs_ as ZpgraphOptions).theme;
+  const theme = g.user_attrs_.theme;
   if (theme !== "light" && theme !== "dark") {
     return;
   }
@@ -53,14 +61,12 @@ export const applyTheme = (g: Zpgraph): void => {
     g.graphDiv.setAttribute("data-theme", theme);
   }
 
-  const preset = themes[theme] as Partial<ZpgraphOptions>;
-  const user = g.user_attrs_ as Record<string, unknown>;
-  const attrs = g.attrs_ as Record<string, unknown>;
+  const preset = themes[theme];
 
   for (const key of THEME_KEYS) {
-    if (Object.hasOwn(user, key)) {
+    if (Object.hasOwn(g.user_attrs_, key)) {
       continue;
     }
-    attrs[key] = preset[key];
+    g.attrs_[key] = preset[key];
   }
 };

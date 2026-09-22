@@ -13,6 +13,16 @@
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 import { halfDown, halfUp } from "../utils";
 
+const toNumberArrayOrNull = (v: unknown): number[] | null => {
+  if (v == null) {
+    return null;
+  }
+  if (!Array.isArray(v)) {
+    return null;
+  }
+  return v.every((x) => typeof x === "number") ? v : null;
+};
+
 /*
 
 Current bits of jankiness:
@@ -70,9 +80,9 @@ class grid {
             g.getOptionForAxis("gridLineColor", axes[i]!),
           );
           lineWidths[i] = Number(g.getOptionForAxis("gridLineWidth", axes[i]!));
-          strokePattern[i] = g.getOptionForAxis("gridLinePattern", axes[i]!) as
-            | number[]
-            | null;
+          strokePattern[i] = toNumberArrayOrNull(
+            g.getOptionForAxis("gridLinePattern", axes[i]!),
+          );
           stroking[i] = !!(strokePattern[i] && strokePattern[i]!.length >= 2);
         }
       }
@@ -112,9 +122,9 @@ class grid {
     // draw grid for x axis
     if (g.getOptionForAxis("drawGrid", "x")) {
       ctx.save();
-      const xStrokePattern = g.getOptionForAxis("gridLinePattern", "x") as
-        | number[]
-        | null;
+      const xStrokePattern = toNumberArrayOrNull(
+        g.getOptionForAxis("gridLinePattern", "x"),
+      );
       const xStroking = !!(xStrokePattern && xStrokePattern.length >= 2);
       if (xStroking) {
         if (ctx.setLineDash) {

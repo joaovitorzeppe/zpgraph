@@ -61,12 +61,13 @@ export interface Emitter {
  */
 export const makeEmitter = (target: object): void => {
   const bus = new EventTarget();
-  const host = target as Emitter;
-  host.addEventListener = bus.addEventListener.bind(bus);
-  host.removeEventListener = bus.removeEventListener.bind(bus);
-  host.emit_ = (type: string, detail?: unknown) => {
-    bus.dispatchEvent(new CustomEvent(type, { detail }));
-  };
+  Object.assign(target, {
+    addEventListener: bus.addEventListener.bind(bus),
+    removeEventListener: bus.removeEventListener.bind(bus),
+    emit_(type: string, detail?: unknown) {
+      bus.dispatchEvent(new CustomEvent(type, { detail }));
+    },
+  } satisfies Emitter);
 };
 
 export interface DragOptions {
@@ -100,7 +101,7 @@ export const drag = (el: HTMLElement, opts: DragOptions): (() => void) => {
     e.preventDefault();
   };
 
-  const end = (e: PointerEvent) => {
+  const end = (e: { pointerId: number }) => {
     if (e.pointerId !== pointerId) {
       return;
     }
@@ -146,7 +147,7 @@ export const drag = (el: HTMLElement, opts: DragOptions): (() => void) => {
 
   return () => {
     el.removeEventListener("pointerdown", start);
-    end({ pointerId } as PointerEvent);
+    end({ pointerId });
   };
 };
 
@@ -161,7 +162,11 @@ export const fillTemplate = (
   template: HTMLElement,
   values: Record<string, unknown>,
 ): HTMLElement => {
-  const clone = template.cloneNode(true) as HTMLElement;
+  const raw = template.cloneNode(true);
+  if (!(raw instanceof HTMLElement)) {
+    return div();
+  }
+  const clone = raw;
   clone.removeAttribute("id");
 
   const substitute = (text: string) =>
@@ -172,15 +177,20 @@ export const fillTemplate = (
   const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = node.nodeValue;
-    if (text && text.includes("{{")) {
+    if (text?.includes("{{")) {
       node.nodeValue = substitute(text);
     }
   }
 
   for (const field of clone.querySelectorAll("input, textarea")) {
-    const input = field as HTMLInputElement;
-    if (input.value.includes("{{")) {
-      input.value = substitute(input.value);
+    if (
+      !(field instanceof HTMLInputElement) &&
+      !(field instanceof HTMLTextAreaElement)
+    ) {
+      continue;
+    }
+    if (field.value.includes("{{")) {
+      field.value = substitute(field.value);
     }
   }
 

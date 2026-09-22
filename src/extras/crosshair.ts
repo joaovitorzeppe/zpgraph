@@ -10,12 +10,7 @@ import ZpgraphImport from "zpgraph";
 import type { SelectPluginEvent } from "../internal-types";
 import type ZpgraphClass from "../zpgraph";
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { Crosshair?: typeof Crosshair };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 /**
  * Draws a crosshair through the selected point.
@@ -119,6 +114,6 @@ class Crosshair {
   }
 }
 
-Zpgraph.Plugins.Crosshair = Crosshair;
+Object.assign(ZpgraphImport.Plugins, { Crosshair });
 
 export default Crosshair;

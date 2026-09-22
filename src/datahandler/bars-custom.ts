@@ -14,7 +14,7 @@ import type {
   UnifiedSeries,
 } from "../internal-types";
 import BarsHandler from "./bars";
-import { seriesOption } from "./datahandler";
+import { rawX, rawYArray, seriesBoolean } from "./datahandler";
 
 class CustomBarsHandler extends BarsHandler {
   /** @inheritDoc */
@@ -23,12 +23,12 @@ class CustomBarsHandler extends BarsHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
+    const series: UnifiedSeries = [];
     let x, y, point;
-    const logScale = seriesOption<boolean>(options, i, "logscale");
+    const logScale = seriesBoolean(options, i, "logscale");
     for (let j = 0; j < rawData.length; j++) {
-      x = rawData[j]![0] as number;
-      point = rawData[j]![i] as number[] | null;
+      x = rawX(rawData[j]![0]!);
+      point = rawYArray(rawData[j]![i]!);
       if (logScale && point !== null) {
         // On the log scale, points less than zero do not exist.
         // This will create a gap in the chart.
@@ -68,7 +68,7 @@ class CustomBarsHandler extends BarsHandler {
     count = 0;
     for (i = 0; i < originalData.length; i++) {
       y = originalData[i]![1];
-      extremes = originalData[i]![2] as number[];
+      extremes = originalData[i]![2]!;
       rollingData[i] = originalData[i]!;
 
       if (y !== null && !isNaN(y)) {
@@ -79,10 +79,10 @@ class CustomBarsHandler extends BarsHandler {
       }
       if (i - rollPeriod >= 0) {
         const prev = originalData[i - rollPeriod]!;
-        if (prev[1]! !== null && !isNaN(prev[1]!)) {
-          low -= (prev[2]! as number[])[0]!;
-          mid -= prev[1]!;
-          high -= (prev[2]! as number[])[1]!;
+        if (prev[1]! !== null && !isNaN(prev[1])) {
+          low -= prev[2]![0]!;
+          mid -= prev[1];
+          high -= prev[2]![1]!;
           count -= 1;
         }
       }

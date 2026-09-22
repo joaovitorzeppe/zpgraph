@@ -12,23 +12,66 @@ import type {
   AxisProperties,
   OptionsManagerLike,
   RawData,
+  RawDataCell,
   UnifiedSeries,
 } from "../internal-types";
 import type { Point } from "../types";
+
+/** Series label at index from options `labels` array. */
+const seriesLabel = (
+  options: OptionsManagerLike,
+  seriesIndex: number,
+): string => {
+  const labels = options.get("labels");
+  if (!Array.isArray(labels)) {
+    return "";
+  }
+  const label = labels[seriesIndex];
+  return typeof label === "string" ? label : String(label ?? "");
+};
 
 /**
  * Reads a per-series option. Every handler needs the series label before it can
  * ask for `logscale` or `sigma`, and the label only ever comes from the index.
  */
-export const seriesOption = <T>(
+export const seriesOption = (
   options: OptionsManagerLike,
   seriesIndex: number,
   name: string,
-): T =>
-  options.getForSeries(
-    name,
-    (options.get("labels") as string[])[seriesIndex]!,
-  ) as T;
+): unknown => options.getForSeries(name, seriesLabel(options, seriesIndex));
+
+/** Boolean per-series option (logscale, wilsonInterval, …). */
+export const seriesBoolean = (
+  options: OptionsManagerLike,
+  seriesIndex: number,
+  name: string,
+): boolean => Boolean(seriesOption(options, seriesIndex, name));
+
+/** Numeric per-series option (sigma, …). */
+export const seriesNumber = (
+  options: OptionsManagerLike,
+  seriesIndex: number,
+  name: string,
+): number => {
+  const v = seriesOption(options, seriesIndex, name);
+  return typeof v === "number" ? v : Number(v);
+};
+
+/** X cell from a raw row (number or Date → millis). */
+export const rawX = (cell: RawDataCell): number =>
+  typeof cell === "number"
+    ? cell
+    : cell instanceof Date
+      ? cell.valueOf()
+      : Number(cell);
+
+/** Scalar Y cell from a raw row. */
+export const rawY = (cell: RawDataCell): number | null =>
+  cell === null || typeof cell === "number" ? cell : null;
+
+/** Nested Y cell (error/custom/fraction bars). */
+export const rawYArray = (cell: RawDataCell): Array<number | null> | null =>
+  Array.isArray(cell) ? cell : null;
 
 /**
  * The data handler is responsible for all data specific operations. All of the

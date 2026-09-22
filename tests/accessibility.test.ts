@@ -10,7 +10,7 @@ import { mockCanvas, mountDiv } from "./helpers";
 
 const data = Array.from({ length: 20 }, (_, i) => [i, i, 20 - i]);
 
-const makeChart = (opts: Record<string, unknown> = {}) => {
+const makeChart = (opts: Partial<import("../src/types").ZpgraphOptions> = {}) => {
   const el = mountDiv();
   const g = new Zpgraph(el, data, {
     labels: ["x", "A", "B"],
@@ -18,7 +18,7 @@ const makeChart = (opts: Record<string, unknown> = {}) => {
     height: 320,
     axes: { x: { valueFormatter: (v: number) => String(v) } },
     ...opts,
-  }) as unknown as Record<string, any>;
+  });
   return { el, g };
 };
 
@@ -41,7 +41,10 @@ describe("screen reader description", () => {
   it("describes the chart, its series and its x range on the canvas", () => {
     const { el, g } = makeChart({ title: "Sales" });
 
-    const canvas = el.querySelector('canvas[role="img"]') as HTMLCanvasElement;
+    const canvas = el.querySelector('canvas[role="img"]');
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      throw new Error("expected canvas");
+    }
     const label = canvas.getAttribute("aria-label")!;
     expect(label).toContain("Sales");
     expect(label).toContain("A, B");
@@ -66,7 +69,10 @@ describe("screen reader description", () => {
 
   it("follows a zoom, because the range it names changed", () => {
     const { el, g } = makeChart();
-    const canvas = el.querySelector('canvas[role="img"]') as HTMLCanvasElement;
+    const canvas = el.querySelector('canvas[role="img"]');
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      throw new Error("expected canvas");
+    }
 
     g.updateOptions({ dateWindow: [5, 10] });
 

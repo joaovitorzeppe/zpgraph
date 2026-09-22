@@ -13,7 +13,7 @@ import type {
   RawData,
   UnifiedSeries,
 } from "../internal-types";
-import ZpgraphDataHandler, { seriesOption } from "./datahandler";
+import ZpgraphDataHandler, { rawX, rawY, seriesBoolean } from "./datahandler";
 
 class DefaultHandler extends ZpgraphDataHandler {
   /** @inheritDoc */
@@ -22,12 +22,12 @@ class DefaultHandler extends ZpgraphDataHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
-    const logScale = seriesOption<boolean>(options, i, "logscale");
+    const series: UnifiedSeries = [];
+    const logScale = seriesBoolean(options, i, "logscale");
     for (let j = 0; j < rawData.length; j++) {
       const row = rawData[j]!;
-      const x = row[0] as number;
-      let point = row[i] as number | null;
+      const x = rawX(row[0]!);
+      let point = rawY(row[i]!);
       if (logScale) {
         // On the log scale, points less than zero do not exist.
         // This will create a gap in the chart.

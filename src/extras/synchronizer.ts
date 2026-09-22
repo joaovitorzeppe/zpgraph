@@ -53,19 +53,18 @@ interface SyncOptions {
 }
 
 interface StoredCallbacks {
-  drawCallback?: (...args: unknown[]) => void;
-  highlightCallback?: (...args: unknown[]) => void;
-  unhighlightCallback?: (...args: unknown[]) => void;
-  [key: string]: ((...args: unknown[]) => void) | undefined;
+  drawCallback?: ZpgraphOptions["drawCallback"];
+  highlightCallback?: ZpgraphOptions["highlightCallback"];
+  unhighlightCallback?: ZpgraphOptions["unhighlightCallback"];
 }
 
 type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  synchronize: typeof synchronize;
+  synchronize?: typeof synchronize;
 };
 
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
+const Zpgraph: ZpgraphExtrasHost = ZpgraphImport;
 
-const arraysAreEqual = <T>(a: T[] | unknown, b: T[] | unknown): boolean => {
+const arraysAreEqual = (a: unknown, b: unknown): boolean => {
   if (!Array.isArray(a) || !Array.isArray(b)) {
     return false;
   }
@@ -90,13 +89,12 @@ const attachZoomHandlers = (
   gs.forEach((g) => {
     g.updateOptions(
       {
-        drawCallback(me: unknown, initial: boolean) {
-          const chart = me as ZpgraphInstance;
+        drawCallback(me: ZpgraphInstance, initial: boolean) {
           if (state.block || initial) {
             // call the user’s drawCallback even if we are blocked
             for (let j = 0; j < gs.length; j++) {
-              if (gs[j] === chart) {
-                prevCallbacks[j]?.drawCallback?.(chart, initial);
+              if (gs[j] === me) {
+                prevCallbacks[j]?.drawCallback?.(me, initial);
                 break;
               }
             }
@@ -106,22 +104,22 @@ const attachZoomHandlers = (
           state.block = true;
 
           const opts: Partial<ZpgraphOptions> = {
-            dateWindow: chart.xAxisRange(),
+            dateWindow: me.xAxisRange(),
           };
           if (syncOpts.range) {
-            opts.valueRange = chart.yAxisRange();
+            opts.valueRange = me.yAxisRange();
           }
 
           for (let j = 0; j < gs.length; j++) {
-            if (gs[j] === chart) {
-              prevCallbacks[j]?.drawCallback?.(chart, initial);
+            if (gs[j] === me) {
+              prevCallbacks[j]?.drawCallback?.(me, initial);
               continue;
             }
 
             // If X-zoom differs, update
             let update = !arraysAreEqual(
               opts.dateWindow,
-              gs[j]!.getOption("dateWindow") as [number, number] | null,
+              gs[j]!.getOption("dateWindow"),
             );
             // If Y-zoom differs and syncing, update
             if (
@@ -129,9 +127,7 @@ const attachZoomHandlers = (
               syncOpts.range &&
               !arraysAreEqual(
                 opts.valueRange,
-                gs[j]!.getOption("valueRange") as
-                  | [number | null, number | null]
-                  | null,
+                gs[j]!.getOption("valueRange"),
               )
             ) {
               update = true;
@@ -213,11 +209,51 @@ const attachSelectionHandlers = (
 const parseSyncOpts = (obj: object, opts: SyncOptions) => {
   const OPTIONS = ["selection", "zoom", "range"] as const;
   for (const optName of OPTIONS) {
-    if (Object.hasOwn(obj, optName)) {
-      opts[optName] = (obj as SyncOptions)[optName];
+    if (!Object.hasOwn(obj, optName)) {
+      continue;
+    }
+    const v = Reflect.get(obj, optName);
+    if (typeof v === "boolean") {
+      opts[optName] = v;
     }
   }
 };
+
+const wrapDrawCallback = (
+  fn: ((...args: unknown[]) => unknown) | undefined,
+): ZpgraphOptions["drawCallback"] | undefined => {
+  if (!fn) {
+    return undefined;
+  }
+  return (g, initial) => {
+    fn(g, initial);
+  };
+};
+
+const wrapHighlightCallback = (
+  fn: ((...args: unknown[]) => unknown) | undefined,
+): ZpgraphOptions["highlightCallback"] | undefined => {
+  if (!fn) {
+    return undefined;
+  }
+  return (event, x, points, row, seriesName) => {
+    fn(event, x, points, row, seriesName);
+  };
+};
+
+const wrapUnhighlightCallback = (
+  fn: ((...args: unknown[]) => unknown) | undefined,
+): ZpgraphOptions["unhighlightCallback"] | undefined => {
+  if (!fn) {
+    return undefined;
+  }
+  return (event) => {
+    fn(event);
+  };
+};
+
+const isZpgraphInstance = (v: unknown): v is ZpgraphInstance =>
+  v instanceof ZpgraphImport;
 
 const synchronize = (...args: unknown[]) => {
   if (args.length === 0) {
@@ -235,12 +271,13 @@ const synchronize = (...args: unknown[]) => {
   let zpgraph: ZpgraphInstance[] | null = [];
   let prevCallbacks: StoredCallbacks[] | null = [];
 
-  if (args[0] instanceof ZpgraphImport) {
+  if (isZpgraphInstance(args[0])) {
     // Arguments are Zpgraph objects.
     let i = 0;
     for (; i < args.length; i++) {
-      if (args[i] instanceof ZpgraphImport) {
-        zpgraph.push(args[i] as ZpgraphInstance);
+      const arg = args[i];
+      if (isZpgraphInstance(arg)) {
+        zpgraph.push(arg);
       } else {
         break;
       }
@@ -251,15 +288,23 @@ const synchronize = (...args: unknown[]) => {
           "All but the last argument must be Zpgraph objects.",
       );
     } else if (i === args.length - 1) {
-      parseSyncOpts(args[args.length - 1] as object, opts);
+      const last = args[args.length - 1];
+      if (last !== null && typeof last === "object") {
+        parseSyncOpts(last, opts);
+      }
     }
-  } else if ((args[0] as ZpgraphInstance[]).length) {
+  } else if (Array.isArray(args[0]) && args[0].length) {
     // Invoked w/ list of zpgraph, options
-    for (let i = 0; i < (args[0] as ZpgraphInstance[]).length; i++) {
-      zpgraph.push((args[0] as ZpgraphInstance[])[i]!);
+    for (const item of args[0]) {
+      if (isZpgraphInstance(item)) {
+        zpgraph.push(item);
+      }
     }
     if (args.length === 2) {
-      parseSyncOpts(args[1] as object, opts);
+      const maybeOpts = args[1];
+      if (maybeOpts !== null && typeof maybeOpts === "object") {
+        parseSyncOpts(maybeOpts, opts);
+      }
     } else if (args.length > 2) {
       throw new Error(
         "Invalid invocation of Zpgraph.synchronize(). " +
@@ -290,24 +335,19 @@ const synchronize = (...args: unknown[]) => {
       if (--readyState.readycount === 0) {
         // store original callbacks
         for (let j = 0; j < charts.length; j++) {
-          if (!callbacks![j]) {
-            callbacks![j] = {};
+          if (!callbacks[j]) {
+            callbacks[j] = {};
           }
-          const savedDraw = charts[j]!.getFunctionOption("drawCallback");
-          if (savedDraw) {
-            callbacks![j]!.drawCallback = savedDraw;
-          }
-          const savedHighlight =
-            charts[j]!.getFunctionOption("highlightCallback");
-          if (savedHighlight) {
-            callbacks![j]!.highlightCallback = savedHighlight;
-          }
-          const savedUnhighlight = charts[j]!.getFunctionOption(
-            "unhighlightCallback",
+          const saved = callbacks[j]!;
+          saved.drawCallback = wrapDrawCallback(
+            charts[j]!.getFunctionOption("drawCallback"),
           );
-          if (savedUnhighlight) {
-            callbacks![j]!.unhighlightCallback = savedUnhighlight;
-          }
+          saved.highlightCallback = wrapHighlightCallback(
+            charts[j]!.getFunctionOption("highlightCallback"),
+          );
+          saved.unhighlightCallback = wrapUnhighlightCallback(
+            charts[j]!.getFunctionOption("unhighlightCallback"),
+          );
         }
 
         // Listen for draw, highlight, unhighlight callbacks.
@@ -316,11 +356,11 @@ const synchronize = (...args: unknown[]) => {
           syncOpts.zoom = true;
         }
         if (syncOpts.zoom) {
-          attachZoomHandlers(charts, syncOpts, callbacks!);
+          attachZoomHandlers(charts, syncOpts, callbacks);
         }
 
         if (syncOpts.selection) {
-          attachSelectionHandlers(charts, callbacks!);
+          attachSelectionHandlers(charts, callbacks);
         }
       }
     });
@@ -334,15 +374,27 @@ const synchronize = (...args: unknown[]) => {
       for (let i = 0; i < zpgraph.length; i++) {
         const g = zpgraph[i]!;
         if (opts.zoom) {
-          g.updateOptions({
-            drawCallback: prevCallbacks[i]?.drawCallback ?? null,
-          } as Partial<ZpgraphOptions>);
+          const restore: Partial<ZpgraphOptions> = {};
+          Reflect.set(
+            restore,
+            "drawCallback",
+            prevCallbacks[i]?.drawCallback ?? null,
+          );
+          g.updateOptions(restore);
         }
         if (opts.selection) {
-          g.updateOptions({
-            highlightCallback: prevCallbacks[i]?.highlightCallback ?? null,
-            unhighlightCallback: prevCallbacks[i]?.unhighlightCallback ?? null,
-          } as Partial<ZpgraphOptions>);
+          const restore: Partial<ZpgraphOptions> = {};
+          Reflect.set(
+            restore,
+            "highlightCallback",
+            prevCallbacks[i]?.highlightCallback ?? null,
+          );
+          Reflect.set(
+            restore,
+            "unhighlightCallback",
+            prevCallbacks[i]?.unhighlightCallback ?? null,
+          );
+          g.updateOptions(restore);
         }
       }
       // release references & make subsequent calls throw.

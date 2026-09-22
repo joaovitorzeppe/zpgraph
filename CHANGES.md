@@ -1,5 +1,11 @@
 # Changes
 
+## 1.3.0
+
+- Stricter TypeScript surfaces (`InteractionContext`, plugins, getters)
+- Type-aware oxlint: eliminate unsafe assertions / arguments; lint clean under new rules
+- Safer string option coercion and interaction/plugin `this` binding fixes
+
 ## 1.2.2
 
 - Build with `tsdown` instead of `tsup`

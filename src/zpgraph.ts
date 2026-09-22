@@ -129,6 +129,9 @@ import { registerZpgraphStatics } from "./register";
 
 const OPTIONS_REFERENCE: Record<string, unknown> | null = OPTIONS_REFERENCE_;
 
+const isAxisName = (a: string): a is AxisName =>
+  a === "x" || a === "y" || a === "y2";
+
 interface PluginDict {
   plugin: Plugin;
   events: Record<string, (...args: unknown[]) => unknown>;
@@ -139,7 +142,7 @@ interface PluginDict {
 type TrackedEvent = {
   elem: EventTarget;
   type: string;
-  fn: EventListener;
+  fn: utils.DomEventHandler;
 };
 
 /**
@@ -158,6 +161,9 @@ type TrackedEvent = {
  */
 
 export default class Zpgraph {
+  // Lets lifecycle read statics via g.constructor without an unsafe cast.
+  declare ["constructor"]: typeof Zpgraph;
+
   is_initial_draw_!: boolean;
   readyFns_!: Array<(g: Zpgraph) => void>;
   maindiv_!: HTMLElement;
@@ -185,14 +191,14 @@ export default class Zpgraph {
   canvas_!: HTMLCanvasElement;
   hidden_!: HTMLCanvasElement;
   plotter_!: ZpgraphCanvasRenderer;
-  mouseMoveHandler_?: utils.Coalesced;
-  keyDownHandler_?: (e: KeyboardEvent) => void;
+  mouseMoveHandler_?: utils.Coalesced<[Event]>;
+  keyDownHandler_?: utils.DomEventHandler;
   /** Row the keyboard last moved to, undefined before the first key. */
   keyboardRow_: number | undefined;
   /** Frame-coalesced handlers, cancelled on destroy. */
-  coalesced_: utils.Coalesced[] = [];
-  mouseOutHandler_?: (e: MouseEvent) => void;
-  resizeHandler_?: utils.Coalesced | null;
+  coalesced_: Array<{ flush(): void; cancel(): void }> = [];
+  mouseOutHandler_?: utils.DomEventHandler;
+  resizeHandler_?: utils.Coalesced<[]> | null;
   resizeObserver_?: ResizeObserver | null;
   fileLoadAbort_: AbortController | null = null;
   rawData_!: RawData;
@@ -212,7 +218,7 @@ export default class Zpgraph {
   drawingTimeMs_!: number;
   readyFired_!: boolean;
   resize_lock!: boolean;
-  currentZoomRectArgs_: unknown | null;
+  currentZoomRectArgs_: unknown;
   canvas_ctx_!: CanvasRenderingContext2D;
   hidden_ctx_!: CanvasRenderingContext2D;
   mouseEventElement_!: HTMLElement;
@@ -304,7 +310,7 @@ export default class Zpgraph {
     for (let i = 0; i < this.plugins_.length; i++) {
       const p = this.plugins_[i]!;
       if (p.plugin instanceof type) {
-        return p.plugin as T;
+        return p.plugin;
       }
     }
     return null;
@@ -333,7 +339,7 @@ export default class Zpgraph {
       return isZoomedY;
     }
 
-    throw new Error(`axis parameter is [${axis}] must be null, 'x' or 'y'.`);
+    throw new Error(`axis parameter is [${String(axis)}] must be null, 'x' or 'y'.`);
   }
 
   /**
@@ -341,7 +347,7 @@ export default class Zpgraph {
    */
   toString() {
     const maindiv = this.maindiv_;
-    const id = maindiv && maindiv.id ? maindiv.id : maindiv;
+    const id = maindiv?.id ? maindiv.id : "";
     return "[Zpgraph " + id + "]";
   }
 
@@ -400,7 +406,8 @@ export default class Zpgraph {
    * @private
    */
   getNumericOption(name: string, opt_seriesName?: string): number {
-    return this.getOption(name, opt_seriesName) as number;
+    const v = this.getOption(name, opt_seriesName);
+    return typeof v === "number" ? v : Number(v);
   }
 
   /**
@@ -412,7 +419,14 @@ export default class Zpgraph {
    * @private
    */
   getStringOption(name: string, opt_seriesName?: string): string {
-    return this.getOption(name, opt_seriesName) as string;
+    const v = this.getOption(name, opt_seriesName);
+    if (typeof v === "string") {
+      return v;
+    }
+    if (typeof v === "number" || typeof v === "boolean" || typeof v === "bigint") {
+      return String(v);
+    }
+    return "";
   }
 
   /**
@@ -424,7 +438,8 @@ export default class Zpgraph {
    * @private
    */
   getBooleanOption(name: string, opt_seriesName?: string): boolean {
-    return this.getOption(name, opt_seriesName) as boolean;
+    const v = this.getOption(name, opt_seriesName);
+    return typeof v === "boolean" ? v : Boolean(v);
   }
 
   /**
@@ -438,10 +453,12 @@ export default class Zpgraph {
   getFunctionOption(
     name: string,
     opt_seriesName?: string,
-  ): (...args: unknown[]) => unknown {
-    return this.getOption(name, opt_seriesName) as (
-      ...args: unknown[]
-    ) => unknown;
+  ): ((...args: unknown[]) => unknown) | undefined {
+    const v = this.getOption(name, opt_seriesName);
+    if (typeof v !== "function") {
+      return undefined;
+    }
+    return (...args: unknown[]) => v(...args);
   }
 
   getOptionForAxis(name: string, axis: string | number) {
@@ -453,19 +470,37 @@ export default class Zpgraph {
    * @param axis The name of the axis (i.e. 'x', 'y' or 'y2')
    * @return A function mapping string -> option value
    */
-  optionsViewForAxis_(axis: AxisName | string): OptionsGetter {
-    const axisName = axis as AxisName;
+  optionsViewForAxis_(axis: string): OptionsGetter {
+    const normalized =
+      axis === "y1" || axis === "Y1" || axis === "Y" || axis === "y"
+        ? "y"
+        : axis === "Y2" || axis === "y2"
+          ? "y2"
+          : axis === "x" || axis === "X"
+            ? "x"
+            : axis;
+    if (!isAxisName(normalized)) {
+      throw new Error("Unknown axis: " + axis);
+    }
+    const axisName = normalized;
     const readAxisOpt = (
       axes: ZpgraphOptions["axes"],
       opt: string,
-    ): unknown | undefined => {
-      const bucket = axes?.[axisName] as Record<string, unknown> | undefined;
-      if (bucket && Object.hasOwn(bucket, opt)) {
-        return bucket[opt];
+    ): unknown => {
+      if (!axes) {
+        return undefined;
+      }
+      const bucket: unknown = Reflect.get(axes, axisName);
+      if (
+        typeof bucket === "object" &&
+        bucket !== null &&
+        Object.hasOwn(bucket, opt)
+      ) {
+        return Reflect.get(bucket, opt);
       }
       return undefined;
     };
-    const userAttrs = this.user_attrs_ as Record<string, unknown>;
+    const userAttrs = this.user_attrs_;
 
     return (opt: string) => {
       const userAxisOpt = readAxisOpt(this.user_attrs_.axes, opt);
@@ -474,15 +509,15 @@ export default class Zpgraph {
       }
 
       // I don't like that this is in a second spot.
-      if (axis === "x" && opt === "logscale") {
+      if (axisName === "x" && opt === "logscale") {
         // return the default value.
         return false;
       }
 
       // user-specified attributes always trump defaults, even if they're less
       // specific.
-      if (typeof userAttrs[opt] != "undefined") {
-        return userAttrs[opt];
+      if (Object.hasOwn(userAttrs, opt)) {
+        return Reflect.get(userAttrs, opt);
       }
 
       const attrsAxisOpt = readAxisOpt(this.attrs_.axes, opt);
@@ -491,15 +526,15 @@ export default class Zpgraph {
       }
 
       // check old-style axis options
-      if (axis === "y") {
+      if (axisName === "y") {
         const y0 = this.axes_?.[0];
         if (y0 && Object.hasOwn(y0, opt)) {
-          return y0[opt];
+          return Reflect.get(y0, opt);
         }
-      } else if (axis === "y2") {
+      } else if (axisName === "y2") {
         const y1 = this.axes_?.[1];
         if (y1 && Object.hasOwn(y1, opt)) {
-          return y1[opt];
+          return Reflect.get(y1, opt);
         }
       }
       return this.attr_(opt);
@@ -537,7 +572,7 @@ export default class Zpgraph {
     return yAxisRanges(this);
   }
 
-  toDomCoords(x: number, y: number, axis?: number) {
+  toDomCoords(x: number, y: number, axis?: number): [number | null, number | null] {
     return toDomCoords(this, x, y, axis);
   }
 
@@ -549,7 +584,7 @@ export default class Zpgraph {
     return toDomYCoord(this, y ?? null, axis);
   }
 
-  toDataCoords(x: number, y: number, axis?: number) {
+  toDataCoords(x: number, y: number, axis?: number): [number | null, number | null] {
     return toDataCoords(this, x, y, axis);
   }
 
@@ -569,7 +604,7 @@ export default class Zpgraph {
     return toPercentXCoord(this, x ?? null);
   }
 
-  eventToDomCoords(event: MouseEvent) {
+  eventToDomCoords(event: MouseEvent): [number, number] {
     return eventToDomCoords(this, event);
   }
 
@@ -679,8 +714,8 @@ export default class Zpgraph {
     return {
       name: series_name,
       column: idx,
-      visible: this.visibility()[idx - 1],
-      color: this.colorsMap_[series_name],
+      visible: this.visibility()[idx - 1] ?? false,
+      color: this.colorsMap_[series_name] ?? "",
       axis: 1 + this.attributes_.axisForSeries(series_name),
     };
   }
@@ -940,18 +975,14 @@ export default class Zpgraph {
    * @private
    */
   static copyUserAttrs_(attrs: Partial<ZpgraphOptions>) {
-    const src = attrs as Record<string, unknown>;
-    const my_attrs: Record<string, unknown> = {};
-    for (const k in src) {
-      if (!Object.hasOwn(src, k)) {
-        continue;
-      }
+    const my_attrs: Partial<ZpgraphOptions> = {};
+    for (const k of Object.keys(attrs)) {
       if (k === "file") {
         continue;
       }
-      my_attrs[k] = src[k];
+      Reflect.set(my_attrs, k, Reflect.get(attrs, k));
     }
-    return my_attrs as Partial<ZpgraphOptions>;
+    return my_attrs;
   }
 
   /**
@@ -1114,7 +1145,10 @@ export default class Zpgraph {
 
     while (low <= high) {
       const idx = (high + low) >> 1;
-      const x = this.getValue(idx, 0) as number;
+      const x = this.getValue(idx, 0);
+      if (typeof x !== "number") {
+        return null;
+      }
       if (x < xVal) {
         low = idx + 1;
       } else if (x > xVal) {
@@ -1160,7 +1194,7 @@ export default class Zpgraph {
    *     on the event. The function takes one parameter: the event object.
    * @private
    */
-  addAndTrackEvent(elem: EventTarget, type: string, fn: EventListener) {
+  addAndTrackEvent(elem: EventTarget, type: string, fn: utils.DomEventHandler) {
     utils.addEvent(elem, type, fn);
     this.registeredEvents_.push({ elem, type, fn });
   }

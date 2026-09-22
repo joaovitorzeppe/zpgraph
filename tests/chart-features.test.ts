@@ -118,7 +118,7 @@ describe("toolbar + status overlays", () => {
       height: 320,
       noData: { text: "Vazio" },
     });
-    const node = el.querySelector(".zpgraph-no-data") as HTMLElement | null;
+    const node = el.querySelector(".zpgraph-no-data");
     expect(node).not.toBeNull();
     expect(node!.textContent).toBe("Vazio");
     g.destroy();

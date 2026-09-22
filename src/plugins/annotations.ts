@@ -15,12 +15,15 @@ import type {
   ChartDrawPluginEvent,
   ZpgraphInstance,
 } from "../internal-types";
-import type { Annotation, AnnotationHandler } from "../types";
+import type { Annotation, Point } from "../types";
 import {
   getChartClassNames,
   safeCssClasses,
   withClassNames,
 } from "../class-names";
+
+const isAnnotatedPoint = (p: Point): p is AnnotatedPoint =>
+  "annotation" in p && Reflect.get(p, "annotation") != null;
 
 /**
 Current bits of jankiness:
@@ -62,12 +65,17 @@ class annotations {
     const g = e.zpgraph;
 
     // Early out in the (common) case of zero annotations.
-    const points = g.layout_.annotated_points as AnnotatedPoint[] | undefined;
-    if (!points || points.length === 0) {
+    const rawPoints = g.layout_.annotated_points;
+    if (!rawPoints || rawPoints.length === 0) {
       return;
     }
+    const points = rawPoints.filter(isAnnotatedPoint);
 
-    const containerDiv = e.canvas.parentNode as HTMLElement;
+    const parent = e.canvas.parentNode;
+    if (!(parent instanceof HTMLElement)) {
+      return;
+    }
+    const containerDiv = parent;
 
     const bindEvt = (
       eventName: keyof Pick<
@@ -85,16 +93,19 @@ class annotations {
       pt: AnnotatedPoint,
     ) => {
       return function (annotation_event: Event) {
-        const mouseEvent = annotation_event as MouseEvent;
+        if (!(annotation_event instanceof MouseEvent)) {
+          return;
+        }
+        const mouseEvent = annotation_event;
         const a = pt.annotation;
-        const handler = a[eventName] as AnnotationHandler | undefined;
+        const handler = a[eventName];
         if (handler) {
           handler(a, pt, g, mouseEvent);
         } else {
-          const fallback = g.getOption(classEventName) as
-            | AnnotationHandler
-            | undefined;
-          fallback?.(a, pt, g, mouseEvent);
+          const fallback = g.getOption(classEventName);
+          if (typeof fallback === "function") {
+            Reflect.apply(fallback, undefined, [a, pt, g, mouseEvent]);
+          }
         }
       };
     };
@@ -157,7 +168,7 @@ class annotations {
       } else if (Object.hasOwn(p.annotation, "shortText")) {
         div.appendChild(document.createTextNode(p.annotation.shortText ?? ""));
       }
-      const left = p.canvasx! - width / 2;
+      const left = p.canvasx - width / 2;
       div.style.left = left + "px";
       let divTop = 0;
       let y: number;
@@ -171,7 +182,7 @@ class annotations {
         xToUsedHeight[left] += tick_height + height;
         divTop = y;
       } else {
-        divTop = p.canvasy! - height - tick_height;
+        divTop = p.canvasy - height - tick_height;
       }
       div.style.top = divTop + "px";
       div.style.width = width + "px";
@@ -215,12 +226,12 @@ class annotations {
         : g.getNumericOption("strokeWidth");
       ctx.beginPath();
       if (!a.attachAtBottom) {
-        ctx.moveTo(p.canvasx!, p.canvasy!);
-        ctx.lineTo(p.canvasx!, p.canvasy! - 2 - tick_height);
+        ctx.moveTo(p.canvasx, p.canvasy);
+        ctx.lineTo(p.canvasx, p.canvasy - 2 - tick_height);
       } else {
         const tickY = divTop + height;
-        ctx.moveTo(p.canvasx!, tickY);
-        ctx.lineTo(p.canvasx!, tickY + tick_height);
+        ctx.moveTo(p.canvasx, tickY);
+        ctx.lineTo(p.canvasx, tickY + tick_height);
       }
       ctx.closePath();
       ctx.stroke();

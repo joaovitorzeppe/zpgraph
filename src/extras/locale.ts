@@ -110,30 +110,26 @@ export const packs = {
   } satisfies LocalePack,
 } as const;
 
+const isToolbarOptions = (v: unknown): v is ToolbarOptions =>
+  typeof v === "object" && v !== null;
+
 export const applyLocale = (g: ZpgraphInstance, locale: LocalePack): void => {
   const opts: Partial<ZpgraphOptions> = {};
   if (locale.labelsUTC != null) {
     opts.labelsUTC = locale.labelsUTC;
   }
   if (locale.toolbar) {
-    const prev =
-      (g.getOption("toolbar") as ToolbarOptions | boolean | undefined) || {};
-    const base =
-      typeof prev === "object" && prev
-        ? prev
-        : prev === true
-          ? ({} as ToolbarOptions)
-          : null;
-    if (base) {
+    const prev = g.getOption("toolbar");
+    if (isToolbarOptions(prev)) {
       opts.toolbar = {
-        ...base,
-        labels: { ...base.labels, ...locale.toolbar },
+        ...prev,
+        labels: { ...prev.labels, ...locale.toolbar },
       };
     } else if (prev === true || prev == null) {
       opts.toolbar = { labels: { ...locale.toolbar } };
     }
   }
-  (g as { locale_?: LocalePack }).locale_ = locale;
+  Object.assign(g, { locale_: locale });
   g.updateOptions(opts);
 };
 

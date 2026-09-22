@@ -9,12 +9,16 @@ const base: ZpgraphOptions = {
   height: 320,
 };
 
-/** Builds a chart and hands back the div the Legend plugin owns. */
+/** Builds a chart and hands back the div the Legend plugin owns (if any). */
 const makeChart = (options: ZpgraphOptions = {}) => {
   const el = mountDiv();
   const g = new Zpgraph(el, sampleData, { ...base, ...options });
-  const legend = el.querySelector(".zpgraph-legend") as HTMLElement;
-  return { el, g, legend };
+  const legendEl = el.querySelector(".zpgraph-legend");
+  return {
+    el,
+    g,
+    legend: legendEl instanceof HTMLElement ? legendEl : undefined,
+  };
 };
 
 describe("Legend plugin", () => {
@@ -27,10 +31,10 @@ describe("Legend plugin", () => {
     const { g, legend } = makeChart({ tooltip: { show: "always" } });
 
     expect(legend).not.toBeNull();
-    expect(legend.textContent).toContain("A");
-    expect(legend.textContent).toContain("B");
+    expect(legend!.textContent).toContain("A");
+    expect(legend!.textContent).toContain("B");
     // One dash swatch per visible series.
-    expect(legend.querySelectorAll(".zpgraph-legend-line")).toHaveLength(2);
+    expect(legend!.querySelectorAll(".zpgraph-legend-line")).toHaveLength(2);
 
     g.destroy();
   });
@@ -38,11 +42,11 @@ describe("Legend plugin", () => {
   it("stays empty with default tooltip.show 'onmouseover' until something is selected", () => {
     const { g, legend } = makeChart();
 
-    expect(legend.innerHTML).toBe("");
+    expect(legend!.innerHTML).toBe("");
 
     g.setSelection(1);
-    expect(legend.innerHTML).not.toBe("");
-    expect(legend.textContent).toContain("15");
+    expect(legend!.innerHTML).not.toBe("");
+    expect(legend!.textContent).toContain("15");
 
     g.destroy();
   });
@@ -53,7 +57,7 @@ describe("Legend plugin", () => {
       labelsSeparateLines: true,
     });
 
-    expect(legend.innerHTML).toContain("<br>");
+    expect(legend!.innerHTML).toContain("<br>");
 
     g.destroy();
   });
@@ -61,7 +65,7 @@ describe("Legend plugin", () => {
   it("joins series with a space when labelsSeparateLines is off", () => {
     const { g, legend } = makeChart({ tooltip: { show: "always" } });
 
-    expect(legend.innerHTML).not.toContain("<br>");
+    expect(legend!.innerHTML).not.toContain("<br>");
 
     g.destroy();
   });
@@ -71,7 +75,7 @@ describe("Legend plugin", () => {
 
     g.setSelection(1, "A");
 
-    const highlighted = legend.querySelectorAll("span.highlight");
+    const highlighted = legend!.querySelectorAll("span.highlight");
     expect(highlighted).toHaveLength(1);
     expect(highlighted[0]!.textContent).toContain("A");
 
@@ -88,9 +92,11 @@ describe("Legend plugin", () => {
       },
     });
 
-    expect(legend.innerHTML).toBe("<b>A|B</b>");
-    expect(seen).not.toBeNull();
-    const data = seen as unknown as LegendData;
+    expect(legend!.innerHTML).toBe("<b>A|B</b>");
+    if (seen === null) {
+      throw new Error("expected legend data");
+    }
+    const data: LegendData = seen;
     expect(data.x).toBeUndefined();
     expect(data.series.map((s) => s.label)).toEqual(["A", "B"]);
     expect(data.series[0]!.color).toBeTruthy();
@@ -112,8 +118,8 @@ describe("Legend plugin", () => {
       },
     });
 
-    expect(legend.querySelector(".custom-node")).not.toBeNull();
-    expect(legend.textContent).toBe("fragment");
+    expect(legend!.querySelector(".custom-node")).not.toBeNull();
+    expect(legend!.textContent).toBe("fragment");
 
     g.destroy();
   });
@@ -124,9 +130,9 @@ describe("Legend plugin", () => {
       visibility: [true, false],
     });
 
-    expect(legend.textContent).toContain("A");
-    expect(legend.textContent).not.toContain("B");
-    expect(legend.querySelectorAll(".zpgraph-legend-line")).toHaveLength(1);
+    expect(legend!.textContent).toContain("A");
+    expect(legend!.textContent).not.toContain("B");
+    expect(legend!.querySelectorAll(".zpgraph-legend-line")).toHaveLength(1);
 
     g.destroy();
   });
@@ -140,8 +146,8 @@ describe("Legend plugin", () => {
     g.setSelection(1);
 
     // 15 is A's value at row 1, 25 is B's.
-    expect(legend.textContent).toContain("15");
-    expect(legend.textContent).not.toContain("25");
+    expect(legend!.textContent).toContain("15");
+    expect(legend!.textContent).not.toContain("25");
 
     g.destroy();
   });
@@ -149,14 +155,14 @@ describe("Legend plugin", () => {
   it("positions the tooltip near the selection when position is 'follow'", () => {
     const { g, legend } = makeChart({ tooltip: { position: "follow" } });
 
-    stubLayoutMetrics(legend, { width: 80, height: 24 });
+    stubLayoutMetrics(legend!, { width: 80, height: 24 });
 
     g.setSelection(1);
 
-    expect(legend.style.left).not.toBe("");
-    expect(legend.style.top).not.toBe("");
-    expect(parseFloat(legend.style.left)).not.toBeNaN();
-    expect(parseFloat(legend.style.top)).not.toBeNaN();
+    expect(legend!.style.left).not.toBe("");
+    expect(legend!.style.top).not.toBe("");
+    expect(parseFloat(legend!.style.left)).not.toBeNaN();
+    expect(parseFloat(legend!.style.top)).not.toBeNaN();
 
     g.destroy();
   });
@@ -170,13 +176,13 @@ describe("Legend plugin", () => {
         offsetY: 2,
       },
     });
-    stubLayoutMetrics(legend, { width: 80, height: 24 });
+    stubLayoutMetrics(legend!, { width: 80, height: 24 });
     g.setSelection(1);
 
-    expect(parseFloat(legend.style.left)).toBeGreaterThanOrEqual(0);
-    expect(parseFloat(legend.style.top)).toBeGreaterThanOrEqual(0);
+    expect(parseFloat(legend!.style.left)).toBeGreaterThanOrEqual(0);
+    expect(parseFloat(legend!.style.top)).toBeGreaterThanOrEqual(0);
     const area = g.plotter_.area;
-    expect(parseFloat(legend.style.left)).toBeCloseTo(area.x + 8, 0);
+    expect(parseFloat(legend!.style.left)).toBeCloseTo(area.x + 8, 0);
 
     g.destroy();
   });
@@ -185,7 +191,7 @@ describe("Legend plugin", () => {
     const { g, legend } = makeChart({ tooltip: { show: "never" } });
 
     g.setSelection(1);
-    expect(legend.style.display).toBe("none");
+    expect(legend!.style.display).toBe("none");
 
     g.destroy();
   });

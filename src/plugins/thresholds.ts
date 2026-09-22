@@ -11,6 +11,9 @@ import {
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 import type { ThresholdBand } from "../types";
 
+const isThresholdBand = (v: unknown): v is ThresholdBand =>
+  typeof v === "object" && v !== null;
+
 class thresholds {
   labelEls_: HTMLElement[] = [];
 
@@ -34,8 +37,11 @@ class thresholds {
 
   willDrawChart = (e: ChartDrawPluginEvent) => {
     const g = e.zpgraph;
-    const list = g.getOption("thresholds") as ThresholdBand[] | undefined;
-    if (!list || !list.length) {
+    const listRaw = g.getOption("thresholds");
+    const list = Array.isArray(listRaw)
+      ? listRaw.filter(isThresholdBand)
+      : undefined;
+    if (!list?.length) {
       this.clearChart();
       return;
     }
@@ -68,11 +74,11 @@ class thresholds {
       if (domLo != null && domHi != null && domLo !== domHi) {
         const top = Math.min(domLo, domHi);
         const h = Math.abs(domHi - domLo);
-        ctx.fillStyle =
+        const fill =
           band.fillColor ?? "var(--zp-threshold-fill, rgba(27,107,147,0.14))";
-        if (String(ctx.fillStyle).startsWith("var(")) {
-          ctx.fillStyle = "rgba(27,107,147,0.14)";
-        }
+        ctx.fillStyle = fill.startsWith("var(")
+          ? "rgba(27,107,147,0.14)"
+          : fill;
         if (band.fillColor) {
           ctx.fillStyle = band.fillColor;
         }

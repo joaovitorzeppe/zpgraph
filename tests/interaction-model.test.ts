@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Zpgraph } from "../src/index";
 import ZpgraphInteraction from "../src/interaction-model";
-import type { InteractionContext } from "../src/types";
-import { mockCanvas, mountDiv } from "./helpers";
+import type { InteractionContext, ZpgraphOptions } from "../src/types";
+import { callProp, fakeMouse, mockCanvas, mountDiv } from "./helpers";
 
 /**
  * Pan, zoom and touch run on every frame of a drag, so they are the code
@@ -13,54 +13,56 @@ import { mockCanvas, mountDiv } from "./helpers";
 // 40 rows, x from 0 to 39, so a pixel-to-data conversion is easy to reason about.
 const data = Array.from({ length: 40 }, (_, i) => [i, i, 40 - i]);
 
-const makeChart = (opts: Record<string, unknown> = {}) =>
+const makeChart = (opts: Partial<ZpgraphOptions> = {}) =>
   new Zpgraph(mountDiv(), data, {
     labels: ["x", "A", "B"],
     width: 480,
     height: 320,
     ...opts,
-  }) as unknown as Record<string, any>;
+  });
 
 /** The interaction functions only ever read pageX/pageY off the event. */
-const dragEvent = (pageX: number, pageY: number): MouseEvent =>
-  ({
-    pageX,
-    pageY,
-    preventDefault: vi.fn(),
-    stopPropagation: vi.fn(),
-  }) as unknown as MouseEvent;
+const dragEvent = fakeMouse;
 
-const touchEvent = (
-  points: Array<{ x: number; y: number }>,
-  target: Element,
-): TouchEvent =>
-  ({
-    preventDefault: vi.fn(),
-    touches: points.map((p) => ({
-      pageX: p.x,
-      pageY: p.y,
-      clientX: p.x,
-      clientY: p.y,
-      target,
-    })),
-  }) as unknown as TouchEvent;
+const touchLike = (points: Array<{ x: number; y: number }>, target: Element) => ({
+  preventDefault: vi.fn(),
+  touches: points.map((p) => ({
+    pageX: p.x,
+    pageY: p.y,
+    clientX: p.x,
+    clientY: p.y,
+    target,
+  })),
+});
+
+const callTouch = (
+  method: "startTouch" | "moveTouch" | "endTouch",
+  event: object,
+  g: Zpgraph,
+  context: InteractionContext,
+) => {
+  Reflect.apply(ZpgraphInteraction[method], ZpgraphInteraction, [
+    event,
+    g,
+    context,
+  ]);
+};
 
 // The interaction functions treat the context as a scratchpad and add keys to
 // it as a gesture progresses, so this is deliberately open.
-const newContext = (startX = 0, startY = 0): InteractionContext =>
-  ({
-    px: 0,
-    py: 0,
-    dragStartX: startX,
-    dragStartY: startY,
-    dragEndX: startX,
-    dragEndY: startY,
-    isZooming: false,
-    isPanning: false,
-    is2DPan: false,
-    cancelNextDblclick: false,
-    initializeMouseDown: vi.fn(),
-  }) as InteractionContext;
+const newContext = (startX = 0, startY = 0): InteractionContext => ({
+  px: 0,
+  py: 0,
+  dragStartX: startX,
+  dragStartY: startY,
+  dragEndX: startX,
+  dragEndY: startY,
+  isZooming: false,
+  isPanning: false,
+  is2DPan: false,
+  cancelNextDblclick: false,
+  initializeMouseDown: vi.fn(),
+});
 
 describe("pan", () => {
   beforeEach(() => {
@@ -79,9 +81,9 @@ describe("pan", () => {
     ZpgraphInteraction.movePan(dragEvent(260, 100), g, context);
     const after = g.xAxisRange();
 
-    expect(after[0]!).toBeLessThan(before[0]!);
+    expect(after[0]).toBeLessThan(before[0]);
     // Panning slides the window; it never resizes it.
-    expect(after[1] - after[0]!).toBeCloseTo(before[1] - before[0]!, 6);
+    expect(after[1] - after[0]).toBeCloseTo(before[1] - before[0], 6);
 
     g.destroy();
   });
@@ -93,7 +95,7 @@ describe("pan", () => {
     ZpgraphInteraction.startPan(dragEvent(200, 100), g, context);
     ZpgraphInteraction.movePan(dragEvent(140, 100), g, context);
 
-    expect(g.xAxisRange()[0]!).toBeGreaterThan(10);
+    expect(g.xAxisRange()[0]).toBeGreaterThan(10);
     g.destroy();
   });
 
@@ -112,8 +114,8 @@ describe("pan", () => {
     const beforeY = pinned.yAxisRange(0);
     ZpgraphInteraction.movePan(dragEvent(200, 160), pinned, pinnedContext);
     const afterY = pinned.yAxisRange(0);
-    expect(afterY[0]!).not.toBeCloseTo(beforeY[0]!, 6);
-    expect(afterY[1] - afterY[0]!).toBeCloseTo(beforeY[1] - beforeY[0]!, 6);
+    expect(afterY![0]).not.toBeCloseTo(beforeY![0], 6);
+    expect(afterY![1] - afterY![0]).toBeCloseTo(beforeY![1] - beforeY![0], 6);
 
     pinned.destroy();
   });
@@ -127,8 +129,8 @@ describe("pan", () => {
 
     // Drag far past the left edge of the data.
     ZpgraphInteraction.movePan(dragEvent(5000, 100), g, context);
-    expect(g.xAxisRange()[0]!).toBeGreaterThanOrEqual(
-      (context.boundedDates as [number, number])[0]!,
+    expect(g.xAxisRange()[0]).toBeGreaterThanOrEqual(
+      context.boundedDates![0]!,
     );
 
     g.destroy();
@@ -156,7 +158,7 @@ describe("zoom", () => {
     ZpgraphInteraction.endZoom(dragEvent(300, 100), g, context);
 
     const zoomed = g.xAxisRange();
-    expect(zoomed[1] - zoomed[0]!).toBeLessThan(full[1] - full[0]!);
+    expect(zoomed[1] - zoomed[0]).toBeLessThan(full[1] - full[0]);
     expect(context.isZooming).toBe(false);
 
     g.destroy();
@@ -171,13 +173,13 @@ describe("zoom", () => {
     ZpgraphInteraction.moveZoom(dragEvent(300, 100), g, context);
     context.dragDirection = 1;
     ZpgraphInteraction.endZoom(dragEvent(300, 100), g, context);
-    expect(g.xAxisRange()[1] - g.xAxisRange()[0]!).toBeLessThan(
-      full[1] - full[0]!,
+    expect(g.xAxisRange()[1] - g.xAxisRange()[0]).toBeLessThan(
+      full[1] - full[0],
     );
 
     g.resetZoom();
-    expect(g.xAxisRange()[0]!).toBeCloseTo(full[0]!, 6);
-    expect(g.xAxisRange()[1]!).toBeCloseTo(full[1]!, 6);
+    expect(g.xAxisRange()[0]).toBeCloseTo(full[0], 6);
+    expect(g.xAxisRange()[1]).toBeCloseTo(full[1], 6);
 
     g.destroy();
   });
@@ -198,8 +200,8 @@ describe("zoom", () => {
     );
 
     expect(clickCallback).toHaveBeenCalled();
-    expect(g.xAxisRange()[1] - g.xAxisRange()[0]!).toBeCloseTo(
-      full[1] - full[0]!,
+    expect(g.xAxisRange()[1] - g.xAxisRange()[0]).toBeCloseTo(
+      full[1] - full[0],
       6,
     );
 
@@ -219,22 +221,19 @@ describe("touch", () => {
     const context = newContext();
 
     const before = g.xAxisRange();
-    ZpgraphInteraction.startTouch(
-      touchEvent([{ x: 200, y: 100 }], target),
-      g,
-      context,
-    );
+    callTouch("startTouch", touchLike([{ x: 200, y: 100 }], target), g, context);
     expect(context.touchDirections).toEqual({ x: true, y: true });
 
-    ZpgraphInteraction.moveTouch(
-      touchEvent([{ x: 260, y: 100 }], target),
+    callTouch(
+      "moveTouch",
+      touchLike([{ x: 260, y: 100 }], target),
       g,
       context,
     );
     const after = g.xAxisRange();
 
-    expect(after[0]!).not.toBeCloseTo(before[0]!, 6);
-    expect(after[1] - after[0]!).toBeCloseTo(before[1] - before[0]!, 4);
+    expect(after[0]).not.toBeCloseTo(before[0], 6);
+    expect(after[1] - after[0]).toBeCloseTo(before[1] - before[0], 4);
 
     g.destroy();
   });
@@ -247,8 +246,9 @@ describe("touch", () => {
     const beforeX = g.xAxisRange();
 
     // Two fingers side by side: a horizontal pinch.
-    ZpgraphInteraction.startTouch(
-      touchEvent(
+    callTouch(
+      "startTouch",
+      touchLike(
         [
           { x: 180, y: 100 },
           { x: 280, y: 100 },
@@ -258,16 +258,13 @@ describe("touch", () => {
       g,
       context,
     );
-    expect((context.touchDirections as { x: boolean; y: boolean }).x).toBe(
-      true,
-    );
-    expect((context.touchDirections as { x: boolean; y: boolean }).y).toBe(
-      false,
-    );
+    expect(context.touchDirections?.x).toBe(true);
+    expect(context.touchDirections?.y).toBe(false);
 
     // Spread them apart: zoom in.
-    ZpgraphInteraction.moveTouch(
-      touchEvent(
+    callTouch(
+      "moveTouch",
+      touchLike(
         [
           { x: 130, y: 100 },
           { x: 330, y: 100 },
@@ -279,16 +276,17 @@ describe("touch", () => {
     );
 
     const afterX = g.xAxisRange();
-    expect(afterX[1] - afterX[0]!).toBeLessThan(beforeX[1] - beforeX[0]!);
+    expect(afterX[1] - afterX[0]).toBeLessThan(beforeX[1] - beforeX[0]);
     // The y axis is left to auto-scale: a horizontal pinch must not pin it.
     expect(g.axes_[0]!.valueRange).toBeFalsy();
 
-    ZpgraphInteraction.endTouch(
+    callTouch(
+      "endTouch",
       {
         preventDefault: vi.fn(),
         touches: [],
         changedTouches: [],
-      } as unknown as TouchEvent,
+      },
       g,
       context,
     );
@@ -303,21 +301,18 @@ describe("touch", () => {
       preventDefault: vi.fn(),
       touches: [],
       changedTouches: [{ screenX: 200, screenY: 100 }],
-    } as unknown as TouchEvent;
+    };
 
     // First tap only arms the double-tap window.
-    ZpgraphInteraction.startTouch(
-      touchEvent([{ x: 200, y: 100 }], target),
-      g,
-      context,
-    );
-    ZpgraphInteraction.endTouch(tapEnd, g, context);
+    callTouch("startTouch", touchLike([{ x: 200, y: 100 }], target), g, context);
+    callTouch("endTouch", tapEnd, g, context);
     expect(context.startTimeForDoubleTapMs).toEqual(expect.any(Number));
-    expect(g.xAxisRange()[0]!).toBeCloseTo(10, 6);
+    expect(g.xAxisRange()[0]).toBeCloseTo(10, 6);
 
     // A second finger means the gesture is a pinch, not a double tap.
-    ZpgraphInteraction.startTouch(
-      touchEvent(
+    callTouch(
+      "startTouch",
+      touchLike(
         [
           { x: 180, y: 100 },
           { x: 280, y: 100 },
@@ -330,19 +325,11 @@ describe("touch", () => {
     expect(context.startTimeForDoubleTapMs).toBeNull();
 
     // Arm it again and complete the double tap: the zoom resets.
-    ZpgraphInteraction.startTouch(
-      touchEvent([{ x: 200, y: 100 }], target),
-      g,
-      context,
-    );
-    ZpgraphInteraction.endTouch(tapEnd, g, context);
-    ZpgraphInteraction.startTouch(
-      touchEvent([{ x: 200, y: 100 }], target),
-      g,
-      context,
-    );
-    ZpgraphInteraction.endTouch(tapEnd, g, context);
-    expect(g.xAxisRange()[0]!).toBeLessThan(10);
+    callTouch("startTouch", touchLike([{ x: 200, y: 100 }], target), g, context);
+    callTouch("endTouch", tapEnd, g, context);
+    callTouch("startTouch", touchLike([{ x: 200, y: 100 }], target), g, context);
+    callTouch("endTouch", tapEnd, g, context);
+    expect(g.xAxisRange()[0]).toBeLessThan(10);
 
     g.destroy();
   });
@@ -373,25 +360,21 @@ describe("interaction models", () => {
     const context = newContext(200, 100);
     const before = g.xAxisRange();
 
-    (
-      ZpgraphInteraction.dragIsPanInteractionModel.mousemove as (
-        e: MouseEvent,
-        g: unknown,
-        context: unknown,
-      ) => void
-    )(dragEvent(260, 100), g, context);
+    callProp(ZpgraphInteraction.dragIsPanInteractionModel, "mousemove", [
+      dragEvent(260, 100),
+      g,
+      context,
+    ]);
     // Not panning yet: mousemove before mousedown must be a no-op.
-    expect(g.xAxisRange()[0]!).toBeCloseTo(before[0]!, 6);
+    expect(g.xAxisRange()[0]).toBeCloseTo(before[0], 6);
 
     ZpgraphInteraction.startPan(dragEvent(200, 100), g, context);
-    (
-      ZpgraphInteraction.dragIsPanInteractionModel.mousemove as (
-        e: MouseEvent,
-        g: unknown,
-        context: unknown,
-      ) => void
-    )(dragEvent(260, 100), g, context);
-    expect(g.xAxisRange()[0]!).toBeLessThan(before[0]!);
+    callProp(ZpgraphInteraction.dragIsPanInteractionModel, "mousemove", [
+      dragEvent(260, 100),
+      g,
+      context,
+    ]);
+    expect(g.xAxisRange()[0]).toBeLessThan(before[0]);
 
     g.destroy();
   });
@@ -408,7 +391,11 @@ describe("interaction models", () => {
     const mousedown = vi.fn();
     const g = makeChart({ interactionModel: { mousedown } });
 
-    g.mouseEventElement_.dispatchEvent(
+    const el = g.mouseEventElement_;
+    if (!el) {
+      throw new Error("expected mouseEventElement_");
+    }
+    el.dispatchEvent(
       new MouseEvent("mousedown", {
         bubbles: true,
         clientX: 100,
@@ -428,7 +415,11 @@ describe("interaction models", () => {
     const g = makeChart({ interactionModel: { mousedown: first } });
 
     g.updateOptions({ interactionModel: { mousedown: second } });
-    g.mouseEventElement_.dispatchEvent(
+    const el = g.mouseEventElement_;
+    if (!el) {
+      throw new Error("expected mouseEventElement_");
+    }
+    el.dispatchEvent(
       new MouseEvent("mousedown", {
         bubbles: true,
         clientX: 100,

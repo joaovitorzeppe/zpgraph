@@ -9,12 +9,6 @@
 import ZpgraphImport from "zpgraph";
 import type { PlotterEvent } from "../types";
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  smoothPlotter: typeof smoothPlotter;
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-
 interface CanvasPoint {
   x: number;
   y: number;
@@ -144,7 +138,7 @@ const smoothPlotter = (e: PlotterEvent) => {
         lastRightX,
         lastRightY,
         controls[0],
-        controls[1]!,
+        controls[1],
         p1.canvasx!,
         p1.canvasy!,
       );
@@ -165,11 +159,16 @@ const smoothPlotter = (e: PlotterEvent) => {
 smoothPlotter.smoothing = 1 / 3;
 smoothPlotter._getControlPoints = getControlPoints; // for testing
 
+type ZpgraphExtrasHost = typeof ZpgraphImport & {
+  smoothPlotter?: typeof smoothPlotter;
+};
+
+const Zpgraph: ZpgraphExtrasHost = ZpgraphImport;
+
 // Preferred: Zpgraph.smoothPlotter. Global kept for older demos.
 if (typeof window !== "undefined") {
-  (window as unknown as { smoothPlotter: typeof smoothPlotter }).smoothPlotter =
-    smoothPlotter;
+  Object.assign(window, { smoothPlotter });
 }
 Zpgraph.smoothPlotter = smoothPlotter;
 
-export default Zpgraph.smoothPlotter;
+export default smoothPlotter;

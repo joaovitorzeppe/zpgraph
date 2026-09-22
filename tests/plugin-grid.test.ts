@@ -1,8 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { Zpgraph } from "../src/index";
 import GridPlugin from "../src/plugins/grid";
 import type { ZpgraphOptions } from "../src/types";
-import { mockCanvas, mountDiv, sampleData } from "./helpers";
+import {
+  mockCanvas,
+  mountDiv,
+  sampleData,
+  type Mock2DContext,
+} from "./helpers";
 
 const base: ZpgraphOptions = {
   labels: ["x", "A", "B"],
@@ -10,15 +15,22 @@ const base: ZpgraphOptions = {
   height: 320,
 };
 
-/** The stub from mockCanvas: every 2d method is a spy. */
-type Mock = ReturnType<typeof vi.fn>;
-// The canvas methods the grid actually calls are named so they are not
-// `Mock | undefined` on every access.
-type RecordingCtx = Record<string, Mock> &
-  Record<"moveTo" | "lineTo" | "stroke" | "setLineDash", Mock>;
+const mockCalls = (fn: unknown): unknown[][] => {
+  if (typeof fn !== "function" || !("mock" in fn)) {
+    throw new Error("expected vitest mock");
+  }
+  const mock = Reflect.get(fn, "mock");
+  if (!mock || typeof mock !== "object" || !("calls" in mock)) {
+    throw new Error("expected mock.calls");
+  }
+  const { calls } = mock;
+  if (!Array.isArray(calls)) {
+    throw new Error("expected calls array");
+  }
+  return calls;
+};
 
-const freshCtx = () =>
-  document.createElement("canvas").getContext("2d") as unknown as RecordingCtx;
+const freshCtx = (): Mock2DContext => mockCanvas();
 
 const makeChart = (options: ZpgraphOptions = {}) => {
   const el = mountDiv();
@@ -30,21 +42,24 @@ const makeChart = (options: ZpgraphOptions = {}) => {
  * recorded calls are the grid's alone (the axes plugin and the plotters draw
  * into the chart's own hidden context).
  */
-const drawGrid = (g: Zpgraph) => {
+const drawGrid = (g: Zpgraph): Mock2DContext => {
   const ctx = freshCtx();
-  const plugin = new (GridPlugin as unknown as new () => {
-    willDrawChart: (e: unknown) => void;
-  })();
-  plugin.willDrawChart({ zpgraph: g, drawingContext: ctx });
+  const plugin = new GridPlugin();
+  Reflect.apply(plugin.willDrawChart, plugin, [
+    { zpgraph: g, drawingContext: ctx },
+  ]);
   return ctx;
 };
 
 /** [x, y] pairs passed to moveTo. */
-const segments = (ctx: RecordingCtx) =>
-  ctx.moveTo.mock.calls.map((call, i) => ({
-    from: call as [number, number],
-    to: ctx.lineTo.mock.calls[i] as [number, number],
-  }));
+const segments = (ctx: Mock2DContext) =>
+  mockCalls(ctx.moveTo).map((call, i) => {
+    const to = mockCalls(ctx.lineTo)[i] ?? [];
+    return {
+      from: [Number(call[0]), Number(call[1])],
+      to: [Number(to[0]), Number(to[1])],
+    };
+  });
 
 describe("Grid plugin", () => {
   beforeEach(() => {
@@ -56,12 +71,12 @@ describe("Grid plugin", () => {
     const g = makeChart();
     const ctx = drawGrid(g);
 
-    expect(ctx.stroke.mock.calls.length).toBeGreaterThan(0);
-    expect(ctx.moveTo.mock.calls.length).toBe(ctx.lineTo.mock.calls.length);
+    expect(mockCalls(ctx.stroke).length).toBeGreaterThan(0);
+    expect(mockCalls(ctx.moveTo).length).toBe(mockCalls(ctx.lineTo).length);
     // Lines that share a style are batched into one path, so there are far
     // fewer strokes than lines: one for the x axis and one per y axis drawn.
-    expect(ctx.stroke.mock.calls.length).toBeLessThan(
-      ctx.moveTo.mock.calls.length,
+    expect(mockCalls(ctx.stroke).length).toBeLessThan(
+      mockCalls(ctx.moveTo).length,
     );
 
     const horizontal = segments(ctx).filter((s) => s.from[1] === s.to[1]!);
@@ -78,11 +93,17 @@ describe("Grid plugin", () => {
     const area = g.getArea();
     const ctx = drawGrid(g);
 
-    const horizontal = segments(ctx).find((s) => s.from[1] === s.to[1]!)!;
-    expect(horizontal.to[0] - horizontal.from[0]!).toBe(area.w);
+    const horizontal = segments(ctx).find((s) => s.from[1] === s.to[1]);
+    if (!horizontal) {
+      throw new Error("expected horizontal segment");
+    }
+    expect(Number(horizontal.to[0]) - Number(horizontal.from[0])).toBe(area.w);
 
-    const vertical = segments(ctx).find((s) => s.from[0] === s.to[0]!)!;
-    expect(vertical.to[1]!).toBe(area.y);
+    const vertical = segments(ctx).find((s) => s.from[0] === s.to[0]);
+    if (!vertical) {
+      throw new Error("expected vertical segment");
+    }
+    expect(Number(vertical.to[1])).toBe(area.y);
 
     g.destroy();
   });
@@ -124,8 +145,8 @@ describe("Grid plugin", () => {
     const g = makeChart({ axes: { x: { gridLinePattern: [5, 5] } } });
     const ctx = drawGrid(g);
 
-    expect(ctx.setLineDash.mock.calls[0]!).toEqual([[5, 5]]);
-    const dashCalls = ctx.setLineDash.mock.calls;
+    expect(mockCalls(ctx.setLineDash)[0]!).toEqual([[5, 5]]);
+    const dashCalls = mockCalls(ctx.setLineDash);
     expect(dashCalls[dashCalls.length - 1]).toEqual([[]]);
 
     g.destroy();
@@ -139,7 +160,7 @@ describe("Grid plugin", () => {
 
     // Set once for the whole axis, not once per line, and every line it
     // covers is dashed.
-    const dashes = ctx.setLineDash.mock.calls;
+    const dashes = mockCalls(ctx.setLineDash);
     expect(dashes.length).toBe(1);
     expect(segments(ctx).length).toBeGreaterThan(1);
     expect(
@@ -168,7 +189,7 @@ describe("Grid plugin", () => {
         y: { gridLineColor: "rgb(1, 2, 3)", gridLineWidth: 2 },
       },
     });
-    const ctx = drawGrid(g) as unknown as Record<string, unknown>;
+    const ctx = drawGrid(g);
 
     expect(ctx.strokeStyle).toBe("rgb(1, 2, 3)");
     expect(ctx.lineWidth).toBe(2);
@@ -213,10 +234,12 @@ describe("Grid plugin", () => {
 
   it("runs as part of a real redraw, drawing into the chart hidden context", () => {
     const g = makeChart({ axes: { x: { gridLinePattern: [4, 4] } } });
-    const hiddenCtx = (g as unknown as { hidden_ctx_: RecordingCtx })
-      .hidden_ctx_;
-
-    expect(hiddenCtx.setLineDash.mock.calls).toContainEqual([[4, 4]]);
+    const hiddenCtx = Reflect.get(g, "hidden_ctx_");
+    if (!hiddenCtx || typeof hiddenCtx !== "object") {
+      throw new Error("expected hidden_ctx_");
+    }
+    const setLineDash = Reflect.get(hiddenCtx, "setLineDash");
+    expect(mockCalls(setLineDash)).toContainEqual([[4, 4]]);
 
     g.destroy();
   });

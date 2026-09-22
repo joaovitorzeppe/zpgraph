@@ -18,28 +18,14 @@ export type ZoomLimitsOptions = {
   clampToData?: boolean;
 };
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { ZoomLimits?: typeof ZoomLimits };
-};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
-
-const ATTACHED = "_zpZoomLimitsOpts";
-
-type Host = ZpgraphInstance & {
-  [ATTACHED]?: ZoomLimitsOptions;
-  doZoomXDates_: (minDate: number, maxDate: number) => void;
-  updateOptions: (
-    attrs: Partial<ZpgraphOptions>,
-    block_redraw?: boolean,
-  ) => void;
-};
+const attachedLimits = new WeakMap<object, ZoomLimitsOptions>();
 
 /** Read limits attached by the ZoomLimits plugin, if any. */
 export const getAttachedZoomLimits = (
   g: ZpgraphInstance,
-): ZoomLimitsOptions | undefined => (g as Host)[ATTACHED];
+): ZoomLimitsOptions | undefined => attachedLimits.get(g);
 
 /**
  * Clamp `[lo, hi]` to min/max span and (optionally) data extremes.
@@ -135,9 +121,12 @@ export const panBy = (
  */
 class ZoomLimits {
   opts_: ZoomLimitsOptions;
-  g_: Host | null = null;
-  origDoZoomXDates_: Host["doZoomXDates_"] | null = null;
-  origUpdateOptions_: Host["updateOptions"] | null = null;
+  g_: ZpgraphInstance | null = null;
+  origDoZoomXDates_: ((minDate: number, maxDate: number) => void) | null =
+    null;
+  origUpdateOptions_:
+    | ((attrs: Partial<ZpgraphOptions>, block_redraw?: boolean) => void)
+    | null = null;
 
   constructor(opt_options?: ZoomLimitsOptions) {
     this.opts_ = opt_options || {};
@@ -148,20 +137,19 @@ class ZoomLimits {
   }
 
   activate(g: ZpgraphClass) {
-    const host = g as unknown as Host;
-    this.g_ = host;
-    host[ATTACHED] = this.opts_;
+    this.g_ = g;
+    attachedLimits.set(g, this.opts_);
 
-    this.origDoZoomXDates_ = host.doZoomXDates_.bind(host);
-    host.doZoomXDates_ = (minDate: number, maxDate: number) => {
-      const [lo, hi] = clampDateWindow(host, [minDate, maxDate], this.opts_);
+    this.origDoZoomXDates_ = g.doZoomXDates_.bind(g);
+    g.doZoomXDates_ = (minDate: number, maxDate: number) => {
+      const [lo, hi] = clampDateWindow(g, [minDate, maxDate], this.opts_);
       this.origDoZoomXDates_!(lo, hi);
     };
 
-    this.origUpdateOptions_ = host.updateOptions.bind(host);
-    host.updateOptions = (attrs, block_redraw) => {
+    this.origUpdateOptions_ = g.updateOptions.bind(g);
+    g.updateOptions = (attrs, block_redraw) => {
       if (attrs.dateWindow) {
-        const clamped = clampDateWindow(host, attrs.dateWindow, this.opts_);
+        const clamped = clampDateWindow(g, attrs.dateWindow, this.opts_);
         attrs = { ...attrs, dateWindow: clamped };
       }
       this.origUpdateOptions_!(attrs, block_redraw);
@@ -181,11 +169,11 @@ class ZoomLimits {
     if (this.origUpdateOptions_) {
       host.updateOptions = this.origUpdateOptions_;
     }
-    delete host[ATTACHED];
+    attachedLimits.delete(host);
     this.g_ = null;
   }
 }
 
-Zpgraph.Plugins.ZoomLimits = ZoomLimits;
+Object.assign(ZpgraphImport.Plugins, { ZoomLimits });
 
 export default ZoomLimits;

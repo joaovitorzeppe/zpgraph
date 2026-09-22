@@ -16,12 +16,7 @@ import type {
 import type { LabelStyle } from "../types";
 import type ZpgraphClass from "../zpgraph";
 
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { SpanBands?: typeof SpanBands };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 export type SpanBand = {
   x0: number | Date;
@@ -138,7 +133,7 @@ class SpanBands {
   }
 
   activate(g: ZpgraphClass) {
-    this.g_ = g as unknown as ZpgraphInstance;
+    this.g_ = g;
     return {
       willDrawChart: this.willDrawChart,
       clearChart: this.clearChart,
@@ -153,7 +148,7 @@ class SpanBands {
   };
 
   willDrawChart = (e: ChartDrawPluginEvent) => {
-    const g = e.zpgraph as ZpgraphInstance;
+    const g = e.zpgraph;
     const ctx = e.drawingContext;
     const area = g.layout_.getPlotArea();
     const y = area.y + area.h - this.offsetY_ - this.height_;
@@ -227,6 +222,6 @@ class SpanBands {
   }
 }
 
-Zpgraph.Plugins.SpanBands = SpanBands;
+Object.assign(ZpgraphImport.Plugins, { SpanBands });
 
 export default SpanBands;

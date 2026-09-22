@@ -30,9 +30,17 @@
 /*global Zpgraph:false */
 
 import * as utils from "./utils";
-import { DECIMATION_THRESHOLD, type DecimatedPoints } from "./decimate";
+import { DECIMATION_THRESHOLD } from "./decimate";
 import { log } from "./logger";
-import type { DrawPointCallback, Plotter, PlotterEvent, Point } from "./types";
+import type {
+  DrawPointCallback,
+  FillGradient,
+  ForecastOptions,
+  MarkersOptions,
+  Plotter,
+  PlotterEvent,
+  Point,
+} from "./types";
 import type {
   AxisProperties,
   LayoutLike,
@@ -52,7 +60,7 @@ type CanvasPlotterEvent = Omit<
   allSeriesPoints?: Point[][];
 };
 
-type IteratorPredicateFn = (array: unknown[], idx: number) => boolean;
+type IteratorPredicateFn = (array: Point[], idx: number) => boolean;
 type PointOnLine = [canvasx: number, canvasy: number, idx: number];
 type CanvasAction = [type: number, x: number, y: number];
 
@@ -69,7 +77,92 @@ interface FastCanvasProxy {
 type FillContext = CanvasRenderingContext2D | FastCanvasProxy;
 
 const isNullUndefinedOrNaN = (x: unknown) => {
-  return x === null || x === undefined || isNaN(x as number);
+  return x === null || x === undefined || (typeof x === "number" && isNaN(x));
+};
+
+const toPlotter = (v: unknown): Plotter | undefined => {
+  if (typeof v !== "function") {
+    return undefined;
+  }
+  return (e: PlotterEvent) => {
+    v(e);
+  };
+};
+
+const toDrawPointCallback = (v: unknown): DrawPointCallback | undefined => {
+  if (typeof v !== "function") {
+    return undefined;
+  }
+  return (g, name, ctx, canvasx, canvasy, color, radius, idx) => {
+    v(g, name, ctx, canvasx, canvasy, color, radius, idx);
+  };
+};
+
+const toNumberArray = (v: unknown): number[] | null => {
+  if (!Array.isArray(v)) {
+    return null;
+  }
+  return v.every((x) => typeof x === "number") ? v : null;
+};
+
+const toMarkersOptions = (v: unknown): MarkersOptions | undefined => {
+  if (typeof v !== "object" || v === null) {
+    return undefined;
+  }
+  const size = Reflect.get(v, "size");
+  const out: MarkersOptions = {};
+  if (typeof size === "number") {
+    out.size = size;
+  }
+  return out;
+};
+
+const toForecastOptions = (v: unknown): ForecastOptions | undefined => {
+  if (typeof v !== "object" || v === null) {
+    return undefined;
+  }
+  const count = Reflect.get(v, "count");
+  if (typeof count !== "number") {
+    return undefined;
+  }
+  const out: ForecastOptions = { count };
+  const dashPattern = Reflect.get(v, "dashPattern");
+  const strokeWidth = Reflect.get(v, "strokeWidth");
+  const opacity = Reflect.get(v, "opacity");
+  if (Array.isArray(dashPattern) && dashPattern.every((x) => typeof x === "number")) {
+    out.dashPattern = dashPattern;
+  }
+  if (typeof strokeWidth === "number") {
+    out.strokeWidth = strokeWidth;
+  }
+  if (typeof opacity === "number") {
+    out.opacity = opacity;
+  }
+  return out;
+};
+
+const toFillGradient = (v: unknown): FillGradient | null | undefined => {
+  if (v === null || v === undefined) {
+    return v;
+  }
+  if (typeof v !== "object") {
+    return undefined;
+  }
+  const from = Reflect.get(v, "from");
+  const to = Reflect.get(v, "to");
+  if (typeof from !== "string" || typeof to !== "string") {
+    return undefined;
+  }
+  const out: FillGradient = { from, to };
+  const opacityFrom = Reflect.get(v, "opacityFrom");
+  const opacityTo = Reflect.get(v, "opacityTo");
+  if (typeof opacityFrom === "number") {
+    out.opacityFrom = opacityFrom;
+  }
+  if (typeof opacityTo === "number") {
+    out.opacityTo = opacityTo;
+  }
+  return out;
 };
 
 /**
@@ -167,8 +260,8 @@ export default class ZpgraphCanvasRenderer {
       : null;
   }
 
-  static _predicateThatSkipsEmptyPoints(array: unknown[], idx: number) {
-    return (array[idx] as Point).yval !== null;
+  static _predicateThatSkipsEmptyPoints(array: Point[], idx: number) {
+    return array[idx]!.yval !== null;
   }
 
   /**
@@ -196,7 +289,7 @@ export default class ZpgraphCanvasRenderer {
 
     const points = e.points;
     const setName = e.setName;
-    let iter = utils.createIterator(
+    let iter: utils.Iterator<Point> = utils.createIterator(
       points,
       0,
       points.length,
@@ -215,17 +308,14 @@ export default class ZpgraphCanvasRenderer {
       }
     }
 
-    const decimated = ZpgraphCanvasRenderer._decimateByPixel(
-      iter as utils.Iterator,
-      e.plotArea,
-    );
+    const decimated = ZpgraphCanvasRenderer._decimateByPixel(iter, e.plotArea);
     if (decimated) {
       iter = utils.createIterator(decimated, 0, decimated.length, null);
     }
 
     const pointsOnLine = ZpgraphCanvasRenderer._drawSeries(
       e,
-      iter as utils.Iterator,
+      iter,
       strokeWidth,
       pointSize,
       drawPoints,
@@ -267,14 +357,14 @@ export default class ZpgraphCanvasRenderer {
    *
    * @private
    */
-  static _decimateByPixel(iter: utils.Iterator, plotArea: PlotArea) {
-    const arr = iter.array_ as DecimatedPoints;
+  static _decimateByPixel(iter: utils.Iterator<Point>, plotArea: PlotArea) {
+    const arr = iter.array_;
     const start = iter.start_;
     const limit = iter.end_;
     const predicate = iter.predicate_;
     const width = plotArea ? plotArea.w : 0;
 
-    if (arr._decimated) {
+    if (Reflect.get(arr, "_decimated")) {
       return null;
     }
 
@@ -364,7 +454,7 @@ export default class ZpgraphCanvasRenderer {
    */
   static _drawSeries(
     e: CanvasPlotterEvent,
-    iter: utils.Iterator,
+    iter: utils.Iterator<Point>,
     strokeWidth: number,
     _pointSize: number,
     drawPoints: boolean,
@@ -386,9 +476,9 @@ export default class ZpgraphCanvasRenderer {
     ctx.lineWidth = strokeWidth;
 
     // NOTE: we break the iterator's encapsulation here for about a 25% speedup.
-    const arr = iter.array_ as Point[];
+    const arr = iter.array_;
     const limit = iter.end_;
-    const predicate = iter.predicate_ as IteratorPredicateFn | null;
+    const predicate = iter.predicate_;
 
     for (let i = iter.start_; i < limit; i++) {
       point = arr[i]!;
@@ -405,10 +495,10 @@ export default class ZpgraphCanvasRenderer {
       // The 'canvasy != canvasy' test catches NaN values but not Infinity.
       // Could use !isFinite(point.canvasy); != is used for performance.
       if (point.canvasy === null || point.canvasy !== point.canvasy) {
-        if (stepPlot && prevCanvasX !== null) {
+        if (stepPlot && prevCanvasX !== null && prevCanvasY !== null) {
           // Draw a horizontal line to the start of the missing data
-          ctx.moveTo(prevCanvasX, prevCanvasY!);
-          ctx.lineTo(point.canvasx!, prevCanvasY!);
+          ctx.moveTo(prevCanvasX, prevCanvasY);
+          ctx.lineTo(point.canvasx!, prevCanvasY);
         }
         prevCanvasX = prevCanvasY = null;
       } else {
@@ -416,9 +506,7 @@ export default class ZpgraphCanvasRenderer {
         if (drawGapPoints || prevCanvasX === null) {
           iter.nextIdx_ = i;
           iter.next();
-          nextCanvasY = iter.hasNext
-            ? ((iter.peek as Point).canvasy ?? null)
-            : null;
+          nextCanvasY = iter.hasNext ? (iter.peek?.canvasy ?? null) : null;
 
           const isNextCanvasYNullOrNaN =
             nextCanvasY === null || nextCanvasY !== nextCanvasY;
@@ -435,11 +523,11 @@ export default class ZpgraphCanvasRenderer {
           }
         }
 
-        if (prevCanvasX !== null) {
+        if (prevCanvasX !== null && prevCanvasY !== null) {
           if (strokeWidth) {
             if (stepPlot) {
-              ctx.moveTo(prevCanvasX, prevCanvasY!);
-              ctx.lineTo(point.canvasx!, prevCanvasY!);
+              ctx.moveTo(prevCanvasX, prevCanvasY);
+              ctx.lineTo(point.canvasx!, prevCanvasY);
             }
 
             ctx.lineTo(point.canvasx!, point.canvasy!);
@@ -553,21 +641,28 @@ export default class ZpgraphCanvasRenderer {
     this.colors = this.zpgraph_.colorsMap_;
 
     // Determine which series have specialized plotters.
-    const plotter_attr = this.zpgraph_.getOption("plotter") as
-      | Plotter
-      | Plotter[];
-    const plotters: Plotter[] = utils.isArrayLike(plotter_attr)
-      ? (plotter_attr as Plotter[])
-      : [plotter_attr as Plotter];
+    const plotter_attr = this.zpgraph_.getOption("plotter");
+    const plotters: Plotter[] = Array.isArray(plotter_attr)
+      ? plotter_attr.flatMap((p) => {
+          const plotter = toPlotter(p);
+          return plotter ? [plotter] : [];
+        })
+      : (() => {
+          const plotter = toPlotter(plotter_attr);
+          return plotter ? [plotter] : [];
+        })();
 
     const setPlotters: Record<string, Plotter> = {};
     for (i = 0; i < setNames.length; i++) {
       setName = setNames[i]!;
-      const setPlotter = this.zpgraph_.getOption("plotter", setName) as Plotter;
-      if (setPlotter === plotter_attr) {
+      const rawSetPlotter = this.zpgraph_.getOption("plotter", setName);
+      if (rawSetPlotter === plotter_attr) {
         continue;
       } // not specialized.
-
+      const setPlotter = toPlotter(rawSetPlotter);
+      if (!setPlotter) {
+        continue;
+      }
       setPlotters[setName] = setPlotter;
     }
 
@@ -620,7 +715,7 @@ export default class ZpgraphCanvasRenderer {
         if (opt_seriesName != null) {
           plotterEvent.singleSeriesName = opt_seriesName;
         }
-        (p as (e: CanvasPlotterEvent) => void)(plotterEvent);
+        p(plotterEvent);
         ctx.restore();
       }
     }
@@ -655,13 +750,14 @@ export default class ZpgraphCanvasRenderer {
 
     const borderWidth = g.getNumericOption("strokeBorderWidth", setName);
     const drawPointCallback =
-      (g.getOption("drawPointCallback", setName) as DrawPointCallback | null) ||
+      toDrawPointCallback(g.getOption("drawPointCallback", setName)) ||
       utils.Circles.DEFAULT;
-    const strokePattern = (g.getOption("strokePattern", setName) ??
-      g.getOption("strokeDashArray", setName)) as number[] | null;
+    const strokePattern =
+      toNumberArray(g.getOption("strokePattern", setName) ??
+        g.getOption("strokeDashArray", setName));
     let drawPoints = g.getBooleanOption("drawPoints", setName);
     let pointSize = g.getNumericOption("pointSize", setName);
-    const markers = g.getOption("markers") as { size?: number } | undefined;
+    const markers = toMarkersOptions(g.getOption("markers"));
     if (markers) {
       drawPoints = true;
       if (markers.size != null) {
@@ -669,14 +765,7 @@ export default class ZpgraphCanvasRenderer {
       }
     }
 
-    const forecast = g.getOption("forecast") as
-      | {
-          count: number;
-          dashPattern?: number[];
-          strokeWidth?: number;
-          opacity?: number;
-        }
-      | undefined;
+    const forecast = toForecastOptions(g.getOption("forecast"));
 
     if (borderWidth && strokeWidth) {
       ZpgraphCanvasRenderer._drawStyledLine(
@@ -773,7 +862,10 @@ export default class ZpgraphCanvasRenderer {
     ctx.beginPath();
 
     while (iter.hasNext) {
-      const point = iter.next() as Point;
+      const point = iter.next();
+      if (!point) {
+        continue;
+      }
       if (
         (!stepPlot && isNullUndefinedOrNaN(point.y)) ||
         (stepPlot && !isNaN(prevY) && isNullUndefinedOrNaN(prevY))
@@ -805,8 +897,8 @@ export default class ZpgraphCanvasRenderer {
           ctx.lineTo(point.canvasx!, prevYs[1]!);
         } else {
           ctx.moveTo(prevX, prevYs[0]!);
-          ctx.lineTo(point.canvasx!, newYs[0]!);
-          ctx.lineTo(point.canvasx!, newYs[1]!);
+          ctx.lineTo(point.canvasx!, newYs[0]);
+          ctx.lineTo(point.canvasx!, newYs[1]);
         }
         ctx.lineTo(prevX, prevYs[1]!);
         ctx.closePath();
@@ -1004,7 +1096,7 @@ export default class ZpgraphCanvasRenderer {
 
     const anySeriesFilled = (() => {
       for (let i = 0; i < setNames.length; i++) {
-        if (g.getBooleanOption("fillGraph", setNames[i]!)) {
+        if (g.getBooleanOption("fillGraph", setNames[i])) {
           return true;
         }
       }
@@ -1087,18 +1179,16 @@ export default class ZpgraphCanvasRenderer {
       const rgb = utils.toRGB_(color)!;
       const err_color =
         "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + fillAlpha + ")";
-      const fillGradient = (g.getOption("fillGradient", setName) ??
-        g.getOption("fillGradient")) as
-        | {
-            from: string;
-            to: string;
-            opacityFrom?: number;
-            opacityTo?: number;
-          }
-        | undefined
-        | null;
+      const fillGradient = toFillGradient(
+        g.getOption("fillGradient", setName) ?? g.getOption("fillGradient"),
+      );
       if (fillGradient) {
-        const grad = ctx.createLinearGradient(0, area.y, 0, area.y + area.h);
+        const grad = e.drawingContext.createLinearGradient(
+          0,
+          area.y,
+          0,
+          area.y + area.h,
+        );
         const o0 = fillGradient.opacityFrom ?? fillAlpha;
         const o1 = fillGradient.opacityTo ?? 0;
         grad.addColorStop(0, withAlpha(fillGradient.from, o0));
@@ -1115,9 +1205,9 @@ export default class ZpgraphCanvasRenderer {
       // the canvas justifies the overhead of doing so.
       if (
         points.length > 2 * g.width_ ||
-        (g.constructor as { FORCE_FAST_PROXY?: boolean }).FORCE_FAST_PROXY
+        Reflect.get(g.constructor, "FORCE_FAST_PROXY") === true
       ) {
-        ctx = ZpgraphCanvasRenderer._fastCanvasProxy(ctx);
+        ctx = ZpgraphCanvasRenderer._fastCanvasProxy(e.drawingContext);
       }
 
       // For filled charts, we draw points from left to right, then back along
@@ -1129,7 +1219,10 @@ export default class ZpgraphCanvasRenderer {
       // Logic clearer if stackGraph/stepPlot were separate sub-plotters.
       let point: Point | null = null;
       while (iter.hasNext) {
-        point = iter.next() as Point;
+        point = iter.next();
+        if (!point) {
+          continue;
+        }
         if (!utils.isOK(point.y) && !stepPlot) {
           traceBackPath(ctx, prevX, prevYs[1]!, pathBack);
           pathBack = [];
@@ -1153,8 +1246,10 @@ export default class ZpgraphCanvasRenderer {
             lastY = axisY;
           } else if (prevStepPlot && Array.isArray(currBaseline)) {
             lastY = currBaseline[0];
+          } else if (typeof currBaseline === "number") {
+            lastY = currBaseline;
           } else {
-            lastY = currBaseline as number;
+            lastY = axisY;
           }
           newYs = [point.canvasy!, lastY];
 

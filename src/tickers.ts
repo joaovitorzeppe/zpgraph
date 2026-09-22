@@ -85,6 +85,29 @@ interface TickPlacement {
 
 type DateParts = [number, number, number, number, number, number, number];
 
+const optNumber = (opts: AxisOpts, name: string): number => {
+  const v = opts(name);
+  return typeof v === "number" ? v : Number(v);
+};
+
+const isAxisLabelFormatter = (v: unknown): v is AxisLabelFormatter =>
+  typeof v === "function";
+
+const optAxisLabelFormatter = (opts: AxisOpts): AxisLabelFormatter => {
+  const v = opts("axisLabelFormatter");
+  if (!isAxisLabelFormatter(v)) {
+    throw new Error("axisLabelFormatter must be a function");
+  }
+  return v;
+};
+
+const toTickResult = (ticks: NumericTick[]): TickResult =>
+  ticks.map((tick) => ({
+    v: tick.v,
+    label: tick.label ?? "",
+    ...(tick.label_v !== undefined ? { label_v: tick.label_v } : {}),
+  }));
+
 export const numericLinearTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) =>
   numericTicks(
     a,
@@ -96,7 +119,7 @@ export const numericLinearTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) =>
   );
 
 export const numericTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) => {
-  const pixels_per_tick = opts("pixelsPerLabel") as number;
+  const pixels_per_tick = optNumber(opts, "pixelsPerLabel");
   const ticks: NumericTick[] = [];
   let i, j, tickV, nTicks;
   if (vals?.length) {
@@ -205,7 +228,7 @@ export const numericTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) => {
     }
   }
 
-  const formatter = opts("axisLabelFormatter") as AxisLabelFormatter;
+  const formatter = optAxisLabelFormatter(opts);
 
   // Add labels to the ticks.
   for (const tick of ticks) {
@@ -215,7 +238,7 @@ export const numericTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) => {
     tick.label = formatter.call(zpgraph, tick.v, 0, opts, zpgraph);
   }
 
-  return ticks as TickResult;
+  return toTickResult(ticks);
 };
 
 export const integerTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) =>
@@ -350,7 +373,7 @@ export const pickDateTickGranularity = (
   pixels: number,
   opts: AxisOpts,
 ): number => {
-  const pixels_per_tick = opts("pixelsPerLabel") as number;
+  const pixels_per_tick = optNumber(opts, "pixelsPerLabel");
   for (let i = 0; i < Granularity.NUM_GRANULARITIES; i++) {
     const num_ticks = Math.round((b - a) / TICK_PLACEMENT[i]!.spacing);
     if (pixels / num_ticks >= pixels_per_tick) {
@@ -375,7 +398,7 @@ export const getDateAxis = (
   opts: AxisOpts,
   dg: unknown,
 ): TickResult => {
-  const formatter = opts("axisLabelFormatter") as AxisLabelFormatter;
+  const formatter = optAxisLabelFormatter(opts);
   const utc = opts("labelsUTC");
   const accessors = utc ? utils.DateAccessorsUTC : utils.DateAccessorsLocal;
 
@@ -461,5 +484,5 @@ export const getDateAxis = (
       tick_time = tick_date.getTime();
     }
   }
-  return ticks as TickResult;
+  return toTickResult(ticks);
 };

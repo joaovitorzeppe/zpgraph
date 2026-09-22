@@ -1,7 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": ["dist", "coverage", "node_modules", "typings"],
+  "ignorePatterns": ["dist", "coverage", "node_modules", "typings", "demos", "scripts"],
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "import"],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true
+  },
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
@@ -29,7 +33,11 @@
       }
     ],
 
+    "typescript/no-unsafe-type-assertion": "warn",
+    "typescript/no-unnecessary-type-assertion": "warn",
+    "typescript/no-unsafe-argument": "warn",
     "typescript/no-explicit-any": "error",
+    "typescript/unbound-method": "off",
     "no-underscore-dangle": "off",
 
     "typescript/no-this-alias": "warn",

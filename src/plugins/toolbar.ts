@@ -61,8 +61,128 @@ const DEFAULT_ICONS: Record<ToolbarTool, string> = {
     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
 };
 
+
+const isInteractionModel = (v: unknown): v is InteractionModel =>
+  typeof v === "object" && v !== null;
+
+const isToolbarTool = (v: unknown): v is ToolbarTool =>
+  typeof v === "string" &&
+  (v === "zoomin" ||
+    v === "zoomout" ||
+    v === "pan" ||
+    v === "reset" ||
+    v === "downloadPng" ||
+    v === "downloadCsv" ||
+    v === "copyCsv");
+
+const readStringRecord = (
+  v: unknown,
+): Partial<Record<ToolbarTool, string>> | undefined => {
+  if (v == null || typeof v !== "object") {
+    return undefined;
+  }
+  const out: Partial<Record<ToolbarTool, string>> = {};
+  for (const key of Object.keys(v)) {
+    if (!isToolbarTool(key)) {
+      continue;
+    }
+    const val = Reflect.get(v, key);
+    if (typeof val === "string") {
+      out[key] = val;
+    }
+  }
+  return out;
+};
+
+const readIconRecord = (
+  v: unknown,
+): Partial<Record<ToolbarTool, string | (() => Node)>> | undefined => {
+  if (v == null || typeof v !== "object") {
+    return undefined;
+  }
+  const out: Partial<Record<ToolbarTool, string | (() => Node)>> = {};
+  for (const key of Object.keys(v)) {
+    if (!isToolbarTool(key)) {
+      continue;
+    }
+    const val: unknown = Reflect.get(v, key);
+    if (typeof val === "string") {
+      out[key] = val;
+    } else if (typeof val === "function") {
+      out[key] = () => {
+        const node: unknown = Reflect.apply(val, undefined, []);
+        return node instanceof Node ? node : document.createTextNode("");
+      };
+    }
+  }
+  return out;
+};
+
+const readToolbarStyle = (v: unknown): ToolbarStyle | undefined => {
+  if (v == null || typeof v !== "object" || Array.isArray(v)) {
+    return undefined;
+  }
+  const out: ToolbarStyle = {};
+  for (const key of Object.keys(v)) {
+    const val = Reflect.get(v, key);
+    if (typeof val === "string") {
+      out[key] = val;
+    }
+  }
+  return out;
+};
+
+const readToolbarOptions = (v: unknown): ToolbarOptions => {
+  if (v == null || v === true || typeof v !== "object" || Array.isArray(v)) {
+    return {};
+  }
+  const out: ToolbarOptions = {};
+  const tools = Reflect.get(v, "tools");
+  if (Array.isArray(tools)) {
+    out.tools = tools.filter(isToolbarTool);
+  }
+  const position = Reflect.get(v, "position");
+  if (position === "top-right" || position === "top-left") {
+    out.position = position;
+  }
+  const labels = readStringRecord(Reflect.get(v, "labels"));
+  if (labels) {
+    out.labels = labels;
+  }
+  const titles = readStringRecord(Reflect.get(v, "titles"));
+  if (titles) {
+    out.titles = titles;
+  }
+  const icons = readIconRecord(Reflect.get(v, "icons"));
+  if (icons) {
+    out.icons = icons;
+  }
+  const variant = Reflect.get(v, "variant");
+  if (variant === "icon" || variant === "text") {
+    out.variant = variant;
+  }
+  const className = Reflect.get(v, "className");
+  if (typeof className === "string") {
+    out.className = className;
+  }
+  const buttonClassName = Reflect.get(v, "buttonClassName");
+  if (typeof buttonClassName === "string") {
+    out.buttonClassName = buttonClassName;
+  }
+  const style = readToolbarStyle(Reflect.get(v, "style"));
+  if (style) {
+    out.style = style;
+  }
+  const buttonStyle = readToolbarStyle(Reflect.get(v, "buttonStyle"));
+  if (buttonStyle) {
+    out.buttonStyle = buttonStyle;
+  }
+  return out;
+};
+
 class toolbar {
   el_: HTMLElement | null = null;
+  g_: Zpgraph | null = null;
   panMode_ = false;
   /** Interaction model before pan — restored when pan turns off / reset. */
   savedModel_: InteractionModel | null | undefined = undefined;
@@ -73,7 +193,8 @@ class toolbar {
     return "Toolbar Plugin";
   }
 
-  activate(_g: ZpgraphInstance) {
+  activate(g: Zpgraph) {
+    this.g_ = g;
     return {
       layout: this.layout,
       didDrawChart: this.didDrawChart,
@@ -93,15 +214,18 @@ class toolbar {
     this.detach_();
   }
 
-  didDrawChart(e: ChartDrawPluginEvent) {
-    const g = e.zpgraph as unknown as Zpgraph;
-    const opt = g.getOption("toolbar") as boolean | ToolbarOptions | undefined;
+  didDrawChart(_e: ChartDrawPluginEvent) {
+    const g = this.g_;
+    if (!g) {
+      return;
+    }
+    const opt = g.getOption("toolbar");
     if (!opt) {
       this.detach_();
       return;
     }
 
-    const conf: ToolbarOptions = opt === true ? {} : opt;
+    const conf = opt === true ? {} : readToolbarOptions(opt);
     const tools = conf.tools?.length ? conf.tools : DEFAULT_TOOLS;
     const position = conf.position ?? "top-right";
     const key = JSON.stringify({
@@ -194,10 +318,13 @@ class toolbar {
       if (!this.panModel_) {
         this.panModel_ = createPanDragModel();
       }
-      const current = g.getOption("interactionModel") as
-        | InteractionModel
-        | null
-        | undefined;
+      const currentRaw = g.getOption("interactionModel");
+      const current =
+        currentRaw === null || currentRaw === undefined
+          ? currentRaw
+          : isInteractionModel(currentRaw)
+            ? currentRaw
+            : undefined;
       if (current === this.panModel_) {
         return;
       }
@@ -211,10 +338,13 @@ class toolbar {
     if (this.savedModel_ === undefined) {
       return;
     }
-    const current = g.getOption("interactionModel") as
-      | InteractionModel
-      | null
-      | undefined;
+    const currentRaw = g.getOption("interactionModel");
+      const current =
+        currentRaw === null || currentRaw === undefined
+          ? currentRaw
+          : isInteractionModel(currentRaw)
+            ? currentRaw
+            : undefined;
     if (current === this.savedModel_) {
       return;
     }
@@ -265,10 +395,13 @@ class toolbar {
   togglePan_(g: Zpgraph) {
     this.panMode_ = !this.panMode_;
     if (this.panMode_) {
-      const current = g.getOption("interactionModel") as
-        | InteractionModel
-        | null
-        | undefined;
+      const currentRaw = g.getOption("interactionModel");
+      const current =
+        currentRaw === null || currentRaw === undefined
+          ? currentRaw
+          : isInteractionModel(currentRaw)
+            ? currentRaw
+            : undefined;
       if (this.savedModel_ === undefined && current !== this.panModel_) {
         this.savedModel_ = current ?? null;
       }
@@ -347,37 +480,37 @@ const fillButtonContent = (
  */
 const createPanDragModel = (): InteractionModel =>
   ({
-    mousedown: (event: MouseEvent, g: unknown, context: InteractionContext) => {
-      const chart = g as ZpgraphInstance;
+    mousedown: (event: MouseEvent, g: ZpgraphInstance, context: InteractionContext) => {
       if (event.button && event.button === 2) {
         return;
       }
       context.initializeMouseDown(event, g, context);
       ZpgraphInteraction.startPan(event, g, context);
 
-      const drag = context as InteractionContext & {
-        isPanning?: boolean;
-        destroy?: () => void;
-      };
-      const mousemove = utils.coalesceFrames(((moveEvent: MouseEvent) => {
+      const drag = context;
+      const mousemove = utils.coalesceFrames((moveEvent: MouseEvent) => {
         if (drag.isPanning) {
           ZpgraphInteraction.movePan(moveEvent, g, context);
         }
-      }) as (...args: unknown[]) => void);
-      const mouseup = (upEvent: MouseEvent) => {
+      });
+      const mouseup: EventListener = (rawUp) => {
+        if (!(rawUp instanceof MouseEvent)) {
+          return;
+        }
+        const upEvent = rawUp;
         mousemove.flush();
         if (drag.isPanning) {
           ZpgraphInteraction.endPan(upEvent, g, context);
         }
-        utils.removeEvent(document, "mousemove", mousemove as EventListener);
-        utils.removeEvent(document, "mouseup", mouseup as EventListener);
+        utils.removeEvent(document, "mousemove", mousemove);
+        utils.removeEvent(document, "mouseup", mouseup);
         drag.destroy?.();
       };
-      chart.addAndTrackEvent(document, "mousemove", mousemove as EventListener);
-      chart.addAndTrackEvent(document, "mouseup", mouseup as EventListener);
+      g.addAndTrackEvent(document, "mousemove", mousemove);
+      g.addAndTrackEvent(document, "mouseup", mouseup);
     },
     willDestroyContextMyself: true,
-  }) as InteractionModel;
+  });
 
 const zoomBy = (g: Zpgraph, factor: number) => {
   const [x0, x1] = g.xAxisRange();

@@ -10,6 +10,7 @@ import ZpgraphImport from "zpgraph";
 import { log } from "../logger";
 import type { ZpgraphInstance } from "../internal-types";
 import type { Point } from "../types";
+import LegendPlugin from "../plugins/legend";
 import { div, drag, makeEmitter, setStyle, toggle } from "./dom-helpers";
 import type { Emitter } from "./dom-helpers";
 
@@ -46,22 +47,7 @@ interface ChartClickEvent {
   canvasx: number;
 }
 
-type LegendPluginStatic = {
-  generateLegendHTML: (
-    g: ZpgraphInstance,
-    x: number,
-    sel_points: Point[],
-    oneEmWidth: number,
-    row?: number,
-  ) => string | Node;
-};
-
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  Plugins: Record<string, unknown> & { Legend?: LegendPluginStatic };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
-Zpgraph.Plugins = Zpgraph.Plugins || {};
+ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 const chartValue = (g: ZpgraphInstance, row: number, col: number): number =>
   Number(g.getValue(row, col));
@@ -84,8 +70,14 @@ const makeInfoDiv = () => {
   const template = document.getElementById("hairline-template");
   let infoDiv: HTMLElement;
   if (template) {
-    infoDiv = template.cloneNode(true) as HTMLElement;
-    infoDiv.removeAttribute("id");
+    const clone = template.cloneNode(true);
+    if (!(clone instanceof HTMLElement)) {
+      infoDiv = div();
+      infoDiv.appendChild(div("hairline-legend"));
+    } else {
+      infoDiv = clone;
+      infoDiv.removeAttribute("id");
+    }
   } else {
     infoDiv = div();
     infoDiv.appendChild(div("hairline-legend"));
@@ -94,7 +86,7 @@ const makeInfoDiv = () => {
   return infoDiv;
 };
 
-Zpgraph.Plugins.Hairlines = (() => {
+const Hairlines = (() => {
   "use strict";
 
   /**
@@ -202,7 +194,7 @@ Zpgraph.Plugins.Hairlines = (() => {
 
       const infoDiv = makeInfoDiv();
 
-      const h = Object.assign(
+      const h: Hairline = Object.assign(
         {
           interpolated: true,
           selected: false,
@@ -210,7 +202,7 @@ Zpgraph.Plugins.Hairlines = (() => {
           infoDiv: infoDiv,
         },
         props,
-      ) as Hairline;
+      );
 
       // Both divs drag the same hairline, each along x only, staying inside the
       // plot area. The chart's own coordinates are the ones that matter here: the
@@ -228,7 +220,11 @@ Zpgraph.Plugins.Hairlines = (() => {
       };
 
       infoDiv.addEventListener("click", (e: MouseEvent) => {
-        if ((e.target as Element)?.closest?.(".hairline-kill-button")) {
+        const target = e.target;
+        if (
+          target instanceof Element &&
+          target.closest(".hairline-kill-button")
+        ) {
           this.removeHairline(h);
           this.emit_("hairlineDeleted", { xval: h.xval });
           this.emit_("hairlinesChanged", {});
@@ -278,8 +274,8 @@ Zpgraph.Plugins.Hairlines = (() => {
 
     updateHairlineStyles() {
       for (const h of this.hairlines_) {
-        h.infoDiv.classList.toggle("selected", !!h.selected);
-        h.lineDiv.classList.toggle("selected", !!h.selected);
+        h.infoDiv.classList.toggle("selected", h.selected);
+        h.lineDiv.classList.toggle("selected", h.selected);
       }
     }
 
@@ -395,11 +391,12 @@ Zpgraph.Plugins.Hairlines = (() => {
         } else {
           const target = h.infoDiv.querySelector(".hairline-legend");
           if (target) {
-            const content = Zpgraph.Plugins.Legend!.generateLegendHTML(
+            const content = LegendPlugin.generateLegendHTML(
               g,
               h.xval,
               selPoints,
               10,
+              null,
             );
             if (content instanceof Node) {
               target.replaceChildren(content);
@@ -603,4 +600,6 @@ Zpgraph.Plugins.Hairlines = (() => {
   return hairlines;
 })();
 
-export default Zpgraph.Plugins.Hairlines;
+Object.assign(ZpgraphImport.Plugins, { Hairlines });
+
+export default Hairlines;

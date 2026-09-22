@@ -5,13 +5,16 @@
  */
 
 import ZpgraphImport from "zpgraph";
+import type { ZpgraphInstance } from "../internal-types";
 import type { Plotter, PlotterEvent } from "../types";
 
+type MovingAveragePlotter = Plotter & { period: number; color?: string };
+
 type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  movingAveragePlotter: Plotter & { period: number; color?: string };
+  movingAveragePlotter?: MovingAveragePlotter;
 };
 
-const Zpgraph = ZpgraphImport as ZpgraphExtrasHost;
+const Zpgraph: ZpgraphExtrasHost = ZpgraphImport;
 
 export type MovingAverageOptions = {
   /** Window size in points. Default 7. */
@@ -22,6 +25,18 @@ export type MovingAverageOptions = {
   color?: string;
   strokeWidth?: number;
 };
+
+const isChartHost = (
+  v: unknown,
+): v is Pick<
+  ZpgraphInstance,
+  "toDomYCoord" | "getPropertiesForSeries" | "yAxisRange"
+> =>
+  typeof v === "object" &&
+  v !== null &&
+  typeof Reflect.get(v, "toDomYCoord") === "function" &&
+  typeof Reflect.get(v, "getPropertiesForSeries") === "function" &&
+  typeof Reflect.get(v, "yAxisRange") === "function";
 
 /**
  * Overlay plotter: draws a rolling-average curve on top of the series.
@@ -80,11 +95,10 @@ export const createMovingAveragePlotter = (
         sum += v;
       }
       const avg = sum / ys.length;
-      const g = e.zpgraph as {
-        toDomYCoord: (y: number, axis?: number) => number | null;
-        getPropertiesForSeries: (name: string) => { axis: number } | null;
-        yAxisRange: (idx?: number) => [number, number] | null;
-      };
+      if (!isChartHost(e.zpgraph)) {
+        continue;
+      }
+      const g = e.zpgraph;
       const axisIdx = g.getPropertiesForSeries(e.setName)?.axis ?? 0;
       if (!g.yAxisRange?.(axisIdx)) {
         continue;
@@ -109,13 +123,10 @@ export const createMovingAveragePlotter = (
   };
 };
 
-const movingAveragePlotter = createMovingAveragePlotter({
-  period: 7,
-}) as Plotter & {
-  period: number;
-  color?: string;
-};
-movingAveragePlotter.period = 7;
+const movingAveragePlotter: MovingAveragePlotter = Object.assign(
+  createMovingAveragePlotter({ period: 7 }),
+  { period: 7 },
+);
 
 Zpgraph.movingAveragePlotter = movingAveragePlotter;
 

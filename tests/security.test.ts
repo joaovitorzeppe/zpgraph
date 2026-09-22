@@ -6,6 +6,15 @@ import { mockCanvas, mountDiv, sampleData } from "./helpers";
 
 const XSS = '<img src=x onerror="globalThis.__xss = true">';
 
+/** JSON.parse as object without `any` / unsafe assertion. */
+const parseObject = (json: string): object => {
+  const value: unknown = JSON.parse(json);
+  if (typeof value !== "object" || value === null) {
+    throw new TypeError("expected object");
+  }
+  return value;
+};
+
 const graphWithColor = (color: string) => ({
   getLabels: () => ["x", "A"],
   getPropertiesForSeries: () => ({ color, visible: true, axis: 1 }),
@@ -33,18 +42,18 @@ const renderAnnotation = (annotation: Record<string, unknown>) => {
 describe("option merging cannot reach the prototype chain", () => {
   afterEach(() => {
     // Any leak would poison every later test in the run.
-    delete (Object.prototype as Record<string, unknown>).polluted;
+    Reflect.deleteProperty(Object.prototype, "polluted");
   });
 
   it("updateDeep ignores __proto__ coming from parsed JSON", () => {
-    const evil = JSON.parse('{"__proto__": {"polluted": "yes"}}');
+    const evil = parseObject('{"__proto__": {"polluted": "yes"}}');
     utils.updateDeep({}, evil);
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(Reflect.get({}, "polluted")).toBeUndefined();
   });
 
   it("update ignores __proto__ coming from parsed JSON", () => {
     const target: Record<string, unknown> = {};
-    utils.update(target, JSON.parse('{"__proto__": {"polluted": "yes"}}'));
+    utils.update(target, parseObject('{"__proto__": {"polluted": "yes"}}'));
     expect(target.polluted).toBeUndefined();
     expect(Object.getPrototypeOf(target)).toBe(Object.prototype);
   });
@@ -53,7 +62,9 @@ describe("option merging cannot reach the prototype chain", () => {
     const target: Record<string, unknown> = {};
     utils.updateDeep(
       target,
-      JSON.parse('{"constructor": {"x": 1}, "prototype": {"y": 2}, "keep": 3}'),
+      parseObject(
+        '{"constructor": {"x": 1}, "prototype": {"y": 2}, "keep": 3}',
+      ),
     );
     expect(target.keep).toBe(3);
     expect(target.constructor).toBe(Object);
@@ -61,14 +72,15 @@ describe("option merging cannot reach the prototype chain", () => {
 
   it("a chart built from a polluting options object stays clean", () => {
     mockCanvas();
+    const polluted = parseObject('{"__proto__": {"polluted": "yes"}}');
     const g = new Zpgraph(mountDiv(), sampleData, {
-      ...JSON.parse('{"__proto__": {"polluted": "yes"}}'),
+      ...polluted,
       labels: ["x", "A", "B"],
       width: 480,
       height: 320,
     });
-    g.updateOptions(JSON.parse('{"__proto__": {"polluted": "yes"}}'));
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    g.updateOptions({ ...polluted });
+    expect(Reflect.get({}, "polluted")).toBeUndefined();
     g.destroy();
   });
 });
@@ -80,7 +92,7 @@ describe("text options reach the DOM as text, not markup", () => {
   });
 
   afterEach(() => {
-    delete (globalThis as Record<string, unknown>).__xss;
+    Reflect.deleteProperty(globalThis, "__xss");
   });
 
   it("title, xlabel, ylabel and y2label are escaped", () => {
@@ -98,7 +110,7 @@ describe("text options reach the DOM as text, not markup", () => {
 
     expect(el.querySelector("img")).toBeNull();
     expect(el.querySelector(".zpgraph-title")!.textContent).toBe(XSS);
-    expect((globalThis as Record<string, unknown>).__xss).toBeUndefined();
+    expect(Reflect.get(globalThis, "__xss")).toBeUndefined();
 
     // Redraw takes the didDrawChart path, which updates the labels again.
     g.updateOptions({ title: XSS });
@@ -128,15 +140,16 @@ describe("text options reach the DOM as text, not markup", () => {
 describe("series colors cannot break out of the legend style attribute", () => {
   /** The built-in legend now comes back as nodes rather than as markup. */
   const legendSpan = (color: string) => {
-    const fragment = Legend.generateLegendHTML(
-      graphWithColor(color) as unknown as Parameters<
-        typeof Legend.generateLegendHTML
-      >[0],
+    const fragment = Reflect.apply(Legend.generateLegendHTML, Legend, [
+      graphWithColor(color),
       undefined,
       undefined,
       10,
       null,
-    ) as DocumentFragment;
+    ]);
+    if (!(fragment instanceof DocumentFragment)) {
+      throw new Error("expected DocumentFragment");
+    }
     const host = document.createElement("div");
     host.appendChild(fragment);
     return host.querySelector("span")!;
@@ -158,15 +171,13 @@ describe("series colors cannot break out of the legend style attribute", () => {
   // The whole point of building nodes: a strict style-src blocks a style
   // attribute the parser read out of markup, but not one set through the CSSOM.
   it("the built-in legend asks the parser to read no markup at all", () => {
-    const fragment = Legend.generateLegendHTML(
-      graphWithColor("#ff0000") as unknown as Parameters<
-        typeof Legend.generateLegendHTML
-      >[0],
+    const fragment = Reflect.apply(Legend.generateLegendHTML, Legend, [
+      graphWithColor("#ff0000"),
       undefined,
       undefined,
       10,
       null,
-    );
+    ]);
     expect(fragment).toBeInstanceOf(DocumentFragment);
   });
 });

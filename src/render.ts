@@ -19,11 +19,7 @@ import { log } from "./logger";
 import { createRollInterface, updateAriaLabel } from "./dom";
 import * as utils from "./utils";
 import type { Point, Ticker } from "./types";
-import type {
-  AxisProperties,
-  UnifiedSeries,
-  ZpgraphInstance,
-} from "./internal-types";
+import type { AxisProperties, UnifiedSeries } from "./internal-types";
 import type Zpgraph from "./zpgraph";
 
 type SeriesExtremes = [number | null, number | null];
@@ -61,7 +57,7 @@ export const predraw = (g: Zpgraph) => {
 
   // Create a new plotter.
   g.plotter_ = new ZpgraphCanvasRenderer(
-    g as unknown as ZpgraphInstance,
+    g,
     g.hidden_,
     g.hidden_ctx_,
     g.layout_,
@@ -186,7 +182,7 @@ export const stackPoints = (
     }
 
     const yContribution = Number(actualYval) || 0;
-    let stackedYval = cumulativeYval[xval]!;
+    let stackedYval = cumulativeYval[xval];
     if (lastXval !== xval) {
       // If an x-value is repeated, we ignore the duplicates.
       stackedYval += yContribution;
@@ -301,7 +297,9 @@ export const gatherDatasets = (
       boundaryIds[seriesIdx - 1] = [0, series.length - 1];
     }
 
-    const seriesName = (g.attr_("labels") as string[])[seriesIdx]!;
+    const seriesNameRaw = g.getLabels()?.[seriesIdx];
+    const seriesName =
+      typeof seriesNameRaw === "string" ? seriesNameRaw : "";
     const seriesExtremes = g.dataHandler_.getExtremeYValues(
       series,
       dateWindow,
@@ -355,7 +353,14 @@ export const drawGraph = (g: Zpgraph) => {
   const packed = gatherDatasets(g, g.rolledSeries_, g.dateWindow_);
   const points = packed.points;
   const extremes = packed.extremes;
-  g.boundaryIds_ = packed.boundaryIds as Array<[number, number]>;
+  const boundaryIds: Array<[number, number]> = [];
+  for (let i = 0; i < packed.boundaryIds.length; i++) {
+    const b = packed.boundaryIds[i];
+    if (b) {
+      boundaryIds[i] = b;
+    }
+  }
+  g.boundaryIds_ = boundaryIds;
 
   const pixelWidth = g.plotter_?.area?.w || g.width_;
   const [xMin, xMax] = g.dateWindow_ ?? xAxisExtremes(g);
@@ -370,13 +375,18 @@ export const drawGraph = (g: Zpgraph) => {
   }
 
   g.setIndexByName_ = {};
-  const labels = g.attr_("labels") as string[];
+  const labels = g.getLabels() ?? [];
   let dataIdx = 0;
   for (let i = 1; i < points.length; i++) {
     if (!g.visibility()[i - 1]) {
       continue;
     }
-    g.layout_.addDataset(labels[i]!, points[i]!);
+    const label = labels[i];
+    const seriesPoints = points[i];
+    if (typeof label !== "string" || !seriesPoints) {
+      continue;
+    }
+    g.layout_.addDataset(label, seriesPoints);
     g.datasetIndex_[i] = dataIdx++;
   }
   g.setIndexByName_ = Object.fromEntries(labels.map((label, i) => [label, i]));
@@ -433,7 +443,7 @@ export const renderGraph = (g: Zpgraph, is_initial_draw: boolean) => {
   g.canvas_ctx_.clearRect(0, 0, g.width_, g.height_);
 
   const drawCallback = g.getFunctionOption("drawCallback");
-  if (drawCallback !== null) {
+  if (drawCallback) {
     drawCallback.call(g, g, is_initial_draw);
   }
   if (is_initial_draw) {
@@ -455,7 +465,9 @@ export const renderGraph = (g: Zpgraph, is_initial_draw: boolean) => {
  *   indices are into the axes_ array.
  */
 export const computeYAxes = (g: Zpgraph) => {
-  let axis, opts, v;
+  let axis: number;
+  let opts: AxisProperties;
+  let v: unknown;
 
   // g.axes_ doesn't match g.attributes_.axes_.options. It's used for
   // data computation as well as options storage.
@@ -464,33 +476,40 @@ export const computeYAxes = (g: Zpgraph) => {
 
   for (axis = 0; axis < g.attributes_.numAxes(); axis++) {
     // Add a new axis, making a copy of its per-axis options.
-    opts = { g: g } as unknown as AxisProperties;
-    utils.update(
-      opts as Record<string, unknown>,
-      g.attributes_.axisOptions(axis),
-    );
+    opts = { g };
+    utils.update(opts, g.attributes_.axisOptions(axis));
     g.axes_[axis] = opts;
   }
 
   for (axis = 0; axis < g.axes_.length; axis++) {
     if (axis === 0) {
-      opts = g.optionsViewForAxis_("y" + (axis ? "2" : ""));
-      v = opts("valueRange");
-      if (v) {
-        g.axes_[axis]!.valueRange = v as [number | null, number | null];
+      const axisOpts = g.optionsViewForAxis_("y" + (axis ? "2" : ""));
+      v = axisOpts("valueRange");
+      if (isValueRange(v)) {
+        g.axes_[axis]!.valueRange = v;
       }
     } else {
       // To keep old behavior
       const axes = g.user_attrs_.axes;
-      if (axes && axes.y2) {
+      if (axes?.y2) {
         v = axes.y2.valueRange;
-        if (v) {
+        if (isValueRange(v)) {
           g.axes_[axis]!.valueRange = v;
         }
       }
     }
   }
 };
+
+const isValueRange = (
+  v: unknown,
+): v is [number | null, number | null] =>
+  Array.isArray(v) &&
+  v.length === 2 &&
+  (typeof v[0] === "number" || v[0] === null) &&
+  (typeof v[1] === "number" || v[1] === null);
+
+const isTicker = (v: unknown): v is Ticker => typeof v === "function";
 /**
  * @private
  * Determine the value range and tick marks for each axis.
@@ -628,8 +647,8 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
       // When using yRangePad, adjust the upper/lower bounds to add
       // padding unless the user has zoomed/panned the Y axis range.
 
-      let y0 = axis.computedValueRange![0];
-      let y1 = axis.computedValueRange![1];
+      let y0 = axis.computedValueRange[0];
+      let y1 = axis.computedValueRange[1];
 
       // special case #781: if we have no sense of scale, center on the sole value.
       if (y0 === y1) {
@@ -656,13 +675,16 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
 
     if (independentTicks) {
       axis.independentTicks = !!independentTicks;
-      const opts = g.optionsViewForAxis_("y" + (i ? "2" : ""));
-      const ticker = opts("ticker") as Ticker;
-      axis.ticks = ticker(
-        axis.computedValueRange![0],
-        axis.computedValueRange![1],
+      const axisOpts = g.optionsViewForAxis_("y" + (i ? "2" : ""));
+      const tickerOpt = axisOpts("ticker");
+      if (!isTicker(tickerOpt)) {
+        throw new Error("y-axis ticker option must be a function");
+      }
+      axis.ticks = tickerOpt(
+        axis.computedValueRange[0],
+        axis.computedValueRange[1],
         g.plotter_.area.h,
-        opts,
+        axisOpts,
         g,
       );
       // Define the first independent axis as primary axis.
@@ -683,8 +705,11 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
     const axis = g.axes_[i]!;
 
     if (!axis.independentTicks) {
-      const opts = g.optionsViewForAxis_("y" + (i ? "2" : ""));
-      const ticker = opts("ticker") as Ticker;
+      const axisOpts = g.optionsViewForAxis_("y" + (i ? "2" : ""));
+      const tickerOpt = axisOpts("ticker");
+      if (!isTicker(tickerOpt)) {
+        throw new Error("y-axis ticker option must be a function");
+      }
       const p_ticks = p_axis.ticks!;
       const p_range = p_axis.computedValueRange!;
       const p_scale = p_range[1] - p_range[0];
@@ -697,11 +722,11 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
         tick_values.push(y_val);
       }
 
-      axis.ticks = ticker(
+      axis.ticks = tickerOpt(
         range[0],
         range[1],
         g.plotter_.area.h,
-        opts,
+        axisOpts,
         g,
         tick_values,
       );

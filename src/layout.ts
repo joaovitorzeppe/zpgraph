@@ -48,7 +48,7 @@ export default class ZpgraphLayout {
   annotations: ParsedAnnotation[];
   yAxes_: AxisProperties[] | null;
   xTicks_: AxisTick[] | null;
-  yTicks_: unknown | null;
+  yTicks_: unknown;
   area_: PlotArea | undefined;
   _xAxis: XAxisLayoutState;
   xticks: LayoutTick[];
@@ -168,25 +168,39 @@ export default class ZpgraphLayout {
       },
       chartRect: () => ({ x: area.x, y: area.y, w: area.w, h: area.h }),
     };
-    this.zpgraph_.cascadeEvents_(
-      "layout",
-      e as unknown as Record<string, unknown>,
-    );
+    this.zpgraph_.cascadeEvents_("layout", {
+      chart_div: e.chart_div,
+      reserveSpaceLeft: e.reserveSpaceLeft,
+      reserveSpaceRight: e.reserveSpaceRight,
+      reserveSpaceTop: e.reserveSpaceTop,
+      reserveSpaceBottom: e.reserveSpaceBottom,
+      chartRect: e.chartRect,
+    });
 
     this.area_ = area;
   }
 
-  setAnnotations(ann: Annotation[]) {
+  setAnnotations(ann: Array<Annotation & { xval?: number | null }>) {
     // The Zpgraph object's annotations aren't parsed. We parse them here and
     // save a copy. If there is no parser, then the user must be using raw format.
     this.annotations = [];
-    const parse =
-      (this.zpgraph_.getOption("xValueParser") as
-        | ((x: string | number | Date) => number)
-        | undefined) ?? ((x: string | number | Date) => x as number);
+    const parserOpt = this.zpgraph_.getFunctionOption("xValueParser");
+    const parse = (x: string | number | Date): number => {
+      if (parserOpt) {
+        const parsed = parserOpt(x);
+        return typeof parsed === "number" ? parsed : Number(parsed);
+      }
+      if (typeof x === "number") {
+        return x;
+      }
+      if (x instanceof Date) {
+        return x.getTime();
+      }
+      return Number(x);
+    };
     for (let i = 0; i < ann.length; i++) {
       const a: ParsedAnnotation = { series: "", x: 0 };
-      const src = ann[i]! as Annotation & { xval?: number | null };
+      const src = ann[i]!;
       // An invalid annotation is skipped, not fatal: dropping the rest of the
       // list because of one bad entry hides the good ones.
       if (!src.xval && src.x === undefined) {
@@ -213,7 +227,7 @@ export default class ZpgraphLayout {
         );
         continue;
       }
-      utils.update(a as unknown as Record<string, unknown>, src);
+      utils.update(a, src);
       if (!a.xval) {
         a.xval = parse(a.x);
       }
@@ -285,9 +299,11 @@ export default class ZpgraphLayout {
     logscale: boolean,
   ) {
     if (logscale) {
+      if (typeof value !== "number" || typeof xAxis.xlogscale !== "number") {
+        return NaN;
+      }
       return (
-        (utils.log10(value as number) - utils.log10(xAxis.minval)) *
-        (xAxis.xlogscale as number)
+        (utils.log10(value) - utils.log10(xAxis.minval)) * xAxis.xlogscale
       );
     }
     return (value! - xAxis.minval) * xAxis.scale;
@@ -304,10 +320,12 @@ export default class ZpgraphLayout {
     logscale: boolean,
   ) {
     if (logscale) {
+      if (typeof value !== "number") {
+        return NaN;
+      }
       const x =
         1.0 -
-        (utils.log10(value as number) - utils.log10(axis.minyval!)) *
-          axis.ylogscale!;
+        (utils.log10(value) - utils.log10(axis.minyval!)) * axis.ylogscale!;
       return isFinite(x) ? x : NaN; // shim for v8 issue; see pull request 276
     }
     return 1.0 - (value! - axis.minyval!) * axis.yscale!;
@@ -432,7 +450,7 @@ export default class ZpgraphLayout {
     this.annotated_points = [];
 
     // Exit the function early if there are no annotations.
-    if (!this.annotations || !this.annotations.length) {
+    if (!this.annotations?.length) {
       return;
     }
 

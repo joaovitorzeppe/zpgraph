@@ -13,7 +13,7 @@ import type {
   RawData,
   UnifiedSeries,
 } from "../internal-types";
-import { seriesOption } from "./datahandler";
+import { rawX, rawYArray, seriesBoolean } from "./datahandler";
 import DefaultHandler from "./default";
 
 class DefaultFractionHandler extends DefaultHandler {
@@ -23,13 +23,13 @@ class DefaultFractionHandler extends DefaultHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
+    const series: UnifiedSeries = [];
     let x, y, point, num, den, value;
     const mult = 100.0;
-    const logScale = seriesOption<boolean>(options, i, "logscale");
+    const logScale = seriesBoolean(options, i, "logscale");
     for (let j = 0; j < rawData.length; j++) {
-      x = rawData[j]![0] as number;
-      point = rawData[j]![i] as number[] | null;
+      x = rawX(rawData[j]![0]!);
+      point = rawYArray(rawData[j]![i]!);
       if (logScale && point !== null) {
         // On the log scale, points less than zero do not exist.
         // This will create a gap in the chart.
@@ -71,11 +71,11 @@ class DefaultFractionHandler extends DefaultHandler {
     let den = 0; // numerator/denominator
     const mult = 100.0;
     for (i = 0; i < originalData.length; i++) {
-      num += (originalData[i]![2] as number[])[0]!;
-      den += (originalData[i]![2] as number[])[1]!;
+      num += originalData[i]![2]![0]!;
+      den += originalData[i]![2]![1]!;
       if (i - rollPeriod >= 0) {
-        num -= (originalData[i - rollPeriod]![2] as number[])[0]!;
-        den -= (originalData[i - rollPeriod]![2] as number[])[1]!;
+        num -= originalData[i - rollPeriod]![2]![0]!;
+        den -= originalData[i - rollPeriod]![2]![1]!;
       }
 
       const date = originalData[i]![0];

@@ -43,13 +43,8 @@ export interface DateAccessors {
   ) => Date;
 }
 
-type PageCoordEvent = { pageX?: number; pageY?: number };
-
-type ArrayLikeRecord = Record<string, unknown> & {
-  length?: number;
-  nodeType?: number;
-  item?: (index: number) => unknown;
-};
+/** Page coords from MouseEvent / Touch / legacy drag events. */
+export type PageCoordEvent = Event | { pageX?: number; pageY?: number };
 
 /** @private */
 export const type = (o: unknown): string => {
@@ -147,7 +142,7 @@ export const VERTICAL = 2;
 export const getContext = (
   canvas: HTMLCanvasElement,
 ): CanvasRenderingContext2D => {
-  const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
+  const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new Error("Zpgraph: this browser has no 2d canvas context.");
   }
@@ -174,10 +169,21 @@ const _eventListenerOptions = (eventType: string) => {
  *     on the event. The function takes one parameter: the event object.
  * @private
  */
+/** Handlers accepted by addEvent/removeEvent (DOM + coalesced wrappers). */
+type BivariantListener = {
+  // Method params are bivariant — MouseEvent handlers stay EventListener-safe.
+  bivarianceHack(event: Event): void;
+}["bivarianceHack"];
+
+export type DomEventHandler =
+  | BivariantListener
+  | EventListenerObject
+  | (BivariantListener & { flush(): void; cancel(): void });
+
 export const addEvent = (
   elem: EventTarget,
   eventType: string,
-  fn: EventListenerOrEventListenerObject,
+  fn: DomEventHandler,
 ) => {
   elem.addEventListener(eventType, fn, _eventListenerOptions(eventType));
 };
@@ -192,8 +198,11 @@ export const addEvent = (
 export const removeEvent = (
   elem: EventTarget,
   eventType: string,
-  fn: EventListenerOrEventListenerObject,
+  fn: DomEventHandler | null | undefined,
 ) => {
+  if (!fn) {
+    return;
+  }
   elem.removeEventListener(eventType, fn, _eventListenerOptions(eventType));
 };
 
@@ -295,9 +304,12 @@ export const findPos = (obj: Element) => {
  * Taken from MochiKit.Signal
  * @private
  */
-export const pageX = (e: PageCoordEvent): number => {
-  return !e.pageX || e.pageX < 0 ? 0 : e.pageX;
+const pageCoord = (e: PageCoordEvent, key: "pageX" | "pageY"): number => {
+  const v = Reflect.get(e, key);
+  return typeof v === "number" && v >= 0 ? v : 0;
 };
+
+export const pageX = (e: PageCoordEvent): number => pageCoord(e, "pageX");
 
 /**
  * Returns the y-coordinate of the event in a coordinate system where the
@@ -305,9 +317,7 @@ export const pageX = (e: PageCoordEvent): number => {
  * Taken from MochiKit.Signal
  * @private
  */
-export const pageY = (e: PageCoordEvent): number => {
-  return !e.pageY || e.pageY < 0 ? 0 : e.pageY;
-};
+export const pageY = (e: PageCoordEvent): number => pageCoord(e, "pageY");
 
 /**
  * Converts page the x-coordinate of the event to pixel x-coordinates on the
@@ -753,14 +763,13 @@ const mergeableKeys = (o: object): string[] => {
  *
  *
  * */
-export const update = (
-  self: Record<string, unknown>,
+export const update = <T extends object>(
+  self: T,
   o: object | null | undefined,
-): Record<string, unknown> => {
+): T => {
   if (o != null && typeof o === "object") {
-    const src = o as Record<string, unknown>;
     for (const k of mergeableKeys(o)) {
-      self[k] = src[k];
+      Reflect.set(self, k, Reflect.get(o, k));
     }
   }
   return self;
@@ -773,11 +782,12 @@ const _isNode =
         return o instanceof Node;
       }
     : (o: unknown) => {
+        if (typeof o !== "object" || o === null) {
+          return false;
+        }
         return (
-          typeof o === "object" &&
-          o !== null &&
-          typeof (o as { nodeType?: unknown }).nodeType === "number" &&
-          typeof (o as { nodeName?: unknown }).nodeName === "string"
+          typeof Reflect.get(o, "nodeType") === "number" &&
+          typeof Reflect.get(o, "nodeName") === "string"
         );
       };
 
@@ -790,29 +800,31 @@ const _isNode =
  *
  * @return * @private
  */
-export const updateDeep = (
-  self: Record<string, unknown>,
+export const updateDeep = <T extends object>(
+  self: T,
   o: object | null | undefined,
-): Record<string, unknown> => {
+): T => {
   if (typeof o != "undefined" && o !== null) {
-    const src = o as Record<string, unknown>;
     for (const k of mergeableKeys(o)) {
-      const v = src[k];
+      const v: unknown = Reflect.get(o, k);
       if (v === null) {
-        self[k] = null;
+        Reflect.set(self, k, null);
       } else if (isArrayLike(v)) {
-        self[k] = (v as unknown[]).slice();
+        Reflect.set(self, k, Array.prototype.slice.call(v));
       } else if (_isNode(v)) {
         // DOM objects are shallowly-copied.
-        self[k] = v;
+        Reflect.set(self, k, v);
       } else if (typeof v == "object") {
-        const nested = self[k];
+        const nested: unknown = Reflect.get(self, k);
         if (typeof nested != "object" || nested === null) {
-          self[k] = {};
+          Reflect.set(self, k, {});
         }
-        updateDeep(self[k] as Record<string, unknown>, v as object);
+        const next = Reflect.get(self, k);
+        if (typeof next === "object" && next !== null) {
+          updateDeep(next, v);
+        }
       } else {
-        self[k] = v;
+        Reflect.set(self, k, v);
       }
     }
   }
@@ -826,44 +838,41 @@ export const typeArrayLike = (o: unknown): string => {
   if (o === null) {
     return "null";
   }
-  const t = typeof o;
-  const value = o as ArrayLikeRecord;
-  if (
-    (t === "object" ||
-      (t === "function" && typeof value.item === "function")) &&
-    typeof value.length === "number" &&
-    value.nodeType !== 3 &&
-    value.nodeType !== 4
-  ) {
-    return "array";
-  }
-  return t;
+  return isArrayLike(o) ? "array" : typeof o;
 };
 
 /**
  * @private
  */
-export const isArrayLike = (o: unknown): boolean => {
+export const isArrayLike = (o: unknown): o is ArrayLike<unknown> => {
+  if (o === null) {
+    return false;
+  }
   const t = typeof o;
-  const value = o as ArrayLikeRecord;
+  if (t !== "object" && t !== "function") {
+    return false;
+  }
+  const bag: object = Object(o);
+  const length = Reflect.get(bag, "length");
+  const nodeType = Reflect.get(bag, "nodeType");
+  const item = Reflect.get(bag, "item");
   return (
-    o !== null &&
-    (t === "object" ||
-      (t === "function" && typeof value.item === "function")) &&
-    typeof value.length === "number" &&
-    value.nodeType !== 3 &&
-    value.nodeType !== 4
+    typeof length === "number" &&
+    nodeType !== 3 &&
+    nodeType !== 4 &&
+    (t === "object" || typeof item === "function")
   );
 };
 
 /**
  * @private
  */
-export const isDateLike = (o: unknown): boolean => {
+export const isDateLike = (o: unknown): o is { getTime: () => number } => {
   return (
     o !== null &&
     typeof o === "object" &&
-    typeof (o as { getTime?: unknown }).getTime === "function"
+    "getTime" in o &&
+    typeof o.getTime === "function"
   );
 };
 
@@ -871,21 +880,22 @@ export const isDateLike = (o: unknown): boolean => {
  * Deep-clone nested arrays (chart data). Uses structuredClone when available.
  * @private
  */
-export const clone = (o: unknown[]): unknown[] => {
+export function clone<T>(o: T[]): T[];
+export function clone(o: unknown[]): unknown[] {
   if (typeof structuredClone === "function") {
     return structuredClone(o);
   }
   const r: unknown[] = [];
   for (let i = 0; i < o.length; i++) {
     const item = o[i];
-    if (isArrayLike(item)) {
-      r.push(clone(item as unknown[]));
+    if (Array.isArray(item)) {
+      r.push(clone(item));
     } else {
       r.push(item);
     }
   }
   return r;
-};
+}
 
 /**
  * Create a new canvas element.
@@ -999,8 +1009,8 @@ export const createIterator = <T>(
 export const requestAnimFrame = (callback: FrameRequestCallback): number =>
   window.requestAnimationFrame(callback);
 
-export interface Coalesced {
-  (...args: unknown[]): void;
+export interface Coalesced<T extends unknown[] = unknown[]> {
+  (...args: T): void;
   /** Run a pending call right now, if there is one. */
   flush(): void;
   /** Drop a pending call without running it. */
@@ -1018,9 +1028,11 @@ export interface Coalesced {
  *
  * @private
  */
-export const coalesceFrames = (fn: (...args: unknown[]) => void): Coalesced => {
+export const coalesceFrames = <T extends unknown[]>(
+  fn: (...args: T) => void,
+): Coalesced<T> => {
   let handle = 0;
-  let pending: unknown[] | null = null;
+  let pending: T | null = null;
 
   const run = () => {
     handle = 0;
@@ -1031,30 +1043,29 @@ export const coalesceFrames = (fn: (...args: unknown[]) => void): Coalesced => {
     }
   };
 
-  const wrapped = ((...args: unknown[]) => {
+  const wrapped = (...args: T): void => {
     pending = args;
     if (!handle) {
       handle = requestAnimFrame(run);
     }
-  }) as Coalesced;
-
-  wrapped.flush = () => {
-    if (!handle) {
-      return;
-    }
-    window.cancelAnimationFrame(handle);
-    run();
   };
 
-  wrapped.cancel = () => {
-    if (handle) {
+  return Object.assign(wrapped, {
+    flush() {
+      if (!handle) {
+        return;
+      }
       window.cancelAnimationFrame(handle);
-    }
-    handle = 0;
-    pending = null;
-  };
-
-  return wrapped;
+      run();
+    },
+    cancel() {
+      if (handle) {
+        window.cancelAnimationFrame(handle);
+      }
+      handle = 0;
+      pending = null;
+    },
+  });
 };
 
 /**
@@ -1174,7 +1185,7 @@ const pixelSafeOptions: Record<string, boolean> = {
  */
 export const isPixelChangingOptionList = (
   labels: string[],
-  attrs: Record<string, unknown>,
+  attrs: object,
 ): boolean => {
   // Assume that we do not require new points.
   // This will change to true if we actually do need new points.
@@ -1190,9 +1201,9 @@ export const isPixelChangingOptionList = (
 
   // Scan through a flat (i.e. non-nested) object of options.
   // Returns true/false depending on whether new points are needed.
-  const scanFlatOptions = (options: Record<string, unknown>) => {
-    for (const property in options) {
-      if (Object.hasOwn(options, property) && !pixelSafeOptions[property]) {
+  const scanFlatOptions = (options: object) => {
+    for (const property of Object.keys(options)) {
+      if (!pixelSafeOptions[property]) {
         return true;
       }
     }
@@ -1200,40 +1211,41 @@ export const isPixelChangingOptionList = (
   };
 
   // Iterate through the list of updated options.
-  for (const property in attrs) {
-    if (!Object.hasOwn(attrs, property)) {
-      continue;
-    }
+  for (const property of Object.keys(attrs)) {
+    const value: unknown = Reflect.get(attrs, property);
 
     // Find out of this field is actually a series specific options list.
     if (
       property === "highlightSeriesOpts" ||
-      (seriesNamesDictionary[property] && !attrs.series)
+      (seriesNamesDictionary[property] && !Object.hasOwn(attrs, "series"))
     ) {
       // This property value is a list of options for this series.
-      if (scanFlatOptions(attrs[property] as Record<string, unknown>)) {
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        scanFlatOptions(value)
+      ) {
         return true;
       }
     } else if (property === "series" || property === "axes") {
       // This is twice-nested options list.
-      const perSeries = attrs[property] as Record<
-        string,
-        Record<string, unknown>
-      >;
-      for (const series in perSeries) {
+      if (typeof value !== "object" || value === null) {
+        continue;
+      }
+      for (const series of Object.keys(value)) {
+        const seriesOpts: unknown = Reflect.get(value, series);
         if (
-          Object.hasOwn(perSeries, series) &&
-          scanFlatOptions(perSeries[series]!)
+          typeof seriesOpts === "object" &&
+          seriesOpts !== null &&
+          scanFlatOptions(seriesOpts)
         ) {
           return true;
         }
       }
-    } else {
+    } else if (!pixelSafeOptions[property]) {
       // If this was not a series specific option list,
       // check if it's a pixel-changing property.
-      if (!pixelSafeOptions[property]) {
-        return true;
-      }
+      return true;
     }
   }
 
@@ -1324,14 +1336,14 @@ const parseRGBA = (rgbStr: string) => {
     g = parseInt(bits[2]!, 16);
     b = parseInt(bits[3]!, 16);
     if (bits[4]!) {
-      a = parseInt(bits[4]!, 16);
+      a = parseInt(bits[4], 16);
     }
   } else if ((bits = RGBA_RE.exec(rgbStr))) {
     r = parseInt(bits[1]!, 10);
     g = parseInt(bits[2]!, 10);
     b = parseInt(bits[3]!, 10);
     if (bits[4]!) {
-      a = parseFloat(bits[4]!);
+      a = parseFloat(bits[4]);
     }
   } else {
     return null;
@@ -1428,6 +1440,25 @@ const KMG2_LABELS_SMALL = [
 const KMB2_LABELS_LARGE = ["K", "M", "G", "T", "P", "E", "Z", "Y"];
 const KMB2_LABELS_SMALL = KMB_LABELS_SMALL;
 
+/** Read OptionsGetter fields without narrow casts. */
+const optNumber = (opts: OptionsGetter, name: string, fallback: number): number => {
+  const v = opts(name);
+  return typeof v === "number" ? v : fallback;
+};
+
+const optNumberOrNull = (opts: OptionsGetter, name: string): number | null => {
+  const v = opts(name);
+  if (v === null) {
+    return null;
+  }
+  return typeof v === "number" ? v : null;
+};
+
+const optBoolean = (opts: OptionsGetter, name: string): boolean => {
+  const v = opts(name);
+  return typeof v === "boolean" ? v : Boolean(v);
+};
+
 /**
  * @private
  * Return a string version of a number. This respects the digitsAfterDecimal
@@ -1436,7 +1467,7 @@ const KMB2_LABELS_SMALL = KMB_LABELS_SMALL;
  * @param opts An options view
  */
 export const numberValueFormatter = (x: number, opts: OptionsGetter) => {
-  const sigFigs = opts("sigFigs") as number | null;
+  const sigFigs = optNumberOrNull(opts, "sigFigs");
 
   if (sigFigs !== null) {
     // User has opted for a fixed number of significant figures.
@@ -1448,11 +1479,11 @@ export const numberValueFormatter = (x: number, opts: OptionsGetter) => {
     return "0";
   }
 
-  const digits = opts("digitsAfterDecimal") as number;
-  const maxNumberWidth = opts("maxNumberWidth") as number;
+  const digits = optNumber(opts, "digitsAfterDecimal", 2);
+  const maxNumberWidth = optNumber(opts, "maxNumberWidth", 8);
 
-  const kmb = opts("labelsKMB") as boolean;
-  const kmg2 = opts("labelsKMG2") as boolean;
+  const kmb = optBoolean(opts, "labelsKMB");
+  const kmg2 = optBoolean(opts, "labelsKMG2");
 
   let label;
   const absx = Math.abs(x);
@@ -1572,7 +1603,7 @@ export const dateAxisLabelFormatter = (
   granularity: number,
   opts: OptionsGetter,
 ): string => {
-  const utc = opts("labelsUTC") as boolean;
+  const utc = optBoolean(opts, "labelsUTC");
   const accessors = utc ? DateAccessorsUTC : DateAccessorsLocal;
 
   const year = accessors.getFullYear(date),
@@ -1613,7 +1644,7 @@ export const dateAxisLabelFormatter = (
  * @private
  */
 export const dateValueFormatter = (d: number, opts: OptionsGetter) => {
-  return dateString_(d, opts("labelsUTC") as boolean);
+  return dateString_(d, optBoolean(opts, "labelsUTC"));
 };
 
 // stuff for simple onDOMready implementation

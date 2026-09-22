@@ -7,7 +7,6 @@
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 import type { NoDataOptions } from "../types";
 import { getChartClassNames, withClassNames } from "../class-names";
-import type Zpgraph from "../zpgraph";
 
 /**
  * Empty-state and loading overlays for the chart root.
@@ -32,12 +31,13 @@ class status_overlay {
   }
 
   didDrawChart(e: ChartDrawPluginEvent) {
-    const g = e.zpgraph as unknown as Zpgraph;
+    const g = e.zpgraph;
     const loading = !!g.getOption("loading");
-    const noDataOpt = g.getOption("noData") as
-      | NoDataOptions
-      | false
-      | undefined;
+    const noDataRaw = g.getOption("noData");
+    const noDataOpt =
+      noDataRaw === false
+        ? false
+        : readNoDataOptions(noDataRaw);
     const empty = g.numRows() === 0;
 
     if (loading) {
@@ -59,7 +59,7 @@ class status_overlay {
     }
   }
 
-  ensureLoading_(g: Zpgraph) {
+  ensureLoading_(g: ZpgraphInstance) {
     if (!this.loadingEl_) {
       this.loadingEl_ = document.createElement("div");
       this.loadingEl_.setAttribute("role", "status");
@@ -73,7 +73,7 @@ class status_overlay {
     this.loadingEl_.hidden = false;
   }
 
-  ensureNoData_(g: Zpgraph, opt: NoDataOptions | undefined) {
+  ensureNoData_(g: ZpgraphInstance, opt: NoDataOptions | undefined) {
     const text = opt?.text ?? "No data";
     if (!this.noDataEl_) {
       this.noDataEl_ = document.createElement("div");
@@ -111,5 +111,16 @@ class status_overlay {
     this.detach_();
   }
 }
+
+const readNoDataOptions = (v: unknown): NoDataOptions | undefined => {
+  if (v == null || typeof v !== "object" || Array.isArray(v)) {
+    return undefined;
+  }
+  const text = Reflect.get(v, "text");
+  if (typeof text === "string") {
+    return { text };
+  }
+  return {};
+};
 
 export default status_overlay;

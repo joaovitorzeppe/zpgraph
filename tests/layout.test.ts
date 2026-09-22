@@ -11,7 +11,7 @@ describe("layout", () => {
       graphDiv: document.createElement("div"),
     };
 
-    const layout = new ZpgraphLayout(fake as never);
+    const layout = Reflect.construct(ZpgraphLayout, [fake]);
     layout.computePlotArea();
     expect(layout.getPlotArea()).toEqual({ x: 0, y: 0, w: 395, h: 200 });
 

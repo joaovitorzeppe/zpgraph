@@ -21,6 +21,11 @@ import type Zpgraph from "./zpgraph";
 import type { ZpgraphOptions } from "./types";
 
 const DEFAULT_ATTRS: typeof DEFAULT_ATTRS_ = DEFAULT_ATTRS_;
+
+const isDefaultAxisKey = (
+  key: string,
+): key is keyof typeof DEFAULT_ATTRS.axes =>
+  key === "x" || key === "y" || key === "y2";
 const OPTIONS_REFERENCE: Record<string, unknown> | null = OPTIONS_REFERENCE_;
 
 let WARNINGS: Record<string, boolean> = {}; // Only show any particular warning once.
@@ -100,7 +105,7 @@ class OptionsManager {
       throw new Error("Zpgraph only supports two y-axes, indexed from 0-1.");
     }
     if (axis) {
-      throw new Error("Unknown axis : " + axis);
+      throw new Error("Unknown axis");
     }
     // No axis specification means axis 0.
     return 0;
@@ -143,8 +148,11 @@ class OptionsManager {
      */
     this.labels_ = [];
 
-    this.highlightSeries_ =
-      (this.get("highlightSeriesOpts") as Record<string, unknown> | null) || {};
+    this.highlightSeries_ = {};
+    const highlightOpts = this.get("highlightSeriesOpts");
+    if (highlightOpts !== null && typeof highlightOpts === "object") {
+      utils.update(this.highlightSeries_, highlightOpts);
+    }
     this.reparseSeries();
   }
 
@@ -153,10 +161,14 @@ class OptionsManager {
    * options are either updated, or source data has been made available.
    */
   reparseSeries() {
-    const labels = this.get("labels") as string[] | null | undefined;
-    if (!labels) {
+    const rawLabels = this.get("labels");
+    if (!Array.isArray(rawLabels)) {
       return; // -- can't do more for now, will parse after getting the labels.
     }
+    if (!rawLabels.every((x): x is string => typeof x === "string")) {
+      return;
+    }
+    const labels = rawLabels;
 
     utils.validateSeriesLabels(labels);
 
@@ -179,13 +191,11 @@ class OptionsManager {
     //
     // So, if series is found, it's expected to contain per-series data,
     // otherwise set a default.
-    const seriesDict = (this.user_.series || {}) as Record<
-      string,
-      Record<string, unknown>
-    >;
+    const seriesDict = this.user_.series ?? {};
     for (let idx = 0; idx < this.labels_.length; idx++) {
       const seriesName = this.labels_[idx]!;
-      const optionsForSeries = seriesDict[seriesName] || {};
+      const optionsForSeries: Record<string, unknown> = {};
+      utils.update(optionsForSeries, seriesDict[seriesName] || {});
       const yAxis = OptionsManager.axisToIndex_(optionsForSeries["axis"]);
 
       this.series_[seriesName] = {
@@ -197,14 +207,11 @@ class OptionsManager {
       if (!this.yAxes_[yAxis]) {
         this.yAxes_[yAxis] = { series: [seriesName], options: {} };
       } else {
-        this.yAxes_[yAxis]!.series.push(seriesName);
+        this.yAxes_[yAxis].series.push(seriesName);
       }
     }
 
-    const axis_opts = (this.user_["axes"] || {}) as Record<
-      string,
-      Record<string, unknown>
-    >;
+    const axis_opts = this.user_.axes ?? {};
     utils.update(this.yAxes_[0]!.options, axis_opts["y"] || {});
     if (this.yAxes_.length > 1) {
       utils.update(this.yAxes_[1]!.options, axis_opts["y2"] || {});
@@ -227,22 +234,19 @@ class OptionsManager {
     return this.getGlobalDefault_(name);
   }
 
-  getGlobalUser_(name: string): unknown | null {
-    const user = this.user_ as Record<string, unknown>;
-    if (Object.hasOwn(user, name)) {
-      return user[name];
+  getGlobalUser_(name: string): unknown {
+    if (Object.hasOwn(this.user_, name)) {
+      return Reflect.get(this.user_, name);
     }
     return null;
   }
 
   getGlobalDefault_(name: string): unknown {
-    const global = this.global_ as Record<string, unknown>;
-    if (Object.hasOwn(global, name)) {
-      return global[name];
+    if (Object.hasOwn(this.global_, name)) {
+      return Reflect.get(this.global_, name);
     }
-    const defaults = DEFAULT_ATTRS as Record<string, unknown>;
-    if (Object.hasOwn(defaults, name)) {
-      return defaults[name];
+    if (Object.hasOwn(DEFAULT_ATTRS, name)) {
+      return Reflect.get(DEFAULT_ATTRS, name);
     }
     return null;
   }
@@ -299,13 +303,11 @@ class OptionsManager {
       }
     }
     // Default axis options third.
-    const axisKey = axisString as keyof typeof DEFAULT_ATTRS.axes;
-    const defaultAxisOptions = DEFAULT_ATTRS.axes[axisKey] as Record<
-      string,
-      unknown
-    >;
-    if (Object.hasOwn(defaultAxisOptions, name)) {
-      return defaultAxisOptions[name];
+    if (isDefaultAxisKey(axisString)) {
+      const defaultAxisOptions = DEFAULT_ATTRS.axes[axisString];
+      if (Object.hasOwn(defaultAxisOptions, name)) {
+        return Reflect.get(defaultAxisOptions, name);
+      }
     }
 
     // Default global options last.
@@ -395,7 +397,7 @@ class OptionsManager {
     const optionsDicts = [
       this.xAxis_.options,
       this.yAxes_[0]!.options,
-      this.yAxes_[1] && this.yAxes_[1]!.options,
+      this.yAxes_[1]?.options,
       this.global_,
       this.user_,
       this.highlightSeries_,

@@ -27,9 +27,7 @@ import type {
 } from "../internal-types";
 import type {
   Point,
-  TooltipOptions,
   TooltipPosition,
-  ValueFormatter,
 } from "../types";
 import { getChartClassNames, withClassNames } from "../class-names";
 
@@ -79,11 +77,6 @@ interface LegendBuildData {
   series: LegendSeriesRow[];
 }
 
-type LegendFormatterFn = (
-  this: LegendChart,
-  data: LegendBuildData,
-) => string | DocumentFragment | Node;
-
 const ABOVE_PLOT_GAP = 4;
 /** Default top chrome when tooltip.position is top-* (keeps tip off the series). */
 const DEFAULT_TOOLTIP_RESERVE_TOP = 0;
@@ -96,9 +89,16 @@ type TooltipOptionSource = {
   getOption(name: string, series?: string): unknown;
 };
 
+const readTooltipField = (g: TooltipOptionSource, key: string): unknown => {
+  const tip = g.getOption("tooltip");
+  if (tip == null || typeof tip !== "object") {
+    return undefined;
+  }
+  return Reflect.get(tip, key);
+};
+
 const resolveTooltipShow = (g: TooltipOptionSource): TooltipShowMode => {
-  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
-  const show = tip?.show;
+  const show = readTooltipField(g, "show");
   if (show === "never" || show === "always" || show === "onmouseover") {
     return show;
   }
@@ -106,8 +106,17 @@ const resolveTooltipShow = (g: TooltipOptionSource): TooltipShowMode => {
 };
 
 const resolveTooltipPosition = (g: TooltipOptionSource): TooltipPosition => {
-  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
-  return tip?.position ?? "top-right";
+  const position = readTooltipField(g, "position");
+  if (
+    position === "top-left" ||
+    position === "top-right" ||
+    position === "bottom-left" ||
+    position === "bottom-right" ||
+    position === "follow"
+  ) {
+    return position;
+  }
+  return "top-right";
 };
 
 const isTopTooltip = (position: TooltipPosition) =>
@@ -119,12 +128,21 @@ const isTopTooltip = (position: TooltipPosition) =>
  */
 const placeFixedLegend = (g: ZpgraphInstance, div: HTMLElement): void => {
   const area = g.plotter_.area;
-  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
-  const explicit = tip?.position;
+  const explicitRaw = readTooltipField(g, "position");
+  const explicit: TooltipPosition | undefined =
+    explicitRaw === "top-left" ||
+    explicitRaw === "top-right" ||
+    explicitRaw === "bottom-left" ||
+    explicitRaw === "bottom-right" ||
+    explicitRaw === "follow"
+      ? explicitRaw
+      : undefined;
   const position: TooltipPosition =
     explicit && explicit !== "follow" ? explicit : "top-right";
-  const ox = tip?.offsetX ?? 0;
-  const oy = tip?.offsetY ?? 0;
+  const oxRaw = readTooltipField(g, "offsetX");
+  const oyRaw = readTooltipField(g, "offsetY");
+  const ox = typeof oxRaw === "number" ? oxRaw : 0;
+  const oy = typeof oyRaw === "number" ? oyRaw : 0;
   const w = div.offsetWidth;
   const h = div.offsetHeight;
   const abovePlot = !!explicit && isTopTooltip(explicit);
@@ -167,7 +185,6 @@ const placeFollowLegend = (
   if (points.length === 0) {
     return;
   }
-  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
   const area = g.plotter_.area;
   const labelsDivWidth = div.offsetWidth;
   const yAxisLabelWidth = Number(g.getOptionForAxis("axisLabelWidth", "y"));
@@ -176,8 +193,12 @@ const placeFollowLegend = (
   if (highlightSeries) {
     point = points.find((p) => p.name === highlightSeries) ?? point;
   }
-  const followOffsetX = tip?.offsetX ?? DEFAULT_FOLLOW_OFFSET_X;
-  const followOffsetY = tip?.offsetY ?? DEFAULT_FOLLOW_OFFSET_Y;
+  const oxRaw = readTooltipField(g, "offsetX");
+  const oyRaw = readTooltipField(g, "offsetY");
+  const followOffsetX =
+    typeof oxRaw === "number" ? oxRaw : DEFAULT_FOLLOW_OFFSET_X;
+  const followOffsetY =
+    typeof oyRaw === "number" ? oyRaw : DEFAULT_FOLLOW_OFFSET_Y;
   let leftLegend = (point.x ?? 0) * area.w + followOffsetX;
   const topLegend = (point.y ?? 0) * area.h + followOffsetY;
 
@@ -194,14 +215,72 @@ const placeFollowLegend = (
 };
 
 const tooltipReserveTop = (g: ZpgraphInstance): number => {
-  const tip = g.getOption("tooltip") as TooltipOptions | undefined;
-  if (!tip?.position || !isTopTooltip(tip.position)) {
+  const position = readTooltipField(g, "position");
+  if (
+    position !== "top-left" &&
+    position !== "top-right"
+  ) {
     return 0;
   }
-  if (tip.reserveTop != null) {
-    return Math.max(0, tip.reserveTop);
+  const reserveTop = readTooltipField(g, "reserveTop");
+  if (typeof reserveTop === "number") {
+    return Math.max(0, reserveTop);
   }
   return DEFAULT_TOOLTIP_RESERVE_TOP;
+};
+
+const toNumberArrayOpt = (v: unknown): number[] | null | undefined => {
+  if (v == null) {
+    return v;
+  }
+  if (!Array.isArray(v)) {
+    return undefined;
+  }
+  return v.every((x) => typeof x === "number") ? v : undefined;
+};
+
+const callValueFormatter = (
+  fn: unknown,
+  value: number,
+  opts: OptionsGetter,
+  seriesName: string,
+  zpgraph: unknown,
+  row: number,
+  col: number,
+): string => {
+  if (typeof fn !== "function") {
+    return String(value);
+  }
+  const result: unknown = Reflect.apply(fn, undefined, [
+    value,
+    opts,
+    seriesName,
+    zpgraph,
+    row,
+    col,
+  ]);
+  return typeof result === "string" ? result : String(result);
+};
+
+const isLegendChart = (g: LegendGraphLike): g is LegendChart =>
+  typeof g.optionsViewForAxis_ === "function";
+
+const callLegendFormatter = (
+  fn: unknown,
+  chart: LegendChart,
+  data: LegendBuildData,
+): string | DocumentFragment | Node => {
+  if (typeof fn === "function") {
+    const result: unknown = Reflect.apply(fn, chart, [data]);
+    if (
+      typeof result === "string" ||
+      result instanceof DocumentFragment ||
+      (typeof Node !== "undefined" && result instanceof Node)
+    ) {
+      return result;
+    }
+  }
+  return Legend.defaultFormatter(data);
 };
 
 /**
@@ -228,13 +307,10 @@ class Legend {
 
     const userLabelsDiv = g.getOption("labelsDiv");
     if (userLabelsDiv && null !== userLabelsDiv) {
-      if (
-        typeof userLabelsDiv === "string" ||
-        Object.prototype.toString.call(userLabelsDiv) === "[object String]"
-      ) {
-        div = document.getElementById(String(userLabelsDiv));
-      } else {
-        div = userLabelsDiv as HTMLElement;
+      if (typeof userLabelsDiv === "string") {
+        div = document.getElementById(userLabelsDiv);
+      } else if (userLabelsDiv instanceof HTMLElement) {
+        div = userLabelsDiv;
       }
     } else {
       div = document.createElement("div");
@@ -389,7 +465,6 @@ class Legend {
     oneEmWidth: number,
     row: number | null,
   ): string | DocumentFragment | Node {
-    const chart = g as LegendChart;
     // Data about the selection to pass to legendFormatter
     const data: LegendBuildData = {
       zpgraph: g,
@@ -409,10 +484,9 @@ class Legend {
         if (!series) {
           continue;
         }
-        const strokePattern = g.getOption("strokePattern", label) as
-          | number[]
-          | null
-          | undefined;
+        const strokePattern = toNumberArrayOpt(
+          g.getOption("strokePattern", label),
+        );
         // Sanitize once here so the default formatter, the dash markup and any
         // caller-supplied legendFormatter all see a color safe to interpolate.
         const color = sanitizeCssColor(series.color);
@@ -435,16 +509,24 @@ class Legend {
       typeof x !== "undefined" &&
       labels &&
       sel_points &&
-      chart.optionsViewForAxis_
+      isLegendChart(g)
     ) {
+      const chart = g;
       const xOptView = chart.optionsViewForAxis_("x");
-      const xvf = xOptView("valueFormatter") as ValueFormatter;
-      data.xHTML = xvf(x, xOptView, labels[0]!, g, row ?? 0, 0);
+      data.xHTML = callValueFormatter(
+        xOptView("valueFormatter"),
+        x,
+        xOptView,
+        labels[0]!,
+        g,
+        row ?? 0,
+        0,
+      );
 
       const yOptViews: OptionsGetter[] = [];
       const num_axes = g.numAxes();
       for (let i = 0; i < num_axes; i++) {
-        yOptViews[i] = chart.optionsViewForAxis_!("y" + (i ? 1 + i : ""));
+        yOptViews[i] = chart.optionsViewForAxis_("y" + (i ? 1 + i : ""));
       }
 
       const showZeros = g.getOption("labelsShowZeroValues");
@@ -467,8 +549,8 @@ class Legend {
           continue;
         }
         const yOptView = yOptViews[series.axis - 1]!;
-        const fmtFunc = yOptView("valueFormatter") as ValueFormatter;
-        const yHTML = fmtFunc(
+        seriesData.yHTML = callValueFormatter(
+          yOptView("valueFormatter"),
           pt.yval ?? 0,
           yOptView,
           pt.name,
@@ -477,17 +559,16 @@ class Legend {
           labels.indexOf(pt.name),
         );
 
-        seriesData.yHTML = yHTML;
-
         if (pt.name === highlightSeries) {
           seriesData.isHighlighted = true;
         }
       }
     }
 
-    const formatter = (g.getOption("legendFormatter") ??
-      Legend.defaultFormatter) as LegendFormatterFn;
-    return formatter.call(chart, data);
+    if (!isLegendChart(g)) {
+      return Legend.defaultFormatter(data);
+    }
+    return callLegendFormatter(g.getOption("legendFormatter"), g, data);
   }
 
   static defaultFormatter(data: LegendBuildData): DocumentFragment {

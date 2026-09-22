@@ -16,12 +16,6 @@
 import ZpgraphImport from "zpgraph";
 import type { DrawPointCallback } from "../types";
 
-type ZpgraphCirclesHost = {
-  Circles: Record<string, DrawPointCallback> & { DEFAULT: DrawPointCallback };
-};
-
-const Zpgraph = ZpgraphImport as ZpgraphCirclesHost;
-
 /**
  * @param ctx the canvas context
  * @param sides the number of sides in the shape.
@@ -45,10 +39,10 @@ const regularShape = (
   const initialAngle = rotationRadians;
   let angle = initialAngle;
 
-  const computeCoordinates = () => {
+  const computeCoordinates = (): [number, number] => {
     const x = cx + Math.sin(angle) * radius;
     const y = cy + -Math.cos(angle) * radius;
-    return [x, y] as const;
+    return [x, y];
   };
 
   const initialCoordinates = computeCoordinates();
@@ -128,11 +122,6 @@ const customCircles: Record<string, DrawPointCallback> = {
   },
 };
 
-for (const k in customCircles) {
-  if (!Object.hasOwn(customCircles, k)) {
-    continue;
-  }
-  Zpgraph.Circles[k] = customCircles[k]!;
-}
+Object.assign(ZpgraphImport.Circles, customCircles);
 
-export default Zpgraph.Circles;
+export default ZpgraphImport.Circles;

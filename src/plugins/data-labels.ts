@@ -6,7 +6,40 @@
 
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 import type { DataLabelsOptions, Point } from "../types";
-import type Zpgraph from "../zpgraph";
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+const readDataLabelsOptions = (v: unknown): DataLabelsOptions | undefined => {
+  if (!isPlainObject(v)) {
+    return undefined;
+  }
+  const out: DataLabelsOptions = {};
+  const enabled = Reflect.get(v, "enabled");
+  if (typeof enabled === "boolean") {
+    out.enabled = enabled;
+  }
+  const filter = Reflect.get(v, "filter");
+  if (isPlainObject(filter)) {
+    const every = Reflect.get(filter, "every");
+    const minDistancePx = Reflect.get(filter, "minDistancePx");
+    out.filter = {};
+    if (typeof every === "number") {
+      out.filter.every = every;
+    }
+    if (typeof minDistancePx === "number") {
+      out.filter.minDistancePx = minDistancePx;
+    }
+  }
+  const formatter = Reflect.get(v, "formatter");
+  if (typeof formatter === "function") {
+    out.formatter = (yval: number | null | undefined, p: Point) => {
+      const result: unknown = Reflect.apply(formatter, undefined, [yval, p]);
+      return typeof result === "string" ? result : String(result);
+    };
+  }
+  return out;
+};
 
 class data_labels {
   toString() {
@@ -20,8 +53,8 @@ class data_labels {
   }
 
   didDrawChart(e: ChartDrawPluginEvent) {
-    const g = e.zpgraph as unknown as Zpgraph;
-    const opts = g.getOption("dataLabels") as DataLabelsOptions | undefined;
+    const g = e.zpgraph;
+    const opts = readDataLabelsOptions(g.getOption("dataLabels"));
     if (!opts?.enabled) {
       return;
     }
@@ -29,7 +62,7 @@ class data_labels {
     const every = opts.filter?.every ?? 1;
     const minDist = opts.filter?.minDistancePx ?? 40;
     const ctx = e.drawingContext;
-    const sets = g.layout_.points as Point[][] | undefined;
+    const sets = g.layout_.points;
     if (!sets?.length) {
       return;
     }

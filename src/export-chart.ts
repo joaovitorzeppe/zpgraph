@@ -65,7 +65,14 @@ export const toCsv = (g: Zpgraph, opts: ToCsvOptions = {}): string => {
 
   const rows: string[] = [];
   if (includeHeader && colIdx.length) {
-    rows.push(colIdx.map((c) => escapeCsv(allLabels[c] ?? "")).join(","));
+    rows.push(
+      colIdx
+        .map((c) => {
+          const label = allLabels[c];
+          return escapeCsv(typeof label === "string" ? label : "");
+        })
+        .join(","),
+    );
   }
 
   const n = g.numRows();
@@ -95,8 +102,10 @@ const formatCsvCell = (v: unknown): string => {
     const nums = v.filter((x) => typeof x === "number" && Number.isFinite(x));
     return escapeCsv(nums.join(";"));
   }
-  const s = String(v);
-  return s === "NaN" ? "" : escapeCsv(s);
+  if (typeof v === "string") {
+    return v === "NaN" ? "" : escapeCsv(v);
+  }
+  return "";
 };
 
 const escapeCsv = (s: string): string => {

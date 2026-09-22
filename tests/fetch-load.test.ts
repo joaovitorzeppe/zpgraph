@@ -93,12 +93,14 @@ describe("Zpgraph URL data load via fetch", () => {
     });
 
     const [error, url] = onError.mock.calls[0]!;
-    expect((error as Error).message).toContain("503");
+    expect(error instanceof Error ? error.message : String(error)).toContain(
+      "503",
+    );
     expect(url).toBe("https://example.test/down.csv");
     // The callback takes over; the failure is not also logged.
     expect(
       consoleError.mock.calls.some((args) =>
-        String(args[0]!).includes("Failed to load chart data"),
+        String(args[0]).includes("Failed to load chart data"),
       ),
     ).toBe(false);
 

@@ -27,6 +27,26 @@ import type {
   UnifiedSeries,
   ZpgraphInstance,
 } from "../internal-types";
+import type { ZpgraphOptions } from "../types";
+
+/** Pointer fields shared by MouseEvent and Touch (range-selector drag). */
+type RangePointer = {
+  clientX: number;
+  target: EventTarget | null;
+  type: string;
+};
+
+const cancelIfMouse = (e: RangePointer) => {
+  if (e instanceof MouseEvent) {
+    utils.cancelEvent(e);
+  }
+};
+
+const touchAsPointer = (touch: Touch, type: string): RangePointer => ({
+  clientX: touch.clientX,
+  target: touch.target,
+  type,
+});
 
 const setElementRect = (
   canvas: HTMLCanvasElement | null,
@@ -113,8 +133,11 @@ class rangeSelector {
     return this.chart_().getBooleanOption(name, opt_series);
   }
 
-  setDefaultOption_(name: string, value: unknown) {
-    (this.chart_().attrs_ as Record<string, unknown>)[name] = value;
+  setDefaultOption_<K extends keyof ZpgraphOptions>(
+    name: K,
+    value: ZpgraphOptions[K],
+  ) {
+    this.chart_().attrs_[name] = value;
   }
 
   createInterface_() {
@@ -181,7 +204,7 @@ class rangeSelector {
     if (enabled) {
       if (!this.interfaceCreated_) {
         this.createInterface_();
-      } else if (!this.graphDiv_ || !this.graphDiv_.parentNode) {
+      } else if (!this.graphDiv_?.parentNode) {
         this.addToGraph_();
       }
     } else if (this.graphDiv_) {
@@ -216,13 +239,13 @@ class rangeSelector {
     setElementRect(
       this.bgcanvas_,
       this.bgcanvas_ctx_,
-      this.canvasRect_!,
+      this.canvasRect_,
       pixelRatioOption,
     );
     setElementRect(
       this.fgcanvas_,
       this.fgcanvas_ctx_,
-      this.canvasRect_!,
+      this.canvasRect_,
       pixelRatioOption,
     );
   }
@@ -265,7 +288,11 @@ class rangeSelector {
     }
 
     this.leftZoomHandle_ = img;
-    this.rightZoomHandle_ = img.cloneNode(false) as HTMLImageElement;
+    const right = img.cloneNode(false);
+    if (!(right instanceof HTMLImageElement)) {
+      return;
+    }
+    this.rightZoomHandle_ = right;
   }
 
   initInteraction_() {
@@ -283,7 +310,7 @@ class rangeSelector {
     const toXDataWindow = (zoomHandleStatus: {
       leftHandlePos: number;
       rightHandlePos: number;
-    }) => {
+    }): [number, number] => {
       const xDataLimits = this.chart_().xAxisExtremes();
       const canvasRect = this.canvasRect_!;
       const fact = (xDataLimits[1] - xDataLimits[0]) / canvasRect.w;
@@ -302,10 +329,7 @@ class rangeSelector {
         if (!zoomHandleStatus.isZoomed) {
           this.chart_().resetZoom();
         } else {
-          const xDataWindow = toXDataWindow(zoomHandleStatus) as [
-            number,
-            number,
-          ];
+          const xDataWindow = toXDataWindow(zoomHandleStatus);
           this.chart_().doZoomXDates_(xDataWindow[0], xDataWindow[1]);
         }
       } finally {
@@ -316,9 +340,7 @@ class rangeSelector {
     const doPan = () => {
       try {
         this.isChangingRange_ = true;
-        this.chart_().dateWindow_ = toXDataWindow(
-          this.getZoomHandleStatus_(),
-        ) as [number, number];
+        this.chart_().dateWindow_ = toXDataWindow(this.getZoomHandleStatus_());
         this.chart_().drawGraph_(false);
       } finally {
         this.isChangingRange_ = false;
@@ -341,11 +363,11 @@ class rangeSelector {
       }
     });
 
-    const onZoom = (e: MouseEvent) => {
+    const onZoom = (e: RangePointer) => {
       if (!isZooming || !handle) {
         return false;
       }
-      utils.cancelEvent(e);
+      cancelIfMouse(e);
 
       const delX = e.clientX - clientXLast;
       if (Math.abs(delX) < 4) {
@@ -378,22 +400,20 @@ class rangeSelector {
       return true;
     };
 
+    const onZoomMove = (e: Event) => {
+      if (e instanceof MouseEvent) {
+        onZoom(e);
+      }
+    };
+
     const onZoomEnd = (_e: Event) => {
       if (!isZooming) {
         return false;
       }
       isZooming = false;
       tarp.uncover();
-      utils.removeEvent(
-        topElem,
-        "mousemove",
-        onZoom as unknown as EventListener,
-      );
-      utils.removeEvent(
-        topElem,
-        "mouseup",
-        onZoomEnd as unknown as EventListener,
-      );
+      utils.removeEvent(topElem, "mousemove", onZoomMove);
+      utils.removeEvent(topElem, "mouseup", onZoomEnd);
       this.fgcanvas_!.style.cursor = "default";
 
       // The gesture ends where the last move left the handle.
@@ -405,30 +425,23 @@ class rangeSelector {
       return true;
     };
 
-    const onZoomStart = (e: MouseEvent) => {
-      utils.cancelEvent(e);
+    const onZoomStart = (e: RangePointer) => {
+      cancelIfMouse(e);
       isZooming = true;
       clientXLast = e.clientX;
-      handle = e.target as HTMLImageElement;
+      handle =
+        e.target instanceof HTMLImageElement ? e.target : this.leftZoomHandle_;
       if (e.type === "mousedown" || e.type === "dragstart") {
         // These events are removed manually.
-        utils.addEvent(
-          topElem,
-          "mousemove",
-          onZoom as unknown as EventListener,
-        );
-        utils.addEvent(
-          topElem,
-          "mouseup",
-          onZoomEnd as unknown as EventListener,
-        );
+        utils.addEvent(topElem, "mousemove", onZoomMove);
+        utils.addEvent(topElem, "mouseup", onZoomEnd);
       }
       this.fgcanvas_!.style.cursor = "col-resize";
       tarp.cover();
       return true;
     };
 
-    const isMouseInPanZone = (e: MouseEvent) => {
+    const isMouseInPanZone = (e: RangePointer) => {
       let rect = this.leftZoomHandle_!.getBoundingClientRect();
       const leftHandleClientX = rect.left + rect.width / 2;
       rect = this.rightZoomHandle_!.getBoundingClientRect();
@@ -436,11 +449,11 @@ class rangeSelector {
       return e.clientX > leftHandleClientX && e.clientX < rightHandleClientX;
     };
 
-    const onPan = (e: MouseEvent) => {
+    const onPan = (e: RangePointer) => {
       if (!isPanning) {
         return false;
       }
-      utils.cancelEvent(e);
+      cancelIfMouse(e);
 
       const delX = e.clientX - clientXLast;
       if (Math.abs(delX) < 4) {
@@ -472,21 +485,19 @@ class rangeSelector {
       return true;
     };
 
+    const onPanMove = (e: Event) => {
+      if (e instanceof MouseEvent) {
+        onPan(e);
+      }
+    };
+
     const onPanEnd = (_e: Event) => {
       if (!isPanning) {
         return false;
       }
       isPanning = false;
-      utils.removeEvent(
-        topElem,
-        "mousemove",
-        onPan as unknown as EventListener,
-      );
-      utils.removeEvent(
-        topElem,
-        "mouseup",
-        onPanEnd as unknown as EventListener,
-      );
+      utils.removeEvent(topElem, "mousemove", onPanMove);
+      utils.removeEvent(topElem, "mouseup", onPanEnd);
       tarp.uncover();
       // The gesture ends where the last move left the handles.
       panFrame.flush();
@@ -497,27 +508,19 @@ class rangeSelector {
       return true;
     };
 
-    const onPanStart = (e: MouseEvent) => {
+    const onPanStart = (e: RangePointer) => {
       if (
         !isPanning &&
         isMouseInPanZone(e) &&
         this.getZoomHandleStatus_().isZoomed
       ) {
-        utils.cancelEvent(e);
+        cancelIfMouse(e);
         isPanning = true;
         clientXLast = e.clientX;
         if (e.type === "mousedown") {
           // These events are removed manually.
-          utils.addEvent(
-            topElem,
-            "mousemove",
-            onPan as unknown as EventListener,
-          );
-          utils.addEvent(
-            topElem,
-            "mouseup",
-            onPanEnd as unknown as EventListener,
-          );
+          utils.addEvent(topElem, "mousemove", onPanMove);
+          utils.addEvent(topElem, "mouseup", onPanEnd);
         }
         tarp.cover();
         return true;
@@ -525,8 +528,8 @@ class rangeSelector {
       return false;
     };
 
-    const onCanvasHover = (e: MouseEvent) => {
-      if (isZooming || isPanning) {
+    const onCanvasHover = (e: Event) => {
+      if (!(e instanceof MouseEvent) || isZooming || isPanning) {
         return;
       }
       const cursor = isMouseInPanZone(e) ? "move" : "default";
@@ -536,16 +539,21 @@ class rangeSelector {
     };
 
     const onZoomHandleTouchEvent = (e: Event) => {
-      const touch = e as TouchEvent;
+      if (!(e instanceof TouchEvent)) {
+        return;
+      }
+      const touch = e;
       if (touch.type === "touchstart" && touch.targetTouches.length === 1) {
-        if (onZoomStart(touch.targetTouches[0] as unknown as MouseEvent)) {
+        const t = touch.targetTouches[0];
+        if (t && onZoomStart(touchAsPointer(t, touch.type))) {
           utils.cancelEvent(touch);
         }
       } else if (
         touch.type === "touchmove" &&
         touch.targetTouches.length === 1
       ) {
-        if (onZoom(touch.targetTouches[0] as unknown as MouseEvent)) {
+        const t = touch.targetTouches[0];
+        if (t && onZoom(touchAsPointer(t, touch.type))) {
           utils.cancelEvent(touch);
         }
       } else {
@@ -554,16 +562,21 @@ class rangeSelector {
     };
 
     const onCanvasTouchEvent = (e: Event) => {
-      const touch = e as TouchEvent;
+      if (!(e instanceof TouchEvent)) {
+        return;
+      }
+      const touch = e;
       if (touch.type === "touchstart" && touch.targetTouches.length === 1) {
-        if (onPanStart(touch.targetTouches[0] as unknown as MouseEvent)) {
+        const t = touch.targetTouches[0];
+        if (t && onPanStart(touchAsPointer(t, touch.type))) {
           utils.cancelEvent(touch);
         }
       } else if (
         touch.type === "touchmove" &&
         touch.targetTouches.length === 1
       ) {
-        if (onPan(touch.targetTouches[0] as unknown as MouseEvent)) {
+        const t = touch.targetTouches[0];
+        if (t && onPan(touchAsPointer(t, touch.type))) {
           utils.cancelEvent(touch);
         }
       } else {
@@ -584,29 +597,37 @@ class rangeSelector {
     );
     this.setDefaultOption_("panEdgeFraction", 0.0001);
 
-    const dragStartEvent = (window as Window & { opera?: unknown }).opera
-      ? "mousedown"
-      : "dragstart";
+    const dragStartEvent = "opera" in window ? "mousedown" : "dragstart";
+    const onZoomStartMouse = (e: Event) => {
+      if (e instanceof MouseEvent) {
+        onZoomStart(e);
+      }
+    };
+    const onPanStartMouse = (e: Event) => {
+      if (e instanceof MouseEvent) {
+        onPanStart(e);
+      }
+    };
     this.chart_().addAndTrackEvent(
       this.leftZoomHandle_!,
       dragStartEvent,
-      onZoomStart as unknown as EventListener,
+      onZoomStartMouse,
     );
     this.chart_().addAndTrackEvent(
       this.rightZoomHandle_!,
       dragStartEvent,
-      onZoomStart as unknown as EventListener,
+      onZoomStartMouse,
     );
 
     this.chart_().addAndTrackEvent(
       this.fgcanvas_!,
       "mousedown",
-      onPanStart as unknown as EventListener,
+      onPanStartMouse,
     );
     this.chart_().addAndTrackEvent(
       this.fgcanvas_!,
       "mousemove",
-      onCanvasHover as unknown as EventListener,
+      onCanvasHover,
     );
 
     // Touch events
@@ -673,10 +694,10 @@ class rangeSelector {
     for (let i = 0; i < combinedSeriesData.data.length; i++) {
       const dataPoint = combinedSeriesData.data[i]!;
       const x =
-        dataPoint[0] !== null ? (dataPoint[0]! - xExtremes[0]!) * xFact : NaN;
+        dataPoint[0] !== null ? (dataPoint[0] - xExtremes[0]) * xFact : NaN;
       const y =
         dataPoint[1] !== null
-          ? canvasHeight - (dataPoint[1]! - combinedSeriesData.yMin) * yFact
+          ? canvasHeight - (dataPoint[1] - combinedSeriesData.yMin) * yFact
           : NaN;
 
       // Skip points that don't change the x-value. Overly fine-grained points
@@ -712,9 +733,9 @@ class rangeSelector {
     if (fillStyle) {
       const lingrad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
       if (fillGradientStyle) {
-        lingrad.addColorStop(0, String(fillGradientStyle));
+        lingrad.addColorStop(0, fillGradientStyle);
       }
-      lingrad.addColorStop(1, String(fillStyle));
+      lingrad.addColorStop(1, fillStyle);
       ctx.fillStyle = lingrad;
       ctx.fill();
     }
@@ -734,17 +755,18 @@ class rangeSelector {
     // Select series to combine. By default, all series are combined.
     const numColumns = g.numColumns();
     const labels = g.getLabels();
-    const includeSeries = Array.from({
-      length: numColumns,
-    }) as Array<boolean | null | undefined>;
+    const includeSeries: Array<boolean | null | undefined> = Array.from(
+      { length: numColumns },
+      () => undefined,
+    );
     let anySet = false;
     const visibility = g.visibility();
     const inclusion: Array<boolean | null> = [];
 
     for (i = 1; i < numColumns; i++) {
-      const include = this.getOption_("showInRangeSelector", labels![i]!) as
-        | boolean
-        | null;
+      const raw = this.getOption_("showInRangeSelector", labels![i]);
+      const include =
+        typeof raw === "boolean" || raw === null ? raw : null;
       inclusion.push(include);
       if (include !== null) {
         anySet = true;
@@ -793,7 +815,7 @@ class rangeSelector {
         count++;
         sum += y;
       }
-      combinedSeries.push([baseSeries[i]![0]!, sum / count]);
+      combinedSeries.push([baseSeries[i]![0], sum / count]);
     }
 
     // Compute the y range.

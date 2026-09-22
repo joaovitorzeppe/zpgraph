@@ -6,7 +6,7 @@ describe("DefaultHandler", () => {
   const handler = new DefaultHandler();
 
   // Partial double: the handlers only ever ask for labels and per-series options.
-  const options = {
+  const options: OptionsManagerLike = {
     get: (name: string) => {
       if (name === "labels") {
         return ["x", "A", "B"];
@@ -14,7 +14,12 @@ describe("DefaultHandler", () => {
       return null;
     },
     getForSeries: () => false,
-  } as unknown as OptionsManagerLike;
+    getForAxis: () => null,
+    axisForSeries: () => 0,
+    numAxes: () => 1,
+    seriesForAxis: () => [],
+    axisOptions: () => ({}),
+  };
 
   it("extractSeries pulls one series column", () => {
     const raw = [

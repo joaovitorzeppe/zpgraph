@@ -22,7 +22,6 @@ Options left to make axis-friendly.
 */
 
 import { log } from "../logger";
-import * as utils from "../utils";
 import { halfDown, halfUp } from "../utils";
 import { getChartClassNames, withClassNames } from "../class-names";
 import type {
@@ -131,7 +130,11 @@ class axes {
     }
 
     const context = e.drawingContext;
-    const containerDiv = e.canvas.parentNode as HTMLElement;
+    const parent = e.canvas.parentNode;
+    if (!(parent instanceof HTMLElement)) {
+      return;
+    }
+    const containerDiv = parent;
     const canvasWidth = g.width_; // e.canvas.width is affected by pixel ratio.
     const canvasHeight = g.height_;
 
@@ -171,7 +174,13 @@ class axes {
       let div = labels[idx];
       let inner_div: HTMLElement;
       if (div) {
-        inner_div = div.firstChild as HTMLElement;
+        const child = div.firstChild;
+        if (!(child instanceof HTMLElement)) {
+          inner_div = document.createElement("div");
+          div.replaceChildren(inner_div);
+        } else {
+          inner_div = child;
+        }
         // Position and alignment are set per draw and differ between slots, so
         // the previous draw's values must not survive into this one.
         div.removeAttribute("style");
@@ -183,8 +192,16 @@ class axes {
         containerDiv.appendChild(div);
       }
       const labelStyle =
-        labelStyles[prec_axis === "y2" ? "y2" : (axis as "x" | "y" | "y2")];
-      utils.update(div.style as unknown as Record<string, unknown>, labelStyle);
+        prec_axis === "y2"
+          ? labelStyles.y2
+          : axis === "y"
+            ? labelStyles.y
+            : axis === "y2"
+              ? labelStyles.y2
+              : labelStyles.x;
+      div.style.position = labelStyle.position;
+      div.style.fontSize = labelStyle.fontSize;
+      div.style.width = labelStyle.width;
       inner_div.className = withClassNames(
         "zpgraph-axis-label" +
           " zpgraph-axis-label-" +
@@ -221,7 +238,7 @@ class axes {
       if (layout.yticks && layout.yticks.length > 0) {
         const num_axes = g.numAxes();
         const getOptions = [makeOptionGetter("y"), makeOptionGetter("y2")];
-        layout.yticks!.forEach((tick) => {
+        layout.yticks.forEach((tick) => {
           if (tick.label === undefined) {
             return;
           } // this tick only has a grid line.
@@ -320,7 +337,7 @@ class axes {
     if (g.getOptionForAxis("drawAxis", "x")) {
       if (layout.xticks) {
         const getAxisOption = makeOptionGetter("x");
-        layout.xticks!.forEach((tick) => {
+        layout.xticks.forEach((tick) => {
           if (tick.label === undefined) {
             return;
           } // this tick only has a grid line.

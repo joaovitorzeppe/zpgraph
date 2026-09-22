@@ -17,10 +17,6 @@ import ZpgraphLayout from "./layout";
 import { log } from "./logger";
 import * as utils from "./utils";
 import { ensureZpgraphStyles } from "./ensure-styles";
-import type {
-  ChartInteractionHandler,
-  ZpgraphInstance,
-} from "./internal-types";
 import type { InteractionContext, InteractionModel } from "./types";
 import type Zpgraph from "./zpgraph";
 
@@ -65,32 +61,38 @@ export const createInterface = (g: Zpgraph) => {
   setUpAccessibility(g);
 
   // Create the grapher
-  g.layout_ = new ZpgraphLayout(g as unknown as ZpgraphInstance);
+  g.layout_ = new ZpgraphLayout(g);
 
   const zpgraph = g;
 
   // Hovering repaints the highlight and the legend; one repaint per frame
   // is all that can be seen.
-  g.mouseMoveHandler_ = utils.coalesceFrames((e: unknown) => {
-    zpgraph.mouseMove_(e as MouseEvent);
+  g.mouseMoveHandler_ = utils.coalesceFrames((e: Event) => {
+    if (e instanceof MouseEvent) {
+      zpgraph.mouseMove_(e);
+    }
   });
   g.coalesced_.push(g.mouseMoveHandler_);
 
-  g.mouseOutHandler_ = (e: MouseEvent) => {
+  g.mouseOutHandler_ = (e: Event) => {
+    if (!(e instanceof MouseEvent)) {
+      return;
+    }
     // The mouse has left the chart if:
     // 1. e.target is inside the chart
     // 2. e.relatedTarget is outside the chart
-    const target = e.target;
-    const relatedTarget = e.relatedTarget;
+    const target = e.target instanceof Node ? e.target : null;
+    const relatedTarget =
+      e.relatedTarget instanceof Node ? e.relatedTarget : null;
     if (
-      utils.isNodeContainedBy(target as Node, zpgraph.graphDiv) &&
-      !utils.isNodeContainedBy(relatedTarget as Node, zpgraph.graphDiv)
+      utils.isNodeContainedBy(target, zpgraph.graphDiv) &&
+      !utils.isNodeContainedBy(relatedTarget, zpgraph.graphDiv)
     ) {
       zpgraph.mouseOut_(e);
     }
   };
 
-  g.addAndTrackEvent(window, "mouseout", g.mouseOutHandler_ as EventListener);
+  g.addAndTrackEvent(window, "mouseout", g.mouseOutHandler_);
   g.addAndTrackEvent(g.mouseEventElement_, "mousemove", g.mouseMoveHandler_);
 
   // Don't recreate and register the resize handler on subsequent calls.
@@ -204,10 +206,12 @@ export const setUpAccessibility = (g: Zpgraph) => {
 
   // Without this the chart cannot be reached with the keyboard at all.
   g.graphDiv.tabIndex = 0;
-  g.keyDownHandler_ = (e: KeyboardEvent) => {
-    keyDown(g, e);
+  g.keyDownHandler_ = (e: Event) => {
+    if (e instanceof KeyboardEvent) {
+      keyDown(g, e);
+    }
   };
-  g.addAndTrackEvent(g.graphDiv, "keydown", g.keyDownHandler_ as EventListener);
+  g.addAndTrackEvent(g.graphDiv, "keydown", g.keyDownHandler_);
 };
 
 /**
@@ -222,7 +226,7 @@ export const updateAriaLabel = (g: Zpgraph) => {
 
   const parts = [];
   const title = g.getOption("title");
-  parts.push(title ? String(title) : "Chart");
+  parts.push(typeof title === "string" && title ? title : "Chart");
 
   const labels = g.getLabels();
   if (labels && labels.length > 1) {
@@ -232,13 +236,12 @@ export const updateAriaLabel = (g: Zpgraph) => {
   if (g.dateWindow_ || g.rawData_) {
     const range = g.xAxisRange();
     const view = g.optionsViewForAxis_("x");
-    const formatter = view("valueFormatter") as (...args: unknown[]) => unknown;
-    parts.push(
-      "x from " +
-        String(formatter.call(g, range[0], view)) +
-        " to " +
-        String(formatter.call(g, range[1], view)),
-    );
+    const formatter = view("valueFormatter");
+    const formatX = (x: number) =>
+      typeof formatter === "function"
+        ? String(formatter.call(g, x, view))
+        : String(x);
+    parts.push("x from " + formatX(range[0]) + " to " + formatX(range[1]));
   }
 
   g.canvas_.setAttribute("aria-label", parts.join(". ") + ".");
@@ -305,11 +308,7 @@ export const keyDown = (g: Zpgraph, e: KeyboardEvent) => {
       }
       const cb = g.getFunctionOption("pointClickCallback");
       if (point && cb) {
-        (cb as (ev: MouseEvent, p: unknown) => void).call(
-          g,
-          new MouseEvent("click", { bubbles: true }),
-          point,
-        );
+        cb.call(g, new MouseEvent("click", { bubbles: true }), point);
       }
       e.preventDefault();
       return;
@@ -406,7 +405,7 @@ export const createRollInterface = (g: Zpgraph) => {
   };
   roller.size = 2;
   roller.value = String(g.rollPeriod_);
-  utils.update(roller.style as unknown as Record<string, unknown>, textAttr);
+  utils.update(roller.style, textAttr);
 
   const that = g;
   roller.addEventListener("change", () => {
@@ -419,8 +418,14 @@ export const createRollInterface = (g: Zpgraph) => {
  * events.
  * @private
  */
+const isInteractionModel = (v: unknown): v is InteractionModel =>
+  typeof v === "object" && v !== null;
+
 export const createDragInterface = (g: Zpgraph) => {
-  const context = {
+  // Self is the graph (needed inside context.destroy).
+  const self = g;
+
+  const context: InteractionContext = {
     // Tracks whether the mouse is down right now
     isZooming: false,
     isPanning: false, // is this drag part of a pan?
@@ -446,6 +451,8 @@ export const createDragInterface = (g: Zpgraph) => {
     // panning operation.
     dateRange: null,
 
+    draggingDate: null,
+
     // Top-left corner of the canvas, in DOM coords
     px: 0,
     py: 0,
@@ -460,27 +467,17 @@ export const createDragInterface = (g: Zpgraph) => {
     tarp: new IFrameTarp(),
 
     // contextB is the same thing as this context object but renamed.
-    initializeMouseDown(
-      event: Event,
-      chart: unknown,
-      contextB: InteractionContext,
-    ) {
+    initializeMouseDown(event, chart, contextB) {
       // prevents mouse drags from selecting page text.
       event.preventDefault();
 
-      const canvasPos = utils.findPos((chart as ZpgraphInstance).canvas_);
+      const canvasPos = utils.findPos(chart.canvas_);
       contextB.px = canvasPos.x;
       contextB.py = canvasPos.y;
-      contextB.dragStartX = utils.dragGetX_(
-        event as Parameters<typeof utils.dragGetX_>[0],
-        contextB,
-      );
-      contextB.dragStartY = utils.dragGetY_(
-        event as Parameters<typeof utils.dragGetY_>[0],
-        contextB,
-      );
+      contextB.dragStartX = utils.dragGetX_(event, contextB);
+      contextB.dragStartY = utils.dragGetY_(event, contextB);
       contextB.cancelNextDblclick = false;
-      (contextB.tarp as IFrameTarp).cover();
+      contextB.tarp?.cover();
     },
     destroy() {
       if (this.isZooming || this.isPanning) {
@@ -491,8 +488,7 @@ export const createDragInterface = (g: Zpgraph) => {
 
       if (this.isPanning) {
         this.isPanning = false;
-        (this as InteractionContext & { draggingDate?: unknown }).draggingDate =
-          null;
+        this.draggingDate = null;
         this.dateRange = null;
         for (let i = 0; i < self.axes_.length; i++) {
           delete self.axes_[i]!.draggingValue;
@@ -500,57 +496,44 @@ export const createDragInterface = (g: Zpgraph) => {
         }
       }
 
-      (this.tarp as IFrameTarp).uncover();
+      this.tarp?.uncover();
     },
   };
 
-  const initialModel = g.getOption("interactionModel") as InteractionModel &
-    Record<string, unknown>;
-
-  // Self is the graph.
-  const self = g;
+  const initialModelRaw = g.getOption("interactionModel");
+  if (!isInteractionModel(initialModelRaw)) {
+    return;
+  }
+  const initialModel = initialModelRaw;
 
   // Resolve handler from the *current* interactionModel on each event.
   // updateOptions({ interactionModel }) must take effect without recreate
   // (toolbar pan, etc.).
-  const bindHandler = (eventName: string) => {
-    return function (event: Event) {
-      const model = g.getOption("interactionModel") as
-        | (InteractionModel & Record<string, unknown>)
-        | null
-        | undefined;
-      if (!model) {
+  const bindHandler = (eventName: string): EventListener => {
+    return (event: Event) => {
+      const modelRaw = g.getOption("interactionModel");
+      if (!isInteractionModel(modelRaw)) {
         return;
       }
-      const handler = model[eventName];
+      const handler: unknown = Reflect.get(modelRaw, eventName);
       if (typeof handler !== "function") {
         return;
       }
-      (handler as ChartInteractionHandler)(
-        event,
-        self as unknown as ZpgraphInstance,
-        context as InteractionContext,
-      );
+      Reflect.apply(handler, undefined, [event, self, context]);
     };
   };
 
-  const coalescedMoves: utils.Coalesced[] = [];
+  const coalescedMoves: Array<{ flush(): void; cancel(): void }> = [];
 
-  for (const eventName in initialModel) {
-    if (!Object.hasOwn(initialModel, eventName)) {
+  for (const eventName of Object.keys(initialModel)) {
+    if (typeof Reflect.get(initialModel, eventName) !== "function") {
       continue;
     }
-    if (typeof initialModel[eventName] !== "function") {
-      continue;
-    }
-    let bound: utils.Coalesced | ((event: Event) => void) =
-      bindHandler(eventName);
+    let bound: EventListener = bindHandler(eventName);
     // A move redraws the whole chart, and a finger or a mouse produces far
     // more of them than there are frames to show them in.
     if (eventName === "touchmove" || eventName === "mousemove") {
-      const coalesced = utils.coalesceFrames(
-        bound as (...args: unknown[]) => void,
-      );
+      const coalesced = utils.coalesceFrames(bound);
       bound = coalesced;
       coalescedMoves.push(coalesced);
       g.coalesced_.push(coalesced);
@@ -565,18 +548,14 @@ export const createDragInterface = (g: Zpgraph) => {
         end(event);
       };
     }
-    g.addAndTrackEvent(
-      g.mouseEventElement_,
-      eventName,
-      bound as unknown as EventListener,
-    );
+    g.addAndTrackEvent(g.mouseEventElement_, eventName, bound);
   }
 
   // If the user releases the mouse button during a drag, but not over the
   // canvas, then it doesn't count as a zooming action.
   if (!initialModel.willDestroyContextMyself) {
     const mouseUpHandler = (_event: Event) => {
-      context.destroy();
+      context.destroy?.();
     };
 
     g.addAndTrackEvent(document, "mouseup", mouseUpHandler);

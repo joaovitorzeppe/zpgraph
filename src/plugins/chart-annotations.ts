@@ -12,7 +12,6 @@ import type {
   PointAnnotation,
   TextAnnotation,
 } from "../types";
-import type Zpgraph from "../zpgraph";
 
 const toMs = (v: number | string | Date): number => {
   if (v instanceof Date) {
@@ -24,6 +23,58 @@ const toMs = (v: number | string | Date): number => {
   const t = Date.parse(v);
   return Number.isFinite(t) ? t : Number(v);
 };
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+const isAxisAnnotation = (x: unknown): x is AxisAnnotation =>
+  typeof x === "object" && x !== null;
+
+const isPointAnnotation = (x: unknown): x is PointAnnotation =>
+  typeof x === "object" && x !== null;
+
+const isTextAnnotation = (x: unknown): x is TextAnnotation =>
+  typeof x === "object" && x !== null && typeof Reflect.get(x, "text") === "string";
+
+const isEventMarker = (x: unknown): x is EventMarker =>
+  typeof x === "object" && x !== null && Reflect.get(x, "x") != null;
+
+const filterArray = <T>(
+  v: unknown,
+  guard: (x: unknown) => x is T,
+): T[] | undefined => {
+  if (!Array.isArray(v)) {
+    return undefined;
+  }
+  return v.every(guard) ? v : undefined;
+};
+
+const readChartAnnotations = (v: unknown): ChartAnnotations | undefined => {
+  if (!isPlainObject(v)) {
+    return undefined;
+  }
+  const out: ChartAnnotations = {};
+  const xaxis = filterArray(Reflect.get(v, "xaxis"), isAxisAnnotation);
+  if (xaxis) {
+    out.xaxis = xaxis;
+  }
+  const yaxis = filterArray(Reflect.get(v, "yaxis"), isAxisAnnotation);
+  if (yaxis) {
+    out.yaxis = yaxis;
+  }
+  const points = filterArray(Reflect.get(v, "points"), isPointAnnotation);
+  if (points) {
+    out.points = points;
+  }
+  const texts = filterArray(Reflect.get(v, "texts"), isTextAnnotation);
+  if (texts) {
+    out.texts = texts;
+  }
+  return out;
+};
+
+const readEventMarkers = (v: unknown): EventMarker[] | undefined =>
+  filterArray(v, isEventMarker);
 
 class chart_annotations {
   toString() {
@@ -37,8 +88,8 @@ class chart_annotations {
   }
 
   willDrawChart(e: ChartDrawPluginEvent) {
-    const g = e.zpgraph as unknown as Zpgraph;
-    const ann = g.getOption("chartAnnotations") as ChartAnnotations | undefined;
+    const g = e.zpgraph;
+    const ann = readChartAnnotations(g.getOption("chartAnnotations"));
     if (ann) {
       const ctx = e.drawingContext;
       const area = g.plotter_.area;
@@ -56,7 +107,7 @@ class chart_annotations {
       }
     }
 
-    const markers = g.getOption("eventMarkers") as EventMarker[] | undefined;
+    const markers = readEventMarkers(g.getOption("eventMarkers"));
     if (markers?.length) {
       const ctx = e.drawingContext;
       const area = g.plotter_.area;
@@ -87,7 +138,7 @@ class chart_annotations {
 }
 
 const drawXAxis = (
-  g: Zpgraph,
+  g: ZpgraphInstance,
   ctx: CanvasRenderingContext2D,
   area: { x: number; y: number; w: number; h: number },
   a: AxisAnnotation,
@@ -126,7 +177,7 @@ const drawXAxis = (
 };
 
 const drawYAxis = (
-  g: Zpgraph,
+  g: ZpgraphInstance,
   ctx: CanvasRenderingContext2D,
   area: { x: number; y: number; w: number; h: number },
   a: AxisAnnotation,
@@ -166,7 +217,7 @@ const drawYAxis = (
 };
 
 const drawPoint = (
-  g: Zpgraph,
+  g: ZpgraphInstance,
   ctx: CanvasRenderingContext2D,
   p: PointAnnotation,
 ) => {
@@ -191,7 +242,7 @@ const drawPoint = (
 };
 
 const drawText = (
-  g: Zpgraph,
+  g: ZpgraphInstance,
   ctx: CanvasRenderingContext2D,
   t: TextAnnotation,
 ) => {

@@ -4,6 +4,7 @@ import {
   fillTemplate,
   makeEmitter,
   toggle,
+  type Emitter,
 } from "../src/extras/dom-helpers";
 
 /**
@@ -29,7 +30,7 @@ const makeEl = () => {
 };
 
 const pointer = (type: string, clientX: number, clientY = 0) =>
-  new (window as any).MouseEvent(type, {
+  new MouseEvent(type, {
     bubbles: true,
     clientX,
     clientY,
@@ -89,7 +90,11 @@ describe("fillTemplate", () => {
 
 describe("makeEmitter", () => {
   it("delivers the payload on event.detail", () => {
-    const target: any = {};
+    const target: Emitter = {
+      addEventListener() {},
+      removeEventListener() {},
+      emit_() {},
+    };
     makeEmitter(target);
     const heard = vi.fn();
 
@@ -117,7 +122,11 @@ describe("drag", () => {
     clientX: number,
     clientY = 0,
   ) => {
-    const e: any = pointer(type, clientX, clientY);
+    const e: MouseEvent & { pointerId?: number } = pointer(
+      type,
+      clientX,
+      clientY,
+    );
     e.pointerId = 1;
     el.dispatchEvent(e);
     return e;

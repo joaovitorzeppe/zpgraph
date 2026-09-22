@@ -11,6 +11,7 @@
  */
 
 import type Zpgraph from "./zpgraph";
+import type { DataHandlerLike, ZpgraphInstance } from "./internal-types";
 
 /**
  * Extra CSS classes merged onto chart DOM nodes (Tailwind-friendly).
@@ -380,51 +381,60 @@ export interface PlotterEvent {
 }
 
 export interface InteractionModel {
+  /** When true, the model owns context teardown (no document mouseup). */
+  willDestroyContextMyself?: boolean;
   mousedown?: (
     event: MouseEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
   mousemove?: (
     event: MouseEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
   mouseup?: (
     event: MouseEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
   mouseout?: (
     event: MouseEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
   dblclick?: (
     event: MouseEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
   mousewheel?: (
     event: WheelEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
   touchstart?: (
     event: TouchEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
   touchmove?: (
     event: TouchEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
   touchend?: (
     event: TouchEvent,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
+}
+
+/** Pan-axis snapshot stored on the interaction context during a pan. */
+export interface InteractionPanAxisData {
+  initialTopValue: number;
+  dragValueRange: number;
+  unitsPerPixel: number;
 }
 
 export interface InteractionContext {
@@ -436,17 +446,54 @@ export interface InteractionContext {
   cancelNextDblclick: boolean;
   initializeMouseDown: (
     event: Event,
-    g: unknown,
+    g: ZpgraphInstance,
     context: InteractionContext,
   ) => void;
+  destroy?: () => void;
+  /** Gesture fields (filled during drag / pinch). */
+  dragStartX?: number | null;
+  dragStartY?: number | null;
+  dragEndX?: number | null;
+  dragEndY?: number | null;
+  dateRange?: number | null;
+  initialLeftmostDate?: number | null;
+  xUnitsPerPixel?: number | null;
+  boundedDates?: [number | null, number | null] | null;
+  boundedValues?: Array<[number | null, number | null]> | null;
+  axes?: InteractionPanAxisData[];
+  regionWidth?: number;
+  regionHeight?: number;
+  dragDirection?: number | null;
+  prevDragDirection?: number | null;
+  prevEndX?: number | null;
+  prevEndY?: number | null;
+  initialTouches?: Array<{
+    pageX: number;
+    pageY: number;
+    dataX: number | null;
+    dataY: number | null;
+  }>;
+  initialPinchCenter?: {
+    pageX: number;
+    pageY: number;
+    dataX: number | null;
+    dataY: number | null;
+  };
+  touchDirections?: { x: boolean; y: boolean };
+  initialRange?: { x: [number, number]; y: [number, number] };
+  startTimeForDoubleTapMs?: number | null;
+  doubleTapX?: number;
+  doubleTapY?: number;
+  draggingDate?: unknown;
+  tarp?: { cover(): void; uncover(): void };
   [key: string]: unknown;
 }
 
 export interface Plugin {
   toString?(): string;
-  // Method form keeps param checking bivariant (plugins take ZpgraphInstance).
+  // Method form keeps param checking bivariant.
   // Return is a loose object: handlers are typed per plugin, not via index sig.
-  activate(zpgraph: unknown): object | void;
+  activate(zpgraph: Zpgraph): object | void;
   destroy?(): void;
 }
 
@@ -462,7 +509,7 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
   colorSaturation?: number;
   colorValue?: number;
   file?: Data;
-  dataHandler?: unknown;
+  dataHandler?: (new () => DataHandlerLike) | null;
   delimiter?: string;
   xValueParser?: ((str: string) => number) | undefined;
   displayAnnotations?: boolean;
@@ -548,9 +595,9 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
   underlayCallback?: (
     ctx: CanvasRenderingContext2D,
     area: { x: number; y: number; w: number; h: number },
-    g: Zpgraph,
+    g: ZpgraphInstance,
   ) => void;
-  drawCallback?: (g: Zpgraph, isInitial: boolean) => void;
+  drawCallback?: (g: ZpgraphInstance, isInitial: boolean) => void;
   dataLoadErrorCallback?: (error: unknown, url: string, g: Zpgraph) => void;
   highlightCallback?: (
     event: MouseEvent,

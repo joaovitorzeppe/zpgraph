@@ -15,27 +15,34 @@ import * as utils from "./utils";
 import { log } from "./logger";
 import * as ZpgraphTickers from "./tickers";
 import type {
-  Annotation,
   AxisLabelFormatter,
   AxisOptions,
   DataArray,
   ValueFormatter,
 } from "./types";
-import type { RawData, RawDataCell, RawDataRow } from "./internal-types";
+import type {
+  ParsedAnnotation,
+  RawData,
+  RawDataCell,
+  RawDataRow,
+} from "./internal-types";
 import type Zpgraph from "./zpgraph";
 
 /** Minimal gviz DataTable surface used by parseDataTable. */
-interface GvizDataTable {
+export interface GvizDataTable {
   getNumberOfColumns(): number;
   getNumberOfRows(): number;
   getColumnType(col: number): string;
   getColumnLabel(col: number): string;
   getValue(row: number, col: number): unknown;
+  getColumnRange?(column: number): unknown;
 }
 
-type PendingAnnotation = Pick<Annotation, "series" | "shortText" | "text"> & {
-  xval: number;
-};
+/** Heuristic: gviz tables expose getColumnRange. */
+export const isGvizDataTable = (data: unknown): data is GvizDataTable =>
+  typeof data === "object" &&
+  data !== null &&
+  typeof Reflect.get(data, "getColumnRange") === "function";
 
 const xAxisOpts = (g: Zpgraph): AxisOptions => {
   if (!g.attrs_.axes) {
@@ -47,7 +54,43 @@ const xAxisOpts = (g: Zpgraph): AxisOptions => {
   return g.attrs_.axes.x;
 };
 
-const numericValueFormatter = ((x: number) => x) as unknown as ValueFormatter;
+const numericValueFormatter: ValueFormatter = (x) => String(x);
+
+const numericAxisLabelFormatter: AxisLabelFormatter = (x) =>
+  String(typeof x === "number" ? x : x.valueOf());
+
+const dateAxisLabel: AxisLabelFormatter = (value, granularity, opts) => {
+  const date = value instanceof Date ? value : new Date(value);
+  return utils.dateAxisLabelFormatter(date, granularity, opts);
+};
+
+const numberAxisLabel: AxisLabelFormatter = (value, granularity, opts) => {
+  const x = typeof value === "number" ? value : value.valueOf();
+  return utils.numberAxisLabelFormatter(x, granularity, opts);
+};
+
+const xCellNumber = (cell: RawDataCell | undefined): number | null => {
+  if (typeof cell === "number") {
+    return cell;
+  }
+  if (utils.isDateLike(cell)) {
+    return cell.getTime();
+  }
+  return null;
+};
+
+const parseXCell = (value: unknown): RawDataCell => {
+  if (typeof value === "number" || value === null) {
+    return value;
+  }
+  if (utils.isDateLike(value)) {
+    return value.getTime();
+  }
+  return null;
+};
+
+const gvizNumber = (value: unknown): number | null =>
+  typeof value === "number" ? value : null;
 
 /**
  * Detects the type of the str (date or numeric) and sets the various
@@ -75,8 +118,7 @@ export const setXAxisOptions = (g: Zpgraph, isDate: boolean): void => {
     g.attrs_.xValueParser = utils.dateParser;
     xAxis.valueFormatter = utils.dateValueFormatter;
     xAxis.ticker = ZpgraphTickers.dateTicker;
-    xAxis.axisLabelFormatter =
-      utils.dateAxisLabelFormatter as AxisLabelFormatter;
+    xAxis.axisLabelFormatter = dateAxisLabel;
   } else {
     /** @private (shut up, jsdoc!) */
     g.attrs_.xValueParser = (x: string): number => {
@@ -85,8 +127,7 @@ export const setXAxisOptions = (g: Zpgraph, isDate: boolean): void => {
     /** @private (shut up, jsdoc!) */
     xAxis.valueFormatter = numericValueFormatter;
     xAxis.ticker = ZpgraphTickers.numericTicks;
-    xAxis.axisLabelFormatter =
-      xAxis.valueFormatter as unknown as AxisLabelFormatter;
+    xAxis.axisLabelFormatter = numericAxisLabelFormatter;
   }
 };
 
@@ -129,7 +170,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
   }
   let xParser: ((...args: unknown[]) => unknown) | undefined;
   let defaultParserSet = false; // attempt to auto-detect x value type
-  const expectedCols = (g.attr_("labels") as string[]).length;
+  const expectedCols = g.getLabels()?.length ?? 0;
   let outOfOrder = false;
   for (let i = start; i < lines.length; i++) {
     const line = lines[i]!;
@@ -150,7 +191,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
       xParser = g.getFunctionOption("xValueParser");
       defaultParserSet = true;
     }
-    fields[0] = xParser!(inFields[0]!, g) as RawDataCell;
+    fields[0] = parseXCell(xParser!(inFields[0]!, g));
 
     // If fractions are expected, parse the numbers as "A/B"
     if (g.fractions_) {
@@ -172,7 +213,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
           fields[j] = [
             utils.parseFloat_(vals[0]!, i, line),
             utils.parseFloat_(vals[1]!, i, line),
-          ] as RawDataCell;
+          ];
         }
       }
     } else if (g.getBooleanOption("errorBars")) {
@@ -193,14 +234,14 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
         fields[(j + 1) / 2] = [
           utils.parseFloat_(inFields[j]!, i, line),
           utils.parseFloat_(inFields[j + 1]!, i, line),
-        ] as RawDataCell;
+        ];
       }
     } else if (g.getBooleanOption("customBars")) {
       // Custom high/low bands are a low;centre;high tuple
       for (j = 1; j < inFields.length; j++) {
         const val = inFields[j]!;
         if (/^ *$/.test(val)) {
-          fields[j] = [null, null, null] as unknown as RawDataCell;
+          fields[j] = [null, null, null];
         } else {
           vals = val.split(";");
           if (vals.length === 3) {
@@ -208,7 +249,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
               utils.parseFloat_(vals[0]!, i, line),
               utils.parseFloat_(vals[1]!, i, line),
               utils.parseFloat_(vals[2]!, i, line),
-            ] as RawDataCell;
+            ];
           } else {
             log.warn(
               "When using customBars, values must be either blank " +
@@ -228,10 +269,13 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
       }
     }
     const prevRow = ret[ret.length - 1];
+    const curX = xCellNumber(fields[0]);
+    const prevX = prevRow ? xCellNumber(prevRow[0]) : null;
     if (
       ret.length > 0 &&
-      prevRow &&
-      (fields[0] as number) < (prevRow[0] as number)
+      curX !== null &&
+      prevX !== null &&
+      curX < prevX
     ) {
       outOfOrder = true;
     }
@@ -278,7 +322,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
   if (outOfOrder) {
     log.warn("CSV is out of order; order it correctly to speed loading.");
     ret.sort((a: RawDataRow, b: RawDataRow) => {
-      return (a[0] as number) - (b[0] as number);
+      return (xCellNumber(a[0]) ?? 0) - (xCellNumber(b[0]) ?? 0);
     });
   }
 
@@ -295,7 +339,7 @@ export const validateNativeFormat = (data: DataArray): void => {
   const firstX = firstRow[0];
   if (typeof firstX !== "number" && !utils.isDateLike(firstX)) {
     throw new Error(
-      `Expected number or date but got ${typeof firstX}: ${firstX}.`,
+      `Expected number or date but got ${typeof firstX}: ${String(firstX)}.`,
     );
   }
   for (let i = 1; i < firstRow.length; i++) {
@@ -309,7 +353,7 @@ export const validateNativeFormat = (data: DataArray): void => {
     if (utils.isArrayLike(val)) {
       continue;
     } // e.g. errorBars or customBars
-    throw new Error(`Expected number or array but got ${typeof val}: ${val}.`);
+    throw new Error(`Expected number or array but got ${typeof val}: ${String(val)}.`);
   }
 };
 
@@ -348,11 +392,11 @@ export const parseArray = (
     }
     g.attributes_.reparseSeries();
   } else {
-    const num_labels = g.attr_("labels") as string[];
-    if (num_labels.length !== data[0]!.length) {
+    const num_labels = g.getLabels();
+    if (!num_labels || num_labels.length !== data[0]!.length) {
       log.error(
         "Mismatch between number of labels (" +
-          num_labels.length +
+          (num_labels?.length ?? 0) +
           ")" +
           " and number of columns in array (" +
           data[0]!.length +
@@ -367,26 +411,26 @@ export const parseArray = (
     const xAxis = xAxisOpts(g);
     xAxis.valueFormatter = utils.dateValueFormatter;
     xAxis.ticker = ZpgraphTickers.dateTicker;
-    xAxis.axisLabelFormatter =
-      utils.dateAxisLabelFormatter as AxisLabelFormatter;
+    xAxis.axisLabelFormatter = dateAxisLabel;
 
     // Assume they're all dates.
-    const parsedData = utils.clone(data) as RawData;
+    const parsedData = utils.clone(data);
     for (i = 0; i < data.length; i++) {
       if (parsedData[i]!.length === 0) {
         log.error("Row " + (1 + i) + " of data is empty");
         return null;
       }
       const xVal = parsedData[i]![0];
-      if (
-        xVal === null ||
-        typeof (xVal as Date).getTime != "function" ||
-        isNaN((xVal as Date).getTime())
-      ) {
+      if (!utils.isDateLike(xVal)) {
         log.error("x value in row " + (1 + i) + " is not a Date");
         return null;
       }
-      parsedData[i]![0] = (xVal as Date).getTime();
+      const time = xVal.getTime();
+      if (isNaN(time)) {
+        log.error("x value in row " + (1 + i) + " is not a Date");
+        return null;
+      }
+      parsedData[i]![0] = time;
     }
     return parsedData;
   }
@@ -394,15 +438,14 @@ export const parseArray = (
   const xAxis = xAxisOpts(g);
   xAxis.valueFormatter = numericValueFormatter;
   xAxis.ticker = ZpgraphTickers.numericTicks;
-  xAxis.axisLabelFormatter =
-    utils.numberAxisLabelFormatter as AxisLabelFormatter;
+  xAxis.axisLabelFormatter = numberAxisLabel;
   return data;
 };
 
 const shortTextForAnnotationNum = (num: number): string => {
   // converts [0-9]+ [A-Z][a-z]*
   // example: 0=A, 1=B, 25=Z, 26=Aa, 27=Ab
-  // and continues like.. Ba Bb .. Za .. Zz..Aaa...Zzz Aaaa Zzzz
+  // and continues like.. Ba Bb .. Za .. Zz..Aaa...Zzzz Aaaa Zzzz
   let shortText = String.fromCharCode(65 /* A */ + (num % 26));
   num = Math.floor(num / 26);
   while (num > 0) {
@@ -433,8 +476,7 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
     const xAxis = xAxisOpts(g);
     xAxis.valueFormatter = utils.dateValueFormatter;
     xAxis.ticker = ZpgraphTickers.dateTicker;
-    xAxis.axisLabelFormatter =
-      utils.dateAxisLabelFormatter as AxisLabelFormatter;
+    xAxis.axisLabelFormatter = dateAxisLabel;
   } else if (indepType === "number") {
     g.attrs_.xValueParser = (x: string): number => {
       return parseFloat(x);
@@ -442,8 +484,7 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
     const xAxis = xAxisOpts(g);
     xAxis.valueFormatter = numericValueFormatter;
     xAxis.ticker = ZpgraphTickers.numericTicks;
-    xAxis.axisLabelFormatter =
-      xAxis.valueFormatter as unknown as AxisLabelFormatter;
+    xAxis.axisLabelFormatter = numericAxisLabelFormatter;
   } else {
     throw new Error(
       "only 'date', 'datetime' and 'number' types are supported " +
@@ -492,7 +533,7 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
 
   const ret: RawData = [];
   let outOfOrder = false;
-  const annotations: PendingAnnotation[] = [];
+  const annotations: ParsedAnnotation[] = [];
   for (i = 0; i < rows; i++) {
     const row: RawDataRow = [];
     if (
@@ -509,23 +550,45 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
 
     if (indepType === "date" || indepType === "datetime") {
       const xVal = data.getValue(i, 0);
-      row.push((xVal as Date).getTime());
+      if (!utils.isDateLike(xVal)) {
+        log.warn(
+          "Ignoring row " +
+            i +
+            " of DataTable because first column is not a Date.",
+        );
+        continue;
+      }
+      row.push(xVal.getTime());
     } else {
-      row.push(data.getValue(i, 0) as number);
+      const xVal = data.getValue(i, 0);
+      if (typeof xVal !== "number") {
+        log.warn(
+          "Ignoring row " +
+            i +
+            " of DataTable because first column is not a number.",
+        );
+        continue;
+      }
+      row.push(xVal);
     }
     if (!g.getBooleanOption("errorBars")) {
       for (j = 0; j < colIdx.length; j++) {
         const col = colIdx[j]!;
-        row.push(data.getValue(i, col) as number | null);
+        row.push(gvizNumber(data.getValue(i, col)));
         const annCols = annotationCols[col];
         if (
           hasAnnotations &&
           annCols &&
           data.getValue(i, annCols[0]!) !== null
         ) {
-          const ann: PendingAnnotation = {
+          const xNum = xCellNumber(row[0]);
+          if (xNum === null) {
+            continue;
+          }
+          const ann: ParsedAnnotation = {
             series: data.getColumnLabel(col),
-            xval: row[0] as number,
+            x: xNum,
+            xval: xNum,
             shortText: shortTextForAnnotationNum(annotations.length),
             text: "",
           };
@@ -541,23 +604,27 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
 
       // Strip out infinities, which give zpgraph problems later on.
       for (j = 0; j < row.length; j++) {
-        if (!isFinite(row[j] as number)) {
+        const cell = row[j];
+        if (typeof cell === "number" && !isFinite(cell)) {
           row[j] = null;
         }
       }
     } else {
       for (j = 0; j < colCount - 1; j++) {
         row.push([
-          data.getValue(i, 1 + 2 * j) as number,
-          data.getValue(i, 2 + 2 * j) as number,
+          gvizNumber(data.getValue(i, 1 + 2 * j)) ?? 0,
+          gvizNumber(data.getValue(i, 2 + 2 * j)) ?? 0,
         ]);
       }
     }
     const prevRow = ret[ret.length - 1];
+    const curX = xCellNumber(row[0]);
+    const prevX = prevRow ? xCellNumber(prevRow[0]) : null;
     if (
       ret.length > 0 &&
-      prevRow &&
-      (row[0] as number) < (prevRow[0] as number)
+      curX !== null &&
+      prevX !== null &&
+      curX < prevX
     ) {
       outOfOrder = true;
     }
@@ -567,13 +634,13 @@ export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
   if (outOfOrder) {
     log.warn("DataTable is out of order; order it correctly to speed loading.");
     ret.sort((a: RawDataRow, b: RawDataRow) => {
-      return (a[0] as number) - (b[0] as number);
+      return (xCellNumber(a[0]) ?? 0) - (xCellNumber(b[0]) ?? 0);
     });
   }
   g.rawData_ = ret;
 
   if (annotations.length > 0) {
-    g.setAnnotations(annotations as unknown as Annotation[], true);
+    g.setAnnotations(annotations, true);
   }
   g.attributes_.reparseSeries();
 };

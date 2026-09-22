@@ -19,7 +19,7 @@ describe("options cascade", () => {
       getHighlightSeries: () => "",
     };
 
-    const opts = new OptionsManager(fake as never);
+    const opts = Reflect.construct(OptionsManager, [fake]);
     expect(opts.get("strokeWidth")).toBe(2);
     expect(opts.getForSeries("strokeWidth", "A")).toBe(3);
     expect(opts.getForSeries("strokeWidth", "B")).toBe(2);

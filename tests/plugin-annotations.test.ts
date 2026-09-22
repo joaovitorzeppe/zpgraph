@@ -111,7 +111,10 @@ describe("Annotations plugin", () => {
     ]);
 
     const area = g.getArea();
-    const [floating, pinned] = nodes(el) as [HTMLElement, HTMLElement];
+    const list = nodes(el);
+    expect(list).toHaveLength(2);
+    const floating = list[0]!;
+    const pinned = list[1]!;
     expect(parseFloat(pinned.style.top)).toBe(area.y + area.h - 20 - 6);
     expect(parseFloat(floating.style.top)).toBeLessThan(
       parseFloat(pinned.style.top),
@@ -206,16 +209,27 @@ describe("Annotations plugin", () => {
 
   it("draws the tick line into the chart context", () => {
     const { g } = makeChart();
-    const ctx = (
-      g as unknown as {
-        hidden_ctx_: Record<"stroke", ReturnType<typeof vi.fn>>;
-      }
-    ).hidden_ctx_;
-    const strokesBefore = ctx.stroke.mock.calls.length;
+    const hiddenCtx = Reflect.get(g, "hidden_ctx_");
+    if (!hiddenCtx || typeof hiddenCtx !== "object") {
+      throw new Error("expected hidden_ctx_");
+    }
+    const stroke = Reflect.get(hiddenCtx, "stroke");
+    if (typeof stroke !== "function" || !("mock" in stroke)) {
+      throw new Error("expected stroke mock");
+    }
+    const mock = Reflect.get(stroke, "mock");
+    if (!mock || typeof mock !== "object") {
+      throw new Error("expected mock object");
+    }
+    const strokesBefore = Reflect.get(mock, "calls");
+    const beforeLen = Array.isArray(strokesBefore) ? strokesBefore.length : 0;
 
     g.setAnnotations([{ series: "A", x: 2, shortText: "a1" }]);
 
-    expect(ctx.stroke.mock.calls.length).toBeGreaterThan(strokesBefore);
+    const strokesAfter = Reflect.get(mock, "calls");
+    expect(
+      Array.isArray(strokesAfter) ? strokesAfter.length : 0,
+    ).toBeGreaterThan(beforeLen);
 
     g.destroy();
   });

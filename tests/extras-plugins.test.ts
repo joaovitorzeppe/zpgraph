@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Zpgraph } from "../src/index";
 import Hairlines from "../src/extras/hairlines";
 import SuperAnnotations from "../src/extras/super-annotations";
+import type { Plugin } from "../src/types";
 import { mockCanvas, mountDiv, sampleData, stubLayoutMetrics } from "./helpers";
 
 /**
@@ -11,13 +12,13 @@ import { mockCanvas, mountDiv, sampleData, stubLayoutMetrics } from "./helpers";
  * through addEventListener rather than jQuery's bus.
  */
 
-const makeChart = (plugin: unknown) =>
+const makeChart = (plugin: Plugin) =>
   new Zpgraph(mountDiv(), sampleData, {
     labels: ["x", "A", "B"],
     width: 480,
     height: 320,
-    plugins: [plugin as import("../src/types").Plugin],
-  }) as unknown as Record<string, any>;
+    plugins: [plugin],
+  });
 
 const pointer = (type: string, clientX: number, clientY = 0) =>
   Object.assign(
@@ -101,9 +102,10 @@ describe("Hairlines plugin", () => {
 
     plugin.set([{ xval: 2, interpolated: true, selected: false }]);
 
-    const hairline = g.graphDiv.querySelector(
-      ".zpgraph-hairline",
-    ) as HTMLElement;
+    const hairline = g.graphDiv.querySelector(".zpgraph-hairline");
+    if (!(hairline instanceof HTMLElement)) {
+      throw new Error("expected hairline");
+    }
     const area = g.getArea();
     stubLayoutMetrics(g.graphDiv, {
       width: area.w + area.x * 2,
@@ -181,9 +183,10 @@ describe("SuperAnnotations plugin", () => {
     plugin.addEventListener("annotationDeleted", deleted);
 
     plugin.set([{ xval: 2, series: "A", text: "Launch" }]);
-    const kill = g.graphDiv.querySelector(
-      ".annotation-kill-button",
-    ) as HTMLElement;
+    const kill = g.graphDiv.querySelector(".annotation-kill-button");
+    if (!(kill instanceof HTMLElement)) {
+      throw new Error("expected kill button");
+    }
     kill.click();
 
     expect(deleted).toHaveBeenCalledTimes(1);
@@ -201,10 +204,11 @@ describe("SuperAnnotations plugin", () => {
     plugin.set([{ xval: 2, series: "A", text: "Launch" }]);
 
     const [a] = plugin.get();
+    expect(a).toBeDefined();
     expect(a).toMatchObject({ xval: 2, series: "A", text: "Launch" });
-    expect(a.infoDiv).toBe(undefined);
-    expect(a.lineDiv).toBe(undefined);
-    expect(a.stopDrag).toBe(undefined);
+    expect(a!.infoDiv).toBe(undefined);
+    expect(a!.lineDiv).toBe(undefined);
+    expect(a!.stopDrag).toBe(undefined);
     g.destroy();
   });
 });

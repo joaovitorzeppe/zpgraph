@@ -13,7 +13,18 @@
  */
 
 import * as utils from "./utils";
+import type { RawDataCell } from "./internal-types";
 import type Zpgraph from "./zpgraph";
+
+const xCellNumber = (cell: RawDataCell | undefined): number => {
+  if (typeof cell === "number") {
+    return cell;
+  }
+  if (utils.isDateLike(cell)) {
+    return cell.getTime();
+  }
+  return Number(cell);
+};
 
 /**
  * Returns the currently-visible x-range. This can be affected by zooming,
@@ -33,8 +44,8 @@ export const xAxisExtremes = (g: Zpgraph): [number, number] => {
   if (g.numRows() === 0) {
     return [0 - pad, 1 + pad];
   }
-  let left = g.rawData_[0]![0] as number;
-  let right = g.rawData_[g.rawData_.length - 1]![0] as number;
+  let left = xCellNumber(g.rawData_[0]![0]);
+  let right = xCellNumber(g.rawData_[g.rawData_.length - 1]![0]);
   if (pad) {
     // Must keep this in sync with layout _evaluateLimits()
     const range = right - left;
@@ -62,7 +73,7 @@ export const yAxisRange = (
   }
   const axis = g.axes_[idx]!;
   const range = axis.computedValueRange!;
-  return [range[0]!, range[1]!];
+  return [range[0], range[1]];
 };
 
 /**
@@ -87,7 +98,7 @@ export const toDomCoords = (
   x: number | null,
   y: number | null,
   axis?: number,
-) => {
+): [number | null, number | null] => {
   return [toDomXCoord(g, x), toDomYCoord(g, y, axis)];
 };
 
@@ -137,7 +148,7 @@ export const toDataCoords = (
   x: number | null,
   y: number | null,
   axis?: number,
-) => {
+): [number | null, number | null] => {
   return [toDataXCoord(g, x), toDataYCoord(g, y, axis)];
 };
 
@@ -177,8 +188,8 @@ export const toDataYCoord = (g: Zpgraph, y: number | null, axis?: number) => {
     axis = 0;
   }
   const yRange = yAxisRange(g, axis)!;
-  const y0 = yRange[0]!;
-  const y1 = yRange[1]!;
+  const y0 = yRange[0];
+  const y1 = yRange[1];
 
   if (!g.attributes_.getForAxis("logscale", axis)) {
     return y0 + ((area.y + area.h - y) / area.h) * (y1 - y0);
@@ -218,8 +229,8 @@ export const toPercentYCoord = (
   }
 
   const yRange = yAxisRange(g, axis)!;
-  const y0 = yRange[0]!;
-  const y1 = yRange[1]!;
+  const y0 = yRange[0];
+  const y1 = yRange[1];
 
   let pct;
   const logscale = g.attributes_.getForAxis("logscale", axis);
@@ -276,7 +287,10 @@ export const toPercentXCoord = (g: Zpgraph, x: number | null) => {
  *
  * Returns a two-element array: [X, Y].
  */
-export const eventToDomCoords = (g: Zpgraph, event: MouseEvent) => {
+export const eventToDomCoords = (
+  g: Zpgraph,
+  event: MouseEvent,
+): [number, number] => {
   if (event.offsetX && event.offsetY) {
     return [event.offsetX, event.offsetY];
   }

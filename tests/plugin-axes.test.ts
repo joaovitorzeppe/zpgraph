@@ -92,8 +92,8 @@ describe("Axes plugin", () => {
   it("runs tick values through a custom axisLabelFormatter", () => {
     const { el, g } = makeChart({
       axes: {
-        x: { axisLabelFormatter: (v) => `x=${v}` },
-        y: { axisLabelFormatter: (v) => `y=${v}` },
+        x: { axisLabelFormatter: (v) => `x=${String(v)}` },
+        y: { axisLabelFormatter: (v) => `y=${String(v)}` },
       },
     });
 
@@ -101,8 +101,8 @@ describe("Axes plugin", () => {
     const yTexts = texts(el, ".zpgraph-axis-label-y");
     expect(xTexts.length).toBeGreaterThan(0);
     expect(yTexts.length).toBeGreaterThan(0);
-    expect(xTexts.every((t) => t!.startsWith("x="))).toBe(true);
-    expect(yTexts.every((t) => t!.startsWith("y="))).toBe(true);
+    expect(xTexts.every((t) => t.startsWith("x="))).toBe(true);
+    expect(yTexts.every((t) => t.startsWith("y="))).toBe(true);
 
     g.destroy();
   });

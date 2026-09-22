@@ -4,31 +4,37 @@ import ErrorBarsHandler from "../src/datahandler/bars-error";
 import CustomBarsHandler from "../src/datahandler/bars-custom";
 import FractionsBarsHandler from "../src/datahandler/bars-fractions";
 import DefaultFractionHandler from "../src/datahandler/default-fractions";
-import type {
-  AxisProperties,
-  OptionsManagerLike,
-  UnifiedSeries,
-} from "../src/internal-types";
+import type { OptionsManagerLike, UnifiedSeries } from "../src/internal-types";
 
 /**
  * Fake options object in the same shape the handlers ask for: `get('labels')`
  * plus `getForSeries(name, label)` for logscale/sigma/wilsonInterval.
  */
-const makeOptions = (seriesOptions: Record<string, any> = {}) =>
-  ({
-    get: (name: string) => {
-      if (name === "labels") {
-        return ["x", "A", "B"];
-      }
-      return null;
-    },
-    getForSeries: (name: string) =>
-      Object.hasOwn(seriesOptions, name) ? seriesOptions[name] : false,
-  }) as unknown as OptionsManagerLike;
+const makeOptions = (
+  seriesOptions: Record<string, unknown> = {},
+): OptionsManagerLike => ({
+  get: (name: string) => {
+    if (name === "labels") {
+      return ["x", "A", "B"];
+    }
+    return null;
+  },
+  getForSeries: (name: string) =>
+    Object.hasOwn(seriesOptions, name) ? seriesOptions[name] : false,
+  getForAxis: () => null,
+  axisForSeries: () => 0,
+  numAxes: () => 1,
+  seriesForAxis: () => [],
+  axisOptions: () => ({}),
+});
 
 /** Extras of a unified sample, which every bars flavour fills in. */
-const extras = (sample: UnifiedSeries[number]) =>
-  sample[2] as (number | null)[];
+const extras = (sample: UnifiedSeries[number]): (number | null)[] => {
+  if (sample.length < 3 || sample[2] == null) {
+    return [];
+  }
+  return sample[2];
+};
 
 /** BarsHandler is abstract; this is the thinnest thing that can be built. */
 class BareBarsHandler extends BarsHandler {
@@ -120,7 +126,7 @@ describe("BarsHandler", () => {
     const points = handler.seriesToPoints([[1, 10, [8, 12]]], "A", 0);
     handler.onLineEvaluated(
       points,
-      { minyval: 0, yscale: 0.01 } as AxisProperties,
+      { minyval: 0, yscale: 0.01 },
       false,
     );
     // 1 - (value - minyval) * yscale
@@ -139,7 +145,7 @@ describe("BarsHandler", () => {
     );
     handler.onLineEvaluated(
       points,
-      { minyval: 1, ylogscale: 1 } as unknown as AxisProperties,
+      { minyval: 1, ylogscale: 1 },
       true,
     );
     // 1 - (log10(value) - log10(minyval)) * ylogscale
@@ -173,7 +179,7 @@ describe("ErrorBarsHandler", () => {
     ];
     const series = handler.extractSeries(raw, 1, makeOptions({ sigma: 2 }));
     expect(series[0]!).toEqual([1, null, [null, null, null]]);
-    expect(series[1]![0]!).toBe(2);
+    expect(series[1]![0]).toBe(2);
     expect(series[1]![1]!).toBeNaN();
     expect(series[1]![2]!).toEqual([NaN, NaN, NaN]);
   });
@@ -219,7 +225,7 @@ describe("ErrorBarsHandler", () => {
     );
     expect(rolled[0]!).toEqual([1, 10, [8, 12]]);
     // mean 15, stddev sqrt(1 + 4)/2, bar = 15 +/- sigma * stddev = 15 +/- sqrt(5)
-    expect(rolled[1]![0]!).toBe(2);
+    expect(rolled[1]![0]).toBe(2);
     expect(rolled[1]![1]!).toBe(15);
     expect(extras(rolled[1]!)[0]!).toBeCloseTo(15 - Math.sqrt(5), 10);
     expect(extras(rolled[1]!)[1]!).toBeCloseTo(15 + Math.sqrt(5), 10);
@@ -251,7 +257,7 @@ describe("ErrorBarsHandler", () => {
       opts,
       1,
     );
-    expect(kept[0]![0]!).toBe(1);
+    expect(kept[0]![0]).toBe(1);
     expect(kept[0]![1]!).toBeNaN();
     expect(kept[0]![2]!).toEqual([NaN, NaN]);
 
@@ -412,7 +418,7 @@ describe("FractionsBarsHandler", () => {
       [2, [3, 4]],
     ];
     const series = handler.extractSeries(raw, 1, makeOptions({ sigma: 2 }));
-    expect(series[0]![0]!).toBe(1);
+    expect(series[0]![0]).toBe(1);
     expect(series[0]![1]!).toBe(25);
     expect(extras(series[0]!)[0]!).toBeCloseTo(25 - 100 * stddevQuarter, 10);
     expect(extras(series[0]!)[1]!).toBeCloseTo(25 + 100 * stddevQuarter, 10);
@@ -494,7 +500,7 @@ describe("FractionsBarsHandler", () => {
       1,
     );
     // i=2: num = 3 + 2, den = 4 + 4 -> 62.5%
-    expect(rolled[2]![0]!).toBe(3);
+    expect(rolled[2]![0]).toBe(3);
     expect(rolled[2]![1]!).toBe(62.5);
   });
 
@@ -509,7 +515,7 @@ describe("FractionsBarsHandler", () => {
     // p = 0.25, n = 4, sigma = 2
     const pm = 2 * Math.sqrt((0.25 * 0.75) / 4 + 4 / (4 * 16));
     const denom = 1 + 4 / 4;
-    expect(rolled[0]![0]!).toBe(1);
+    expect(rolled[0]![0]).toBe(1);
     expect(rolled[0]![1]!).toBe(25);
     expect(extras(rolled[0]!)[0]!).toBeCloseTo(
       100 * ((0.25 + 4 / 8 - pm) / denom),

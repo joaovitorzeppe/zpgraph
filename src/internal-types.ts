@@ -13,7 +13,6 @@
 
 import type {
   Annotation,
-  AxisName,
   InteractionContext,
   Plugin,
   Point,
@@ -95,7 +94,7 @@ export interface AxisProperties {
  * Parsed chart input: each row is `[x, y1, y2, ...]`.
  * Cell values may be numbers, Dates, null, or nested arrays (error/custom bars).
  */
-export type RawDataCell = number | number[] | Date | null;
+export type RawDataCell = number | Array<number | null> | Date | null;
 export type RawDataRow = RawDataCell[];
 export type RawData = RawDataRow[];
 
@@ -103,7 +102,7 @@ export type RawData = RawDataRow[];
  * Unified series sample from datahandlers:
  * `[x, y]` or `[x, y, extras]` (extras often `[yTop, yBottom]` for bars).
  */
-export type SeriesExtras = unknown;
+export type SeriesExtras = Array<number | null>;
 export type UnifiedSample =
   | [number, number | null]
   | [number, number | null, SeriesExtras];
@@ -113,7 +112,7 @@ export type UnifiedSeries = UnifiedSample[];
 export interface OptionsManagerLike {
   get(name: string): unknown;
   getForSeries(name: string, series: string): unknown;
-  getForAxis(name: string, axis: AxisName | number | string): unknown;
+  getForAxis(name: string, axis: string | number): unknown;
   axisForSeries(series: string): number;
   numAxes(): number;
   seriesForAxis(axis: number): string[];
@@ -204,6 +203,7 @@ export interface ZpgraphInstance {
   hidden_: HTMLCanvasElement;
   canvas_ctx_: CanvasRenderingContext2D;
   hidden_ctx_: CanvasRenderingContext2D;
+  mouseEventElement_?: HTMLElement;
   colors_: string[];
   colorsMap_: Record<string, string>;
   selPoints_: Point[];
@@ -224,13 +224,17 @@ export interface ZpgraphInstance {
   getFunctionOption(
     name: string,
     series?: string,
-  ): (...args: unknown[]) => unknown;
-  getOptionForAxis(name: string, axis: AxisName | string | number): unknown;
+  ): ((...args: unknown[]) => unknown) | undefined;
+  getOptionForAxis(name: string, axis: string | number): unknown;
   attr_(name: string, seriesName?: string): unknown;
 
   // --- events / interaction ---
   cascadeEvents_(name: string, extra_props?: Record<string, unknown>): boolean;
-  addAndTrackEvent(elem: EventTarget, type: string, fn: EventListener): void;
+  addAndTrackEvent(
+    elem: EventTarget,
+    type: string,
+    fn: import("./utils").DomEventHandler,
+  ): void;
 
   // --- ranges / coords ---
   xAxisRange(): [number, number];
@@ -238,10 +242,10 @@ export interface ZpgraphInstance {
   yAxisRange(idx?: number): [number, number] | null;
   yAxisRanges(): Array<[number, number] | null>;
   yAxisExtremes(): Array<[number, number]>;
-  toDomCoords(x: number, y: number, axis?: number): [number, number];
+  toDomCoords(x: number, y: number, axis?: number): [number | null, number | null];
   toDomXCoord(x: number | null | undefined): number | null;
   toDomYCoord(y: number | null | undefined, axis?: number): number | null;
-  toDataCoords(x: number, y: number, axis?: number): [number, number];
+  toDataCoords(x: number, y: number, axis?: number): [number | null, number | null];
   toDataXCoord(x: number | null | undefined): number | null;
   toDataYCoord(y: number | null | undefined, axis?: number): number | null;
   toPercentXCoord(x: number | null | undefined): number | null;
@@ -283,7 +287,7 @@ export interface ZpgraphInstance {
   findClosestPoint(
     domX: number,
     domY: number,
-  ): { row: number; seriesName: string; point: Point; dist: number };
+  ): { row: number; seriesName: string; point: Point };
   findStackedPoint(
     domX: number,
     domY: number,
@@ -313,22 +317,19 @@ export interface ZpgraphInstance {
   resize(width?: number, height?: number): void;
   adjustRoll(length: number): void;
   setVisibility(num: number | number[] | object, value?: boolean): void;
-  size(): [number, number];
+  size(): { width: number; height: number };
   setAnnotations(ann: Annotation[], suppressDraw?: boolean): void;
   annotations(): Annotation[];
   ready(callback: (g: ZpgraphInstance) => void): void;
   destroy(): void;
   rollPeriod(): number;
   toString(): string;
-
-  /** Interaction models may stash context via initializeMouseDown. */
-  [key: string]: unknown;
 }
 
 /** Convenience alias for interaction callbacks that receive the chart. */
 export type ChartInteractionHandler = (
   event: Event,
-  g: ZpgraphInstance,
+  g: ZpgraphInstance | import("./zpgraph").default,
   context: InteractionContext,
 ) => void;
 

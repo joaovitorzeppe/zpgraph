@@ -14,7 +14,7 @@ import type {
   UnifiedSeries,
 } from "../internal-types";
 import BarsHandler from "./bars";
-import { seriesOption } from "./datahandler";
+import { rawX, rawYArray, seriesBoolean, seriesNumber } from "./datahandler";
 
 class ErrorBarsHandler extends BarsHandler {
   /** @inheritDoc */
@@ -23,13 +23,13 @@ class ErrorBarsHandler extends BarsHandler {
     i: number,
     options: OptionsManagerLike,
   ): UnifiedSeries {
-    const series = Array.from({ length: rawData.length }) as UnifiedSeries;
+    const series: UnifiedSeries = [];
     let x, y, variance, point;
-    const logScale = seriesOption<boolean>(options, i, "logscale");
-    const sigma = seriesOption<number>(options, i, "sigma");
+    const logScale = seriesBoolean(options, i, "logscale");
+    const sigma = seriesNumber(options, i, "sigma");
     for (let j = 0; j < rawData.length; j++) {
-      x = rawData[j]![0] as number;
-      point = rawData[j]![i] as number[] | null;
+      x = rawX(rawData[j]![0]!);
+      point = rawYArray(rawData[j]![i]!);
       if (logScale && point !== null) {
         // On the log scale, points less than zero do not exist.
         // This will create a gap in the chart.
@@ -64,7 +64,7 @@ class ErrorBarsHandler extends BarsHandler {
   ): UnifiedSeries {
     rollPeriod = Math.min(rollPeriod, originalData.length);
     const rollingData: UnifiedSeries = [];
-    const sigma = seriesOption<number>(options, seriesIndex_, "sigma");
+    const sigma = seriesNumber(options, seriesIndex_, "sigma");
 
     let i, j, y, v, sum, num_ok, stddev, variance, value;
 
@@ -81,7 +81,7 @@ class ErrorBarsHandler extends BarsHandler {
         }
         num_ok++;
         sum += y;
-        variance += Math.pow((originalData[j]![2] as number[])[2]!, 2);
+        variance += Math.pow(originalData[j]![2]![2]!, 2);
       }
       if (num_ok) {
         stddev = Math.sqrt(variance) / num_ok;

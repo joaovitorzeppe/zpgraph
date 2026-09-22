@@ -25,12 +25,12 @@ abstract class BarsHandler extends ZpgraphDataHandler {
     points: Point[],
   ): void {
     for (let i = 0; i < series.length; ++i) {
-      const item = series[i] as [number, number | null, (number | null)[]];
+      const extras = series[i]![2];
       const point = points[i]!;
       point.y_top = NaN;
       point.y_bottom = NaN;
-      point.yval_minus = ZpgraphDataHandler.parseFloat(item[2][0] ?? null);
-      point.yval_plus = ZpgraphDataHandler.parseFloat(item[2][1] ?? null);
+      point.yval_minus = ZpgraphDataHandler.parseFloat(extras?.[0] ?? null);
+      point.yval_plus = ZpgraphDataHandler.parseFloat(extras?.[1] ?? null);
     }
   }
 
@@ -54,7 +54,10 @@ abstract class BarsHandler extends ZpgraphDataHandler {
         continue;
       }
 
-      const extras = row[2] as number[];
+      const extras = row[2];
+      if (!extras) {
+        continue;
+      }
       let low = extras[0]!;
       let high = extras[1]!;
 
