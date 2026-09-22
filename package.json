@@ -52,7 +52,7 @@
     "CHANGES.md"
   ],
   "scripts": {
-    "build": "node scripts/copy-css.mjs && tsup && tsc -p tsconfig.build.json",
+    "build": "node scripts/copy-css.mjs && tsdown && tsc -p tsconfig.build.json",
     "smoke": "node scripts/smoke-node.mjs",
     "typecheck": "node scripts/copy-css.mjs && tsc -p tsconfig.json --noEmit",
     "lint": "oxlint",
@@ -68,13 +68,13 @@
     "@vitest/coverage-v8": "^5.0.1",
     "jsdom": "^30.0.1",
     "oxlint": "^1.83.0",
-    "tsup": "^8.5.1",
+    "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
   },
   "engines": {
-    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
   },
   "browserslist": [
     "defaults",

@@ -1,13 +1,11 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
   target: "es2023",
   sourcemap: true,
   treeshake: true,
   define: {
-    "process.env.NODE_ENV": JSON.stringify(
-      process.env.NODE_ENV ?? "production",
-    ),
+    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV ?? "production"),
   },
   entry: {
     index: "src/index.ts",
@@ -30,11 +28,12 @@ export default defineConfig({
     "extras/span-bands": "src/extras/span-bands.ts",
   },
   format: ["esm"],
-  // Declarations come from `tsc -p tsconfig.build.json`, not from tsup:
-  // tsup bundles rollup-plugin-dts, which does not run on TypeScript 7.
+  // Declarations come from `tsc -p tsconfig.build.json`, not from tsdown:
+  // tsdown auto-enables dts when package.json has `types`; keep off for TS 7.
   dts: false,
   clean: true,
-  splitting: false,
-  external: ["zpgraph"],
+  platform: "browser",
+  fixedExtension: false,
+  deps: { neverBundle: ["zpgraph"] },
   outDir: "dist",
 });
