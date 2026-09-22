@@ -1,5 +1,12 @@
 # Changes
 
+## 1.3.1
+
+- Build: `tsdown` only (drop `tsc` emit + `fix-dts-extensions`)
+- Ship `style.css` via tsdown `copy` (+ `style.css.d.ts` for typed imports)
+- No source maps / declaration maps in the package
+- Slimmer `gen-style-text` script (runtime CSS inject only)
+
 ## 1.3.0
 
 - Stricter TypeScript surfaces (`InteractionContext`, plugins, getters)

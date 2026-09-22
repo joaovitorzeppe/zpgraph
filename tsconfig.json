@@ -11,8 +11,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "rootDir": ".",
     "types": ["node", "vitest/globals"],
     "noImplicitThis": true,

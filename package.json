@@ -36,7 +36,10 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./style.css": "./dist/style.css",
+    "./style.css": {
+      "types": "./dist/style.css.d.ts",
+      "default": "./dist/style.css"
+    },
     "./extras/*": {
       "types": "./dist/extras/*.d.ts",
       "import": "./dist/extras/*.js",
@@ -52,14 +55,14 @@
     "CHANGES.md"
   ],
   "scripts": {
-    "build": "node scripts/copy-css.mjs && tsdown && node scripts/copy-css.mjs && tsc -p tsconfig.build.json && node scripts/fix-dts-extensions.mjs",
+    "build": "node scripts/gen-style-text.mjs && tsdown",
     "smoke": "node scripts/smoke-node.mjs",
-    "check:pkg": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./style.css",
-    "typecheck": "node scripts/copy-css.mjs && tsc -p tsconfig.json --noEmit",
+    "check:pkg": "publint && attw --pack . --profile esm-only",
+    "typecheck": "node scripts/gen-style-text.mjs && tsc -p tsconfig.json --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "test": "node scripts/copy-css.mjs && vitest run",
-    "test:coverage": "node scripts/copy-css.mjs && vitest run --coverage",
+    "test": "node scripts/gen-style-text.mjs && vitest run",
+    "test:coverage": "node scripts/gen-style-text.mjs && vitest run --coverage",
     "test:watch": "vitest",
     "dev": "vitest",
     "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build && npm run check:pkg && npm run smoke"
