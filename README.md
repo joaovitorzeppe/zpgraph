@@ -61,7 +61,7 @@ Vanilla HTML (no bundler). jsDelivr serves the npm ESM (`+esm`). CSS is injected
 
 ```html
 <script type="module">
-  import { Zpgraph } from "https://cdn.jsdelivr.net/npm/zpgraph@2.0.0/+esm";
+  import { Zpgraph } from "https://cdn.jsdelivr.net/npm/zpgraph@1.4.0/+esm";
   new Zpgraph("chart", data, { labels: ["Date", "Alpha"] });
 </script>
 ```

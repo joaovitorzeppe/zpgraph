@@ -4,7 +4,7 @@ import { Zpgraph } from "../src/index";
 describe("Zpgraph package surface", () => {
   it("exports constructor and version", () => {
     expect(typeof Zpgraph).toBe("function");
-    expect(Zpgraph.VERSION).toBe("2.0.0");
+    expect(Zpgraph.VERSION).toBe("1.4.0");
     expect(Zpgraph.PLUGINS).toHaveLength(5);
     expect(Zpgraph.NAME).toBe("Zpgraph");
   });
