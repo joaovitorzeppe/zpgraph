@@ -124,45 +124,54 @@ export const numericTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) => {
   let i, j, tickV, nTicks;
   if (vals?.length) {
     ticks.push(...vals.map((v) => ({ v })));
+  } else if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) {
+    if (Number.isFinite(a)) {
+      ticks.push({ v: a });
+    }
   } else {
     if (opts("logscale")) {
-      nTicks = Math.floor(pixels / pixels_per_tick);
-      let minIdx = utils.binarySearch(a, PREFERRED_LOG_TICK_VALUES, 1);
-      let maxIdx = utils.binarySearch(b, PREFERRED_LOG_TICK_VALUES, -1);
-      if (minIdx === -1) {
-        minIdx = 0;
-      }
-      if (maxIdx === -1) {
-        maxIdx = PREFERRED_LOG_TICK_VALUES.length - 1;
-      }
-      // Count the number of tick values would appear, if we can get at least
-      // nTicks / 4 accept them.
-      let lastDisplayed = null;
-      if (maxIdx - minIdx >= nTicks / 4) {
-        for (let idx = maxIdx; idx >= minIdx; idx--) {
-          const tickValue = PREFERRED_LOG_TICK_VALUES[idx]!;
-          const pixel_coord =
-            (Math.log(tickValue / a) / Math.log(b / a)) * pixels;
-          const tick: NumericTick = { v: tickValue };
-          if (lastDisplayed === null) {
-            lastDisplayed = {
-              tickValue: tickValue,
-              pixel_coord: pixel_coord,
-            };
-          } else if (
-            Math.abs(pixel_coord - lastDisplayed.pixel_coord) >= pixels_per_tick
-          ) {
-            lastDisplayed = {
-              tickValue: tickValue,
-              pixel_coord: pixel_coord,
-            };
-          } else {
-            tick.label = "";
-          }
-          ticks.push(tick);
+      if (!(a > 0) || !(b > 0)) {
+        ticks.push({ v: a });
+      } else {
+        nTicks = Math.floor(pixels / pixels_per_tick);
+        let minIdx = utils.binarySearch(a, PREFERRED_LOG_TICK_VALUES, 1);
+        let maxIdx = utils.binarySearch(b, PREFERRED_LOG_TICK_VALUES, -1);
+        if (minIdx === -1) {
+          minIdx = 0;
         }
-        // Since we went in backwards order.
-        ticks.reverse();
+        if (maxIdx === -1) {
+          maxIdx = PREFERRED_LOG_TICK_VALUES.length - 1;
+        }
+        // Count the number of tick values would appear, if we can get at least
+        // nTicks / 4 accept them.
+        let lastDisplayed = null;
+        if (maxIdx - minIdx >= nTicks / 4) {
+          for (let idx = maxIdx; idx >= minIdx; idx--) {
+            const tickValue = PREFERRED_LOG_TICK_VALUES[idx]!;
+            const pixel_coord =
+              (Math.log(tickValue / a) / Math.log(b / a)) * pixels;
+            const tick: NumericTick = { v: tickValue };
+            if (lastDisplayed === null) {
+              lastDisplayed = {
+                tickValue: tickValue,
+                pixel_coord: pixel_coord,
+              };
+            } else if (
+              Math.abs(pixel_coord - lastDisplayed.pixel_coord) >=
+              pixels_per_tick
+            ) {
+              lastDisplayed = {
+                tickValue: tickValue,
+                pixel_coord: pixel_coord,
+              };
+            } else {
+              tick.label = "";
+            }
+            ticks.push(tick);
+          }
+          // Since we went in backwards order.
+          ticks.reverse();
+        }
       }
     }
 
@@ -247,6 +256,18 @@ export const integerTicks: Ticker = (a, b, pixels, opts, zpgraph, vals) =>
   );
 
 export const dateTicker: Ticker = (a, b, pixels, opts, zpgraph, _vals) => {
+  if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) {
+    if (Number.isFinite(a) && a === b) {
+      const formatter = optAxisLabelFormatter(opts);
+      return toTickResult([
+        {
+          v: a,
+          label: formatter.call(zpgraph, new Date(a), 0, opts, zpgraph),
+        },
+      ]);
+    }
+    return [];
+  }
   const chosen = pickDateTickGranularity(a, b, pixels, opts);
   // chosen < 0 can happen if self.width_ is zero.
   return chosen >= 0 ? getDateAxis(a, b, chosen, opts, zpgraph) : [];
@@ -373,10 +394,13 @@ export const pickDateTickGranularity = (
   pixels: number,
   opts: AxisOpts,
 ): number => {
+  if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) {
+    return -1;
+  }
   const pixels_per_tick = optNumber(opts, "pixelsPerLabel");
   for (let i = 0; i < Granularity.NUM_GRANULARITIES; i++) {
     const num_ticks = Math.round((b - a) / TICK_PLACEMENT[i]!.spacing);
-    if (pixels / num_ticks >= pixels_per_tick) {
+    if (num_ticks > 0 && pixels / num_ticks >= pixels_per_tick) {
       return i;
     }
   }

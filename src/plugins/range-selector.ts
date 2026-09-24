@@ -85,6 +85,11 @@ class rangeSelector {
   fgcanvas_: HTMLCanvasElement | null = null;
   fgcanvas_ctx_: CanvasRenderingContext2D | null = null;
   canvasRect_: { x: number; y: number; w: number; h: number } | null = null;
+  miniSnapshot_: HTMLCanvasElement | null = null;
+  miniRaw_: unknown = null;
+  miniStyle_ = "";
+  miniW_ = -1;
+  miniH_ = -1;
 
   leftZoomHandle_: HTMLImageElement | null = null;
   rightZoomHandle_: HTMLImageElement | null = null;
@@ -110,8 +115,14 @@ class rangeSelector {
     };
   }
 
+  private endDrag_: (() => void) | null = null;
+
   destroy() {
+    this.endDrag_?.();
+    this.endDrag_ = null;
     this.bgcanvas_ = null;
+    this.miniSnapshot_ = null;
+    this.miniRaw_ = null;
     this.fgcanvas_ = null;
     this.leftZoomHandle_ = null;
     this.rightZoomHandle_ = null;
@@ -341,7 +352,7 @@ class rangeSelector {
       try {
         this.isChangingRange_ = true;
         this.chart_().dateWindow_ = toXDataWindow(this.getZoomHandleStatus_());
-        this.chart_().drawGraph_(false);
+        this.chart_().drawGraph_();
       } finally {
         this.isChangingRange_ = false;
       }
@@ -508,6 +519,16 @@ class rangeSelector {
       return true;
     };
 
+    this.endDrag_ = () => {
+      if (isZooming) {
+        onZoomEnd(new MouseEvent("mouseup"));
+      }
+      if (isPanning) {
+        onPanEnd(new MouseEvent("mouseup"));
+      }
+      tarp.uncover();
+    };
+
     const onPanStart = (e: RangePointer) => {
       if (
         !isPanning &&
@@ -591,10 +612,12 @@ class rangeSelector {
       }
     };
 
-    this.setDefaultOption_(
-      "interactionModel",
-      ZpgraphInteraction.dragIsPanInteractionModel,
-    );
+    if (!Object.hasOwn(this.chart_().user_attrs_, "interactionModel")) {
+      this.setDefaultOption_(
+        "interactionModel",
+        ZpgraphInteraction.dragIsPanInteractionModel,
+      );
+    }
     this.setDefaultOption_("panEdgeFraction", 0.0001);
 
     const dragStartEvent = "opera" in window ? "mousedown" : "dragstart";
@@ -641,6 +664,22 @@ class rangeSelector {
   drawStaticLayer_() {
     const ctx = this.bgcanvas_ctx_!;
     const canvasRect = this.canvasRect_!;
+    const g = this.chart_();
+    const style =
+      this.getOptionStr_("rangeSelectorPlotStrokeColor") +
+      "|" +
+      this.getOptionStr_("rangeSelectorPlotFillColor");
+    if (
+      this.miniSnapshot_ &&
+      this.miniRaw_ === g.rawData_ &&
+      this.miniStyle_ === style &&
+      this.miniW_ === canvasRect.w &&
+      this.miniH_ === canvasRect.h
+    ) {
+      ctx.clearRect(0, 0, canvasRect.w, canvasRect.h);
+      ctx.drawImage(this.miniSnapshot_, 0, 0);
+      return;
+    }
     ctx.clearRect(0, 0, canvasRect.w, canvasRect.h);
     try {
       this.drawMiniPlot_();
@@ -657,6 +696,33 @@ class rangeSelector {
     ctx.lineTo(canvasRect.w - margin, canvasRect.h - margin);
     ctx.lineTo(canvasRect.w - margin, margin);
     ctx.stroke();
+    this.rememberMini_(g.rawData_, canvasRect, style);
+  }
+
+  rememberMini_(
+    raw: unknown,
+    rect: { w: number; h: number },
+    style: string,
+  ) {
+    const bg = this.bgcanvas_;
+    if (!bg) {
+      return;
+    }
+    this.miniRaw_ = raw;
+    this.miniStyle_ = style;
+    this.miniW_ = rect.w;
+    this.miniH_ = rect.h;
+    if (!this.miniSnapshot_) {
+      this.miniSnapshot_ = document.createElement("canvas");
+    }
+    const snap = this.miniSnapshot_;
+    const w = Math.max(1, rect.w);
+    const h = Math.max(1, rect.h);
+    if (snap.width !== w || snap.height !== h) {
+      snap.width = w;
+      snap.height = h;
+    }
+    snap.getContext("2d")?.drawImage(bg, 0, 0);
   }
 
   drawMiniPlot_() {
@@ -913,7 +979,9 @@ class rangeSelector {
         zoomHandleStatus.rightHandlePos - canvasRect.x,
       );
 
-      const veilColour = this.getOptionStr_("rangeSelectorVeilColour");
+      const veilColour =
+        this.getOptionStr_("rangeSelectorVeilColor") ||
+        this.getOptionStr_("rangeSelectorVeilColour");
       ctx.fillStyle = veilColour
         ? veilColour
         : "rgba(240, 240, 240, " +

@@ -27,7 +27,11 @@ import type Zpgraph from "./zpgraph";
  * @private
  */
 export const createInterface = (g: Zpgraph) => {
-  ensureZpgraphStyles();
+  const nonce = g.getOption("styleNonce");
+  ensureZpgraphStyles(g.maindiv_, {
+    disabled: g.getOption("injectStyles") === false,
+    ...(typeof nonce === "string" ? { nonce } : {}),
+  });
 
   // Create the all-enclosing graph div
   const enclosing = g.maindiv_;
@@ -239,7 +243,7 @@ export const updateAriaLabel = (g: Zpgraph) => {
     const formatter = view("valueFormatter");
     const formatX = (x: number) =>
       typeof formatter === "function"
-        ? String(formatter.call(g, x, view))
+        ? String(formatter(x, view, g))
         : String(x);
     parts.push("x from " + formatX(range[0]) + " to " + formatX(range[1]));
   }
@@ -308,7 +312,7 @@ export const keyDown = (g: Zpgraph, e: KeyboardEvent) => {
       }
       const cb = g.getFunctionOption("pointClickCallback");
       if (point && cb) {
-        cb.call(g, new MouseEvent("click", { bubbles: true }), point);
+        cb(new MouseEvent("click", { bubbles: true }), point, g);
       }
       e.preventDefault();
       return;
@@ -378,39 +382,6 @@ const keyDownShift = (g: Zpgraph, key: string): boolean => {
   }
   g.updateOptions({ dateWindow: [lo, hi] });
   return true;
-};
-
-/**
- * Create the text box to adjust the averaging period
- * @private
- */
-export const createRollInterface = (g: Zpgraph) => {
-  // Create a roller if one doesn't exist already.
-  let roller = g.roller_;
-  if (!roller) {
-    g.roller_ = roller = document.createElement("input");
-    roller.type = "text";
-    roller.style.display = "none";
-    roller.className = "zpgraph-roller";
-    g.graphDiv.appendChild(roller);
-  }
-
-  const display = g.getBooleanOption("showRoller") ? "block" : "none";
-
-  const area = g.getArea();
-  const textAttr = {
-    top: area.y + area.h - 25 + "px",
-    left: area.x + 1 + "px",
-    display: display,
-  };
-  roller.size = 2;
-  roller.value = String(g.rollPeriod_);
-  utils.update(roller.style, textAttr);
-
-  const that = g;
-  roller.addEventListener("change", () => {
-    return that.adjustRoll(Number(roller.value));
-  });
 };
 
 /**

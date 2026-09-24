@@ -26,9 +26,6 @@ const numberFormatterOpts = (name: string) => {
   if (name === "sigFigs") {
     return null;
   }
-  if (name === "labelsKMB") {
-    return false;
-  }
   if (name === "labelsKMG2") {
     return false;
   }
@@ -89,10 +86,11 @@ describe("utils", () => {
     expect(binarySearch(4, arr)).toBeLessThan(0);
   });
 
-  it("dateParser parses ISO-ish dates", () => {
-    const ms = dateParser("2009/07/12");
+  it("dateParser accepts ISO dates and rejects slash dates", () => {
+    const ms = dateParser("2009-07-12");
     expect(typeof ms).toBe("number");
     expect(ms).toBeGreaterThan(0);
+    expect(dateParser("2009/07/12")).toBeNaN();
   });
 
   it("parseFloat_ and numberValueFormatter", () => {

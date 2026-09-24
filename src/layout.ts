@@ -30,6 +30,18 @@ import type {
 } from "./internal-types";
 import type { Annotation, Point } from "./types";
 
+const positiveLogBounds = (
+  low: number,
+  high: number,
+): [number, number] | null => {
+  const lo = low > 0 ? low : high > 0 ? high : NaN;
+  const hi = high > 0 ? high : lo;
+  if (!(lo > 0) || !(hi > 0)) {
+    return null;
+  }
+  return [lo, hi];
+};
+
 /**
  * Creates a new ZpgraphLayout object.
  *
@@ -259,10 +271,17 @@ export default class ZpgraphLayout {
     this._xAxis.scale = xrange !== 0 ? 1 / xrange : 1.0;
 
     if (this.zpgraph_.getOptionForAxis("logscale", "x")) {
-      this._xAxis.xlogrange =
-        utils.log10(this._xAxis.maxval) - utils.log10(this._xAxis.minval);
-      this._xAxis.xlogscale =
-        this._xAxis.xlogrange !== 0 ? 1.0 / this._xAxis.xlogrange : 1.0;
+      const bounds = positiveLogBounds(this._xAxis.minval, this._xAxis.maxval);
+      if (bounds) {
+        this._xAxis.minval = bounds[0];
+        this._xAxis.maxval = bounds[1];
+        this._xAxis.xlogrange = utils.log10(bounds[1]) - utils.log10(bounds[0]);
+        this._xAxis.xlogscale =
+          this._xAxis.xlogrange !== 0 ? 1.0 / this._xAxis.xlogrange : 1.0;
+      } else {
+        this._xAxis.xlogrange = NaN;
+        this._xAxis.xlogscale = 1.0;
+      }
     }
     const yAxes = this.yAxes_!;
     for (let i = 0; i < yAxes.length; i++) {
@@ -274,8 +293,19 @@ export default class ZpgraphLayout {
       axis.yscale = axis.yrange !== 0 ? 1.0 / axis.yrange : 1.0;
 
       if (this.zpgraph_.getOption("logscale") || axis.logscale) {
-        axis.ylogrange = utils.log10(axis.maxyval) - utils.log10(axis.minyval);
-        axis.ylogscale = axis.ylogrange !== 0 ? 1.0 / axis.ylogrange : 1.0;
+        const bounds = positiveLogBounds(
+          axis.minyval ?? NaN,
+          axis.maxyval ?? NaN,
+        );
+        if (bounds) {
+          axis.minyval = bounds[0];
+          axis.maxyval = bounds[1];
+          axis.ylogrange = utils.log10(bounds[1]) - utils.log10(bounds[0]);
+          axis.ylogscale = axis.ylogrange !== 0 ? 1.0 / axis.ylogrange : 1.0;
+        } else {
+          axis.ylogrange = NaN;
+          axis.ylogscale = 1.0;
+        }
         if (!isFinite(axis.ylogrange) || isNaN(axis.ylogrange)) {
           log.error(
             "axis " +
@@ -299,12 +329,15 @@ export default class ZpgraphLayout {
     logscale: boolean,
   ) {
     if (logscale) {
-      if (typeof value !== "number" || typeof xAxis.xlogscale !== "number") {
+      if (
+        typeof value !== "number" ||
+        !(value > 0) ||
+        !(xAxis.minval > 0) ||
+        typeof xAxis.xlogscale !== "number"
+      ) {
         return NaN;
       }
-      return (
-        (utils.log10(value) - utils.log10(xAxis.minval)) * xAxis.xlogscale
-      );
+      return (utils.log10(value) - utils.log10(xAxis.minval)) * xAxis.xlogscale;
     }
     return (value! - xAxis.minval) * xAxis.scale;
   }
@@ -320,12 +353,17 @@ export default class ZpgraphLayout {
     logscale: boolean,
   ) {
     if (logscale) {
-      if (typeof value !== "number") {
+      if (
+        typeof value !== "number" ||
+        !(value > 0) ||
+        typeof axis.minyval !== "number" ||
+        !(axis.minyval > 0)
+      ) {
         return NaN;
       }
       const x =
         1.0 -
-        (utils.log10(value) - utils.log10(axis.minyval!)) * axis.ylogscale!;
+        (utils.log10(value) - utils.log10(axis.minyval)) * axis.ylogscale!;
       return isFinite(x) ? x : NaN; // shim for v8 issue; see pull request 276
     }
     return 1.0 - (value! - axis.minyval!) * axis.yscale!;

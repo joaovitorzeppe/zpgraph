@@ -256,7 +256,7 @@ describe("legendFormatter return contract", () => {
     g.destroy();
   });
 
-  it("a string is trusted app HTML (innerHTML path, not XSS-safe by itself)", () => {
+  it("a string legendFormatter is text unless legendHtml is set", () => {
     const el = mountDiv();
     const g = new Zpgraph(el, sampleData, {
       labels: ["x", "A", "B"],
@@ -264,7 +264,48 @@ describe("legendFormatter return contract", () => {
       legendFormatter: () => '<span class="from-app">ok</span>',
     });
     const legend = el.querySelector(".zpgraph-legend")!;
-    expect(legend.querySelector(".from-app")).not.toBeNull();
+    expect(legend.querySelector(".from-app")).toBeNull();
+    expect(legend.textContent).toContain("from-app");
+    g.destroy();
+
+    const elHtml = mountDiv();
+    const gHtml = new Zpgraph(elHtml, sampleData, {
+      labels: ["x", "A", "B"],
+      tooltip: { show: "always" },
+      legendHtml: true,
+      legendFormatter: () => '<span class="from-app">ok</span>',
+    });
+    expect(elHtml.querySelector(".from-app")).not.toBeNull();
+    gHtml.destroy();
+  });
+});
+
+describe("automatic stylesheet", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    document.head.innerHTML = "";
+    mockCanvas();
+  });
+
+  it("injects @layer zpgraph into a shadow root", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: "open" });
+    const el = document.createElement("div");
+    shadow.appendChild(el);
+    Object.defineProperty(el, "clientWidth", { get: () => 480 });
+    Object.defineProperty(el, "clientHeight", { get: () => 320 });
+    const g = new Zpgraph(el, sampleData, {
+      labels: ["x", "A", "B"],
+      width: 480,
+      height: 320,
+    });
+    const style = shadow.querySelector("style[data-zpgraph-style]");
+    const adopted = shadow.adoptedStyleSheets ?? [];
+    const layered =
+      (style?.textContent?.includes("@layer zpgraph") ?? false) ||
+      adopted.length > 0;
+    expect(layered).toBe(true);
     g.destroy();
   });
 });

@@ -87,6 +87,8 @@ class chart_annotations {
     };
   }
 
+  destroy() {}
+
   willDrawChart(e: ChartDrawPluginEvent) {
     const g = e.zpgraph;
     const ann = readChartAnnotations(g.getOption("chartAnnotations"));

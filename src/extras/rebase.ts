@@ -6,16 +6,26 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZpgraphImport from "zpgraph";
 import DefaultHandler from "../datahandler/default";
-import type { PluginEventBase, UnifiedSeries } from "../internal-types";
+import type {
+  DataHandlerLike,
+  PluginEventBase,
+  UnifiedSeries,
+  ZpgraphInstance,
+} from "../internal-types";
 import type ZpgraphClass from "../zpgraph";
-import type { Point } from "../types";
+import type { AxisLabelFormatter, Point, ValueFormatter } from "../types";
 
 type RebaseBase = "percent" | number;
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
-ZpgraphImport.DataHandlers = ZpgraphImport.DataHandlers || {};
+const usableInitial = (initial: number | null): initial is number =>
+  initial !== null && Number.isFinite(initial) && initial !== 0;
+
+const isAxisLabelFormatter = (v: unknown): v is AxisLabelFormatter =>
+  typeof v === "function";
+
+const isValueFormatter = (v: unknown): v is ValueFormatter =>
+  typeof v === "function";
 
 class RebaseHandler extends DefaultHandler {
   baseOpt: RebaseBase;
@@ -29,9 +39,13 @@ class RebaseHandler extends DefaultHandler {
     value: number | null,
     initial: number | null,
     base: RebaseBase,
-  ): number {
-    if (value === null || initial === null) {
-      return NaN;
+  ): number | null {
+    if (
+      value === null ||
+      !Number.isFinite(value) ||
+      !usableInitial(initial)
+    ) {
+      return null;
     }
     if (base === "percent") {
       return (value / initial - 1) * 100;
@@ -50,6 +64,9 @@ class RebaseHandler extends DefaultHandler {
     const firstIdx = 0,
       lastIdx = series.length - 1;
     const initial = series[firstIdx]![1];
+    if (!usableInitial(initial)) {
+      return [null, null];
+    }
 
     for (let j = firstIdx; j <= lastIdx; j++) {
       if (j === firstIdx) {
@@ -57,7 +74,7 @@ class RebaseHandler extends DefaultHandler {
       } else {
         y = RebaseHandler.rebase(series[j]![1], initial, this.baseOpt);
       }
-      if (y === null || isNaN(y)) {
+      if (y === null || Number.isNaN(y)) {
         continue;
       }
       if (maxY === null || y > maxY) {
@@ -79,11 +96,14 @@ class RebaseHandler extends DefaultHandler {
     const firstIdx = 0;
     const lastIdx = series.length - 1;
     const initial = series[firstIdx]![1];
+    const initialOk = usableInitial(initial);
     for (let i = 0; i <= lastIdx; ++i) {
       const item = series[i]!;
       const yraw = item[1];
       let yval = yraw;
-      if (yval !== null) {
+      if (!initialOk) {
+        yval = null;
+      } else if (yval !== null) {
         if (i === firstIdx) {
           yval = this.baseOpt === "percent" ? 0 : this.baseOpt;
         } else {
@@ -105,7 +125,6 @@ class RebaseHandler extends DefaultHandler {
   }
 }
 
-Object.assign(ZpgraphImport.DataHandlers, { RebaseHandler });
 
 const isNumericBase = (v: unknown): v is number =>
   !isNaN(Number(v)) &&
@@ -113,6 +132,14 @@ const isNumericBase = (v: unknown): v is number =>
 
 class Rebase {
   baseOpt_: RebaseBase | null;
+  g_: ZpgraphInstance | null = null;
+  prevDataHandler_: DataHandlerLike | null = null;
+  replacedHandler_ = false;
+  formattersApplied_ = false;
+  axisFormatter_: AxisLabelFormatter | null = null;
+  valueFormatter_: ValueFormatter | null = null;
+  prevAxisFormatter_: unknown;
+  prevValueFormatter_: unknown;
 
   constructor(baseOpt?: unknown) {
     this.baseOpt_ =
@@ -123,7 +150,8 @@ class Rebase {
     return "Rebase Plugin";
   }
 
-  activate(_g: ZpgraphClass) {
+  activate(g: ZpgraphClass) {
+    this.g_ = g;
     if (this.baseOpt_ === null) {
       return undefined;
     }
@@ -134,27 +162,75 @@ class Rebase {
 
   predraw(e: PluginEventBase) {
     const g = e.zpgraph;
+    const base = this.baseOpt_;
+    if (base === null) {
+      return;
+    }
+    this.g_ = g;
 
-    if (this.baseOpt_ === "percent") {
-      g.updateOptions(
-        {
-          axes: {
-            y: {
-              axisLabelFormatter: (y: number | Date) =>
-                (typeof y === "number" ? y : y.getTime()) + "%",
-              valueFormatter: (y: number) => Math.round(y * 100) / 100 + "%",
+    if (base === "percent") {
+      const current = g.getOptionForAxis("axisLabelFormatter", "y");
+      if (current !== this.axisFormatter_) {
+        if (!this.formattersApplied_) {
+          this.prevAxisFormatter_ = current;
+          this.prevValueFormatter_ = g.getOptionForAxis("valueFormatter", "y");
+        }
+        this.axisFormatter_ = (y) =>
+          (typeof y === "number" ? y : y.getTime()) + "%";
+        this.valueFormatter_ = (y) => Math.round(y * 100) / 100 + "%";
+        g.updateOptions(
+          {
+            axes: {
+              y: {
+                axisLabelFormatter: this.axisFormatter_,
+                valueFormatter: this.valueFormatter_,
+              },
             },
           },
-        },
-        true,
-      );
+          true,
+        );
+        this.formattersApplied_ = true;
+      }
     }
 
-    g.dataHandler_ = new RebaseHandler(this.baseOpt_!);
+    this.prevDataHandler_ = g.dataHandler_;
+    this.replacedHandler_ = true;
+    g.dataHandler_ = new RebaseHandler(base);
+  }
+
+  destroy() {
+    const g = this.g_;
+    if (!g) {
+      return;
+    }
+    if (this.replacedHandler_ && this.prevDataHandler_) {
+      g.dataHandler_ = this.prevDataHandler_;
+    }
+    if (this.formattersApplied_) {
+      const y = g.user_attrs_.axes?.y;
+      if (y) {
+        if (isAxisLabelFormatter(this.prevAxisFormatter_)) {
+          y.axisLabelFormatter = this.prevAxisFormatter_;
+        } else {
+          delete y.axisLabelFormatter;
+        }
+        if (isValueFormatter(this.prevValueFormatter_)) {
+          y.valueFormatter = this.prevValueFormatter_;
+        } else {
+          delete y.valueFormatter;
+        }
+      }
+      g.updateOptions({}, true);
+      this.formattersApplied_ = false;
+    }
+    this.replacedHandler_ = false;
+    this.prevDataHandler_ = null;
+    this.axisFormatter_ = null;
+    this.valueFormatter_ = null;
+    this.g_ = null;
   }
 }
 
-Object.assign(ZpgraphImport.Plugins, { Rebase });
 
 export default Rebase;
 export { RebaseHandler };

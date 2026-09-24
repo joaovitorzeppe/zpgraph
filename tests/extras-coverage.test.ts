@@ -8,6 +8,13 @@ import Unzoom from "../src/extras/unzoom";
 import type { ZpgraphOptions } from "../src/types";
 import { mockCanvas, mountDiv, recordingCanvas, sampleData } from "./helpers";
 
+const invoke = (fn: unknown, args: readonly unknown[]) => {
+  if (typeof fn !== "function") {
+    throw new Error("expected shape function");
+  }
+  Reflect.apply(fn, undefined, [...args]);
+};
+
 const makeChart = (opts: Partial<ZpgraphOptions> = {}) =>
   new Zpgraph(mountDiv(), sampleData, {
     labels: ["x", "A", "B"],
@@ -21,11 +28,12 @@ describe("shapes extra", () => {
     document.body.innerHTML = "";
   });
 
-  it("registers custom shapes on Zpgraph.Circles via default export", () => {
-    expect(shapes).toBe(Zpgraph.Circles);
-    expect(typeof Zpgraph.Circles.CIRCLE).toBe("function");
-    expect(typeof Zpgraph.Circles.SQUARE).toBe("function");
-    expect(typeof Zpgraph.Circles.STAR).toBe("function");
+  it("exports custom shapes without mutating Zpgraph.Circles", () => {
+    expect(shapes).not.toBe(Zpgraph.Circles);
+    expect(Zpgraph.Circles.CIRCLE).toBeUndefined();
+    expect(typeof shapes.CIRCLE).toBe("function");
+    expect(typeof shapes.SQUARE).toBe("function");
+    expect(typeof shapes.STAR).toBe("function");
   });
 
   it("CIRCLE draws arc, fill and stroke", () => {
@@ -38,7 +46,7 @@ describe("shapes extra", () => {
       fillStyle: "",
     };
 
-    Reflect.apply(Zpgraph.Circles.CIRCLE!, undefined, [
+    invoke(shapes.CIRCLE, [
       null,
       "A",
       ctx,
@@ -68,7 +76,7 @@ describe("shapes extra", () => {
       fillStyle: "",
     };
 
-    Reflect.apply(Zpgraph.Circles.SQUARE!, undefined, [
+    invoke(shapes.SQUARE, [
       null,
       "B",
       ctx,
@@ -89,7 +97,7 @@ describe("shapes extra", () => {
   it("draws custom shapes through drawPointCallback on a chart", () => {
     mockCanvas();
     const drawPointCallback = vi.fn((...args: unknown[]) => {
-      Reflect.apply(Zpgraph.Circles.CIRCLE!, undefined, args);
+      invoke(shapes.CIRCLE, args);
     });
 
     const g = makeChart({
@@ -107,8 +115,7 @@ describe("smooth-plotter extra", () => {
     document.body.innerHTML = "";
   });
 
-  it("exports the plotter on Zpgraph.smoothPlotter", () => {
-    expect(smoothPlotter).toBe(Reflect.get(Zpgraph, "smoothPlotter"));
+  it("exports the smooth plotter function", () => {
     expect(typeof smoothPlotter).toBe("function");
     expect(smoothPlotter.smoothing).toBe(1 / 3);
   });
@@ -214,8 +221,8 @@ describe("crosshair extra", () => {
     g.destroy();
   });
 
-  it("registers on Zpgraph.Plugins.Crosshair", () => {
-    expect(Zpgraph.Plugins.Crosshair).toBe(Crosshair);
+  it("does not mutate Zpgraph.Plugins on import", () => {
+    expect(Zpgraph.Plugins.Crosshair).toBeUndefined();
   });
 });
 
@@ -275,7 +282,7 @@ describe("unzoom extra", () => {
     g.destroy();
   });
 
-  it("registers on Zpgraph.Plugins.Unzoom", () => {
-    expect(Zpgraph.Plugins.Unzoom).toBe(Unzoom);
+  it("does not mutate Zpgraph.Plugins on import", () => {
+    expect(Zpgraph.Plugins.Unzoom).toBeUndefined();
   });
 });

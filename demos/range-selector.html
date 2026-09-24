@@ -21,7 +21,7 @@
   </p>
   <div id="chart" class="chart" style="height: 460px"></div>
   <script type="module">
-    import Zpgraph from 'zpgraph';
+    import { Zpgraph, RangeSelectorPlugin } from 'zpgraph';
     import { makeCustomBars } from './helpers.js';
 
     new Zpgraph(document.getElementById('chart'), makeCustomBars(90), {
@@ -30,6 +30,7 @@
       tooltip: { show: 'always' },
       title: 'Daily temperatures (custom bars)',
       ylabel: '°F',
+      plugins: [RangeSelectorPlugin],
       showRangeSelector: true,
       rangeSelectorHeight: 36,
       rangeSelectorPlotStrokeColor: '#1b6b93',

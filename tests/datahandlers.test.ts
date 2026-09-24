@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import BarsHandler from "../src/datahandler/bars";
+import DefaultHandler from "../src/datahandler/default";
 import ErrorBarsHandler from "../src/datahandler/bars-error";
 import CustomBarsHandler from "../src/datahandler/bars-custom";
 import FractionsBarsHandler from "../src/datahandler/bars-fractions";
@@ -45,6 +46,28 @@ class BareBarsHandler extends BarsHandler {
     throw new Error("not implemented");
   }
 }
+
+describe("DefaultHandler", () => {
+  const handler = new DefaultHandler();
+
+  it("rollingAverage matches the window mean and skips nulls", () => {
+    const original: UnifiedSeries = [
+      [1, 10],
+      [2, null],
+      [3, 30],
+      [4, 40],
+    ];
+    const rolled = handler.rollingAverage(original, 3, makeOptions(), 1);
+    expect(rolled.map((row) => row[1])).toEqual([10, 10, 20, 35]);
+  });
+
+  it("rollingAverage with period 1 returns the same series", () => {
+    const original: UnifiedSeries = [[1, Number.NaN]];
+    expect(handler.rollingAverage(original, 1, makeOptions(), 1)).toBe(
+      original,
+    );
+  });
+});
 
 describe("BarsHandler", () => {
   const handler = new BareBarsHandler();

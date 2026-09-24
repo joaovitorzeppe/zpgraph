@@ -4,7 +4,6 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import ZpgraphImport from "zpgraph";
 import type { ZpgraphInstance } from "../internal-types";
 import type { ZpgraphOptions } from "../types";
 import type ZpgraphClass from "../zpgraph";
@@ -18,7 +17,6 @@ export type ZoomLimitsOptions = {
   clampToData?: boolean;
 };
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 const attachedLimits = new WeakMap<object, ZoomLimitsOptions>();
 
@@ -174,6 +172,5 @@ class ZoomLimits {
   }
 }
 
-Object.assign(ZpgraphImport.Plugins, { ZoomLimits });
 
 export default ZoomLimits;

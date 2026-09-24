@@ -211,7 +211,7 @@ class toolbar {
   }
 
   clearChart(_e: ChartDrawPluginEvent) {
-    this.detach_();
+    // Redraws must not tear the toolbar down. didDrawChart updates in place.
   }
 
   didDrawChart(_e: ChartDrawPluginEvent) {
@@ -221,6 +221,17 @@ class toolbar {
     }
     const opt = g.getOption("toolbar");
     if (!opt) {
+      if (this.panMode_) {
+        this.panMode_ = false;
+        this.panModel_ = null;
+        if (this.savedModel_ !== undefined) {
+          g.updateOptions(
+            { interactionModel: this.savedModel_ ?? null },
+            true,
+          );
+          this.savedModel_ = undefined;
+        }
+      }
       this.detach_();
       return;
     }
@@ -436,9 +447,16 @@ const applyToolbarStyle = (
     return;
   }
   for (const [key, value] of Object.entries(style)) {
-    el.style.setProperty(key.includes("-") ? key : camelToKebab(key), value);
+    const name = key.includes("-") ? key : camelToKebab(key);
+    if (!isSafeStyle(name, value)) {
+      continue;
+    }
+    el.style.setProperty(name, value);
   }
 };
+
+const isSafeStyle = (name: string, value: string): boolean =>
+  /^[a-z-]+$/.test(name) && !/url\s*\(|expression\s*\(|javascript:/i.test(value);
 
 const camelToKebab = (s: string) =>
   s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
@@ -455,11 +473,7 @@ const fillButtonContent = (
     return;
   }
   if (typeof custom === "string") {
-    if (custom.trim().startsWith("<")) {
-      btn.innerHTML = custom;
-    } else {
-      btn.textContent = custom;
-    }
+    btn.textContent = custom;
     return;
   }
   if (conf.variant === "text") {

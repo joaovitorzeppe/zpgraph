@@ -17,7 +17,7 @@
   <h1>Two y-axes</h1>
   <p class="lede">
     Low-range series on the left axis, high-range series on the right
-    (<code>labelsKMB</code>).
+    (<code>labelsKMG2</code>).
   </p>
   <div class="toolbar">
     <label class="chk">
@@ -27,7 +27,7 @@
   </div>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zpgraph from 'zpgraph';
+    import { Zpgraph } from 'zpgraph';
     import { makeDualAxisData } from './helpers.js';
 
     const g = new Zpgraph(document.getElementById('chart'), makeDualAxisData(), {
@@ -42,7 +42,7 @@
       },
       axes: {
         y: { axisLabelWidth: 48 },
-        y2: { labelsKMB: true, axisLabelWidth: 56 },
+        y2: { labelsKMG2: true, axisLabelWidth: 56 },
       },
       animatedZooms: true,
     });

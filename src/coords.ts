@@ -112,10 +112,12 @@ export const toDomXCoord = (g: Zpgraph, x: number | null) => {
   if (x === null) {
     return null;
   }
-
+  const pct = toPercentXCoord(g, x);
+  if (pct === null) {
+    return null;
+  }
   const area = g.plotter_.area;
-  const xRange = xAxisRange(g);
-  return area.x + ((x - xRange[0]) / (xRange[1] - xRange[0])) * area.w;
+  return area.x + pct * area.w;
 };
 
 /**
@@ -291,7 +293,13 @@ export const eventToDomCoords = (
   g: Zpgraph,
   event: MouseEvent,
 ): [number, number] => {
-  if (event.offsetX && event.offsetY) {
+  const target = event.target;
+  if (
+    target instanceof Element &&
+    g.mouseEventElement_?.contains(target) &&
+    typeof event.offsetX === "number" &&
+    typeof event.offsetY === "number"
+  ) {
     return [event.offsetX, event.offsetY];
   }
   const eventElementPos = utils.findPos(g.mouseEventElement_);

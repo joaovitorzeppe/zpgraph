@@ -17,6 +17,8 @@ export type ToCsvOptions = {
   visibleOnly?: boolean;
   /** Prefix UTF-8 BOM for Excel (default false; download path enables it). */
   utf8Bom?: boolean;
+  /** Prefix formula-looking cells so Excel does not execute them. Default true. */
+  excelSafe?: boolean;
 };
 
 /**
@@ -49,13 +51,18 @@ export const toPng = (g: Zpgraph, opts: ToPngOptions = {}): string => {
   if (overlay && overlay !== plot) {
     ctx.drawImage(overlay, 0, 0, out.width, out.height);
   }
-  return out.toDataURL("image/png");
+  try {
+    return out.toDataURL("image/png");
+  } catch {
+    return "";
+  }
 };
 
 /** Dump chart data as CSV (UTF-8). */
 export const toCsv = (g: Zpgraph, opts: ToCsvOptions = {}): string => {
   const includeHeader = opts.includeHeader !== false;
   const visibleOnly = opts.visibleOnly !== false;
+  const excelSafe = opts.excelSafe !== false;
   const visibility = g.visibility() ?? [];
   const allLabels = g.getLabels() ?? [];
 
@@ -69,7 +76,7 @@ export const toCsv = (g: Zpgraph, opts: ToCsvOptions = {}): string => {
       colIdx
         .map((c) => {
           const label = allLabels[c];
-          return escapeCsv(typeof label === "string" ? label : "");
+          return escapeCsv(typeof label === "string" ? label : "", excelSafe);
         })
         .join(","),
     );
@@ -79,7 +86,7 @@ export const toCsv = (g: Zpgraph, opts: ToCsvOptions = {}): string => {
   for (let r = 0; r < n; r++) {
     const cells: string[] = [];
     for (const c of colIdx) {
-      cells.push(formatCsvCell(g.getValue(r, c)));
+      cells.push(formatCsvCell(g.getValue(r, c), excelSafe));
     }
     rows.push(cells.join(","));
   }
@@ -88,31 +95,36 @@ export const toCsv = (g: Zpgraph, opts: ToCsvOptions = {}): string => {
   return opts.utf8Bom ? "\uFEFF" + body : body;
 };
 
-const formatCsvCell = (v: unknown): string => {
+const formatCsvCell = (v: unknown, excelSafe: boolean): string => {
   if (v == null) {
     return "";
   }
   if (v instanceof Date) {
-    return Number.isFinite(v.getTime()) ? escapeCsv(v.toISOString()) : "";
+    return Number.isFinite(v.getTime())
+      ? escapeCsv(v.toISOString(), excelSafe)
+      : "";
   }
   if (typeof v === "number") {
     return Number.isFinite(v) ? String(v) : "";
   }
   if (Array.isArray(v)) {
     const nums = v.filter((x) => typeof x === "number" && Number.isFinite(x));
-    return escapeCsv(nums.join(";"));
+    return escapeCsv(nums.join(";"), excelSafe);
   }
   if (typeof v === "string") {
-    return v === "NaN" ? "" : escapeCsv(v);
+    return v === "NaN" ? "" : escapeCsv(v, excelSafe);
   }
   return "";
 };
 
-const escapeCsv = (s: string): string => {
-  if (/[",\n\r]/.test(s)) {
-    return `"${s.replace(/"/g, '""')}"`;
+const FORMULA_PREFIX = /^[=+\-@\t\r]/;
+
+const escapeCsv = (s: string, excelSafe = true): string => {
+  const safe = excelSafe && FORMULA_PREFIX.test(s) ? `'${s}` : s;
+  if (/[",\n\r]/.test(safe)) {
+    return `"${safe.replace(/"/g, '""')}"`;
   }
-  return s;
+  return safe;
 };
 
 /** Trigger a browser download for a data URL or text blob. */

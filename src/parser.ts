@@ -7,8 +7,8 @@
  */
 
 /**
- * Turns what the user handed us — a CSV string, a native array or a gviz
- * DataTable — into rawData_, and picks the x-axis defaults that match it.
+ * Turns what the user handed us — a CSV string or a native array — into
+ * rawData_, and picks the x-axis defaults that match it.
  */
 
 import * as utils from "./utils";
@@ -20,29 +20,8 @@ import type {
   DataArray,
   ValueFormatter,
 } from "./types";
-import type {
-  ParsedAnnotation,
-  RawData,
-  RawDataCell,
-  RawDataRow,
-} from "./internal-types";
+import type { RawData, RawDataCell, RawDataRow } from "./internal-types";
 import type Zpgraph from "./zpgraph";
-
-/** Minimal gviz DataTable surface used by parseDataTable. */
-export interface GvizDataTable {
-  getNumberOfColumns(): number;
-  getNumberOfRows(): number;
-  getColumnType(col: number): string;
-  getColumnLabel(col: number): string;
-  getValue(row: number, col: number): unknown;
-  getColumnRange?(column: number): unknown;
-}
-
-/** Heuristic: gviz tables expose getColumnRange. */
-export const isGvizDataTable = (data: unknown): data is GvizDataTable =>
-  typeof data === "object" &&
-  data !== null &&
-  typeof Reflect.get(data, "getColumnRange") === "function";
 
 const xAxisOpts = (g: Zpgraph): AxisOptions => {
   if (!g.attrs_.axes) {
@@ -89,9 +68,6 @@ const parseXCell = (value: unknown): RawDataCell => {
   return null;
 };
 
-const gvizNumber = (value: unknown): number | null =>
-  typeof value === "number" ? value : null;
-
 /**
  * Detects the type of the str (date or numeric) and sets the various
  * formatting attributes in g.attrs_ based on this type.
@@ -131,6 +107,101 @@ export const setXAxisOptions = (g: Zpgraph, isDate: boolean): void => {
   }
 };
 
+const csvLineDelimiter = (data: string): string => {
+  let inQuotes = false;
+  for (let i = 0; i < data.length; i++) {
+    const c = data[i]!;
+    if (c === '"') {
+      if (inQuotes && data[i + 1] === '"') {
+        i += 1;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (inQuotes) {
+      continue;
+    }
+    if (c === "\r") {
+      return data[i + 1] === "\n" ? "\r\n" : "\r";
+    }
+    if (c === "\n") {
+      return data[i + 1] === "\r" ? "\n\r" : "\n";
+    }
+  }
+  return "\n";
+};
+
+const csvLines = (data: string): string[] => {
+  if (!data.includes('"')) {
+    return data.split(utils.detectLineDelimiter(data) || "\n");
+  }
+  const delim = csvLineDelimiter(data);
+  const lines: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < data.length; i++) {
+    const c = data[i]!;
+    if (c === '"') {
+      if (inQuotes && data[i + 1] === '"') {
+        cur += '""';
+        i += 1;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      cur += c;
+      continue;
+    }
+    if (!inQuotes && data.startsWith(delim, i)) {
+      lines.push(cur);
+      cur = "";
+      i += delim.length - 1;
+      continue;
+    }
+    cur += c;
+  }
+  lines.push(cur);
+  return lines;
+};
+
+const csvFields = (line: string, delim: string): string[] => {
+  if (!line.includes('"')) {
+    return line.split(delim);
+  }
+  const fields: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]!;
+    if (inQuotes) {
+      if (c === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += c;
+      }
+      continue;
+    }
+    if (c === '"') {
+      inQuotes = true;
+      continue;
+    }
+    if (line.startsWith(delim, i)) {
+      fields.push(cur);
+      cur = "";
+      i += delim.length - 1;
+      continue;
+    }
+    cur += c;
+  }
+  fields.push(cur);
+  return fields;
+};
+
 /**
  * @private
  * Parses a string in a special csv format.  We expect a csv file where each
@@ -149,9 +220,9 @@ export const setXAxisOptions = (g: Zpgraph, isDate: boolean): void => {
  * 3. [ low value, center value, high value ]
  */
 export const parseCSV = (g: Zpgraph, data: string): RawData => {
+  const csv = data.charCodeAt(0) === 0xfeff ? data.slice(1) : data;
   const ret: RawData = [];
-  const line_delimiter = utils.detectLineDelimiter(data);
-  const lines = data.split(line_delimiter || "\n");
+  const lines = csvLines(csv);
   let vals: string[], j: number;
 
   // Use the default delimiter or fall back to a tab if that makes sense.
@@ -165,7 +236,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
   if (!("labels" in g.user_attrs_)) {
     // User hasn't explicitly set labels, so they're (presumably) in the CSV.
     start = 1;
-    g.attrs_.labels = firstLine!.split(delim); // NOTE: _not_ user_attrs_.
+    g.attrs_.labels = csvFields(firstLine!, delim); // NOTE: _not_ user_attrs_.
     g.attributes_.reparseSeries();
   }
   let xParser: ((...args: unknown[]) => unknown) | undefined;
@@ -180,7 +251,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
     if (line[0] === "#") {
       continue;
     } // skip comment lines
-    const inFields = line.split(delim);
+    const inFields = csvFields(line, delim);
     if (inFields.length < 2) {
       continue;
     }
@@ -259,6 +330,7 @@ export const parseCSV = (g: Zpgraph, data: string): RawData => {
                 (1 + i) +
                 ")",
             );
+            fields[j] = [null, null, null];
           }
         }
       }
@@ -440,207 +512,4 @@ export const parseArray = (
   xAxis.ticker = ZpgraphTickers.numericTicks;
   xAxis.axisLabelFormatter = numberAxisLabel;
   return data;
-};
-
-const shortTextForAnnotationNum = (num: number): string => {
-  // converts [0-9]+ [A-Z][a-z]*
-  // example: 0=A, 1=B, 25=Z, 26=Aa, 27=Ab
-  // and continues like.. Ba Bb .. Za .. Zz..Aaa...Zzzz Aaaa Zzzz
-  let shortText = String.fromCharCode(65 /* A */ + (num % 26));
-  num = Math.floor(num / 26);
-  while (num > 0) {
-    shortText =
-      String.fromCharCode(65 /* A */ + ((num - 1) % 26)) +
-      shortText.toLowerCase();
-    num = Math.floor((num - 1) / 26);
-  }
-  return shortText;
-};
-
-/**
- * Parses a DataTable object from gviz.
- * The data is expected to have a first column that is either a date or a
- * number. All subsequent columns must be numbers. If there is a clear mismatch
- * between g.xValueParser_ and the type of the first column, it will be
- * fixed. Fills out rawData_.
- * @param data See above.
- * @private
- */
-export const parseDataTable = (g: Zpgraph, data: GvizDataTable): void => {
-  const cols = data.getNumberOfColumns();
-  const rows = data.getNumberOfRows();
-
-  const indepType = data.getColumnType(0);
-  if (indepType === "date" || indepType === "datetime") {
-    g.attrs_.xValueParser = utils.dateParser;
-    const xAxis = xAxisOpts(g);
-    xAxis.valueFormatter = utils.dateValueFormatter;
-    xAxis.ticker = ZpgraphTickers.dateTicker;
-    xAxis.axisLabelFormatter = dateAxisLabel;
-  } else if (indepType === "number") {
-    g.attrs_.xValueParser = (x: string): number => {
-      return parseFloat(x);
-    };
-    const xAxis = xAxisOpts(g);
-    xAxis.valueFormatter = numericValueFormatter;
-    xAxis.ticker = ZpgraphTickers.numericTicks;
-    xAxis.axisLabelFormatter = numericAxisLabelFormatter;
-  } else {
-    throw new Error(
-      "only 'date', 'datetime' and 'number' types are supported " +
-        "for column 1 of DataTable input (Got '" +
-        indepType +
-        "')",
-    );
-  }
-
-  // Array of the column indices which contain data (and not annotations).
-  const colIdx: number[] = [];
-  const annotationCols: Record<number, number[]> = {}; // data index -> [annotation cols]
-  let hasAnnotations = false;
-  let i: number, j: number;
-  for (i = 1; i < cols; i++) {
-    const type = data.getColumnType(i);
-    if (type === "number") {
-      colIdx.push(i);
-    } else if (type === "string" && g.getBooleanOption("displayAnnotations")) {
-      // This is OK -- it's an annotation column.
-      const dataIdx = colIdx[colIdx.length - 1]!;
-      if (!Object.hasOwn(annotationCols, dataIdx)) {
-        annotationCols[dataIdx] = [i];
-      } else {
-        annotationCols[dataIdx]!.push(i);
-      }
-      hasAnnotations = true;
-    } else {
-      throw new Error(
-        "Only 'number' is supported as a dependent type with Gviz." +
-          " 'string' is only supported if displayAnnotations is true",
-      );
-    }
-  }
-
-  // Read column labels
-  const labels = [data.getColumnLabel(0)];
-  for (i = 0; i < colIdx.length; i++) {
-    labels.push(data.getColumnLabel(colIdx[i]!));
-    if (g.getBooleanOption("errorBars")) {
-      i += 1;
-    }
-  }
-  g.attrs_.labels = labels;
-  const colCount = labels.length;
-
-  const ret: RawData = [];
-  let outOfOrder = false;
-  const annotations: ParsedAnnotation[] = [];
-  for (i = 0; i < rows; i++) {
-    const row: RawDataRow = [];
-    if (
-      typeof data.getValue(i, 0) === "undefined" ||
-      data.getValue(i, 0) === null
-    ) {
-      log.warn(
-        "Ignoring row " +
-          i +
-          " of DataTable because of undefined or null first column.",
-      );
-      continue;
-    }
-
-    if (indepType === "date" || indepType === "datetime") {
-      const xVal = data.getValue(i, 0);
-      if (!utils.isDateLike(xVal)) {
-        log.warn(
-          "Ignoring row " +
-            i +
-            " of DataTable because first column is not a Date.",
-        );
-        continue;
-      }
-      row.push(xVal.getTime());
-    } else {
-      const xVal = data.getValue(i, 0);
-      if (typeof xVal !== "number") {
-        log.warn(
-          "Ignoring row " +
-            i +
-            " of DataTable because first column is not a number.",
-        );
-        continue;
-      }
-      row.push(xVal);
-    }
-    if (!g.getBooleanOption("errorBars")) {
-      for (j = 0; j < colIdx.length; j++) {
-        const col = colIdx[j]!;
-        row.push(gvizNumber(data.getValue(i, col)));
-        const annCols = annotationCols[col];
-        if (
-          hasAnnotations &&
-          annCols &&
-          data.getValue(i, annCols[0]!) !== null
-        ) {
-          const xNum = xCellNumber(row[0]);
-          if (xNum === null) {
-            continue;
-          }
-          const ann: ParsedAnnotation = {
-            series: data.getColumnLabel(col),
-            x: xNum,
-            xval: xNum,
-            shortText: shortTextForAnnotationNum(annotations.length),
-            text: "",
-          };
-          for (let k = 0; k < annCols.length; k++) {
-            if (k) {
-              ann.text += "\n";
-            }
-            ann.text += String(data.getValue(i, annCols[k]!));
-          }
-          annotations.push(ann);
-        }
-      }
-
-      // Strip out infinities, which give zpgraph problems later on.
-      for (j = 0; j < row.length; j++) {
-        const cell = row[j];
-        if (typeof cell === "number" && !isFinite(cell)) {
-          row[j] = null;
-        }
-      }
-    } else {
-      for (j = 0; j < colCount - 1; j++) {
-        row.push([
-          gvizNumber(data.getValue(i, 1 + 2 * j)) ?? 0,
-          gvizNumber(data.getValue(i, 2 + 2 * j)) ?? 0,
-        ]);
-      }
-    }
-    const prevRow = ret[ret.length - 1];
-    const curX = xCellNumber(row[0]);
-    const prevX = prevRow ? xCellNumber(prevRow[0]) : null;
-    if (
-      ret.length > 0 &&
-      curX !== null &&
-      prevX !== null &&
-      curX < prevX
-    ) {
-      outOfOrder = true;
-    }
-    ret.push(row);
-  }
-
-  if (outOfOrder) {
-    log.warn("DataTable is out of order; order it correctly to speed loading.");
-    ret.sort((a: RawDataRow, b: RawDataRow) => {
-      return (xCellNumber(a[0]) ?? 0) - (xCellNumber(b[0]) ?? 0);
-    });
-  }
-  g.rawData_ = ret;
-
-  if (annotations.length > 0) {
-    g.setAnnotations(annotations, true);
-  }
-  g.attributes_.reparseSeries();
 };

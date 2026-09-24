@@ -8,6 +8,7 @@ import {
   applyLabelStyle,
   getChartClassNames,
 } from "../class-names";
+import { pooledLabel } from "../label-pool";
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 import type { ThresholdBand } from "../types";
 
@@ -27,6 +28,10 @@ class thresholds {
       clearChart: this.clearChart,
     };
   }
+
+  destroy = () => {
+    this.clearChart();
+  };
 
   clearChart = () => {
     for (const el of this.labelEls_) {
@@ -102,13 +107,12 @@ class thresholds {
 
       if (band.label && (domHi != null || domLo != null)) {
         const yLabel = domHi ?? domLo!;
-        let el = this.labelEls_[labelIdx];
-        if (!el) {
-          el = document.createElement("div");
-          el.dataset.zpLabel = "threshold";
-          g.graphDiv.appendChild(el);
-          this.labelEls_[labelIdx] = el;
-        }
+        const el = pooledLabel(
+          this.labelEls_,
+          labelIdx,
+          g.graphDiv,
+          "threshold",
+        );
         applyLabelStyle(
           el,
           "zpgraph-threshold-label",

@@ -22,6 +22,17 @@ import { log } from "./logger";
 import type { DrawPointCallback, InteractionContext, Point } from "./types";
 import type { OptionsGetter } from "./internal-types";
 
+/** True for null, undefined and values that are not a finite number. */
+export const isNullUndefinedOrNaN = (num: unknown): boolean => {
+  if (typeof num === "number") {
+    return Number.isNaN(num);
+  }
+  if (typeof num === "string") {
+    return Number.isNaN(parseFloat(num));
+  }
+  return true;
+};
+
 /** Date field accessors for local or UTC calendar math. */
 export interface DateAccessors {
   getFullYear: (d: Date) => number;
@@ -682,66 +693,28 @@ export const binarySearch = (
 };
 
 /**
- * Parses a date, returning the number of milliseconds since epoch. This can be
- * passed in as an xValueParser in the Zpgraph constructor.
- * Supported formats: YYYY/MM/DD, YYYY-MM-DD (normalized to slashes for local
- * time), YYYY-MM-DDTHH:MM:SS (and Z), and any string accepted by Date.parse.
- *
- * @param dateStr A date in a variety of possible string formats.
- * @return Milliseconds since epoch.
- * @private
+ * Parses an ISO-8601 date (`YYYY-MM-DD` or `YYYY-MM-DDTHH:mm:ss` with an
+ * optional fraction and `Z`/offset). Other formats need `xValueParser`.
  */
-const _dateParser_re = /-/g;
-export const dateParser = (dateStr: string) => {
-  let d;
+const ISO_DATE =
+  /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
-  // Let the system try the format first, with one caveat:
-  // YYYY-MM-DD[ HH:MM:SS] is interpreted as UTC by a variety of browsers.
-  // zpgraph displays dates in local time, so this will result in surprising
-  // inconsistencies. But if you specify "T" or "Z" (i.e. YYYY-MM-DDTHH:MM:SS),
-  // then you probably know what you're doing, so we'll let you go ahead.
-  // Issue: https://code.google.com/archive/p/zpgraph/issues/255
-  if (
-    dateStr.search("-") === -1 ||
-    dateStr.search("T") !== -1 ||
-    dateStr.search("Z") !== -1
-  ) {
-    d = dateStrToMillis(dateStr);
-    if (d != null && !isNaN(d)) {
-      return d;
-    }
+export const dateParser = (dateStr: string): number => {
+  const text = dateStr.trim();
+  if (!ISO_DATE.test(text)) {
+    log.error(
+      "Couldn't parse " +
+        dateStr +
+        " as an ISO date. Pass xValueParser for other formats.",
+    );
+    return NaN;
   }
-
-  if (dateStr.search("-") !== -1) {
-    // e.g. '2009-7-12' or '2009-07-12'
-    const dateStrSlashed = dateStr.replace(_dateParser_re, "/");
-    d = dateStrToMillis(dateStrSlashed);
-    if (d != null && !isNaN(d)) {
-      return d;
-    }
+  const ms = new Date(text).getTime();
+  if (Number.isNaN(ms)) {
+    log.error("Couldn't parse " + dateStr + " as an ISO date.");
+    return NaN;
   }
-
-  // Any format that Date.parse will accept, e.g. "2009/07/12" or
-  // "2009/07/12 12:34:56"
-  d = dateStrToMillis(dateStr);
-  if (d != null && !isNaN(d)) {
-    return d;
-  }
-
-  log.error("Couldn't parse " + dateStr + " as a date");
-  return NaN;
-};
-
-/**
- * This is identical to JavaScript's built-in Date.parse() method, except that
- * it doesn't get replaced with an incompatible method by aggressive JS
- * libraries like MooTools or Joomla.
- * @param str The date string, e.g. "2011/05/06"
- * @return millis since epoch
- * @private
- */
-export const dateStrToMillis = (str: string): number => {
-  return new Date(str).getTime();
+  return ms;
 };
 
 /**
@@ -1086,22 +1059,29 @@ export const repeatAndCleanup = (
   maxFrames: number,
   framePeriodInMillis: number,
   cleanupFn: () => void,
-) => {
+): (() => void) => {
   let frameNumber = 0;
   let previousFrameNumber;
+  let stopped = false;
+  const stop = () => {
+    stopped = true;
+  };
   const startTime = new Date().getTime();
   repeatFn(frameNumber);
   if (maxFrames === 1) {
     cleanupFn();
-    return;
+    return stop;
   }
   const maxFrameArg = maxFrames - 1;
 
   const loop = () => {
-    if (frameNumber >= maxFrames) {
+    if (stopped || frameNumber >= maxFrames) {
       return;
     }
     requestAnimFrame(() => {
+      if (stopped) {
+        return;
+      }
       // Determine which frame to draw based on the delay so far.  Will skip
       // frames if necessary.
       const currentTime = new Date().getTime();
@@ -1127,6 +1107,7 @@ export const repeatAndCleanup = (
     });
   };
   loop();
+  return stop;
 };
 
 // A whitelist of options that do not change pixel positions.
@@ -1151,7 +1132,6 @@ const pixelSafeOptions: Record<string, boolean> = {
   highlightCircleSize: true,
   interactionModel: true,
   labelsDiv: true,
-  labelsKMB: true,
   labelsKMG2: true,
   labelsSeparateLines: true,
   labelsShowZeroValues: true,
@@ -1169,7 +1149,6 @@ const pixelSafeOptions: Record<string, boolean> = {
   rangeSelectorForegroundLineWidth: true,
   rangeSelectorAlpha: true,
   showLabelsOnHighlight: true,
-  showRoller: true,
   strokeWidth: true,
   underlayCallback: true,
   unhighlightCallback: true,
@@ -1361,12 +1340,19 @@ const parseRGBA = (rgbStr: string) => {
  * @return } Parsed RGB tuple.
  * @private
  */
+const rgbCache = new Map<string, ReturnType<typeof parseRGBA>>();
+
 export const toRGB_ = (colorStr: string) => {
+  const cached = rgbCache.get(colorStr);
+  if (cached) {
+    return cached;
+  }
   // Strategy: First try to parse colorStr directly. This is fast & avoids DOM
   // manipulation.  If that fails (e.g. for named colors like 'red'), then
   // create a hidden DOM element and parse its computed color.
   const rgb = parseRGBA(colorStr);
   if (rgb) {
+    rgbCache.set(colorStr, rgb);
     return rgb;
   }
 
@@ -1376,7 +1362,11 @@ export const toRGB_ = (colorStr: string) => {
   document.body.appendChild(div);
   const rgbStr = window.getComputedStyle(div, null).backgroundColor;
   div.remove();
-  return parseRGBA(rgbStr);
+  const parsed = parseRGBA(rgbStr);
+  if (parsed) {
+    rgbCache.set(colorStr, parsed);
+  }
+  return parsed;
 };
 
 /**
@@ -1421,10 +1411,7 @@ export const parseFloat_ = (
   return null;
 };
 
-// Label constants for the labelsKMB and labelsKMG2 options.
-// (i.e. '100000' -> '100k')
-const KMB_LABELS_LARGE = ["k", "M", "G", "T", "P", "E", "Z", "Y"];
-const KMB_LABELS_SMALL = ["m", "µ", "n", "p", "f", "a", "z", "y"];
+// Label constants for labelsKMG2 (i.e. 1048576 -> "1Mi").
 const KMG2_LABELS_LARGE = ["Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"];
 const KMG2_LABELS_SMALL = [
   "p-10",
@@ -1436,9 +1423,6 @@ const KMG2_LABELS_SMALL = [
   "p-70",
   "p-80",
 ];
-/* if both are given (legacy/deprecated use only) */
-const KMB2_LABELS_LARGE = ["K", "M", "G", "T", "P", "E", "Z", "Y"];
-const KMB2_LABELS_SMALL = KMB_LABELS_SMALL;
 
 /** Read OptionsGetter fields without narrow casts. */
 const optNumber = (opts: OptionsGetter, name: string, fallback: number): number => {
@@ -1482,30 +1466,15 @@ export const numberValueFormatter = (x: number, opts: OptionsGetter) => {
   const digits = optNumber(opts, "digitsAfterDecimal", 2);
   const maxNumberWidth = optNumber(opts, "maxNumberWidth", 8);
 
-  const kmb = optBoolean(opts, "labelsKMB");
   const kmg2 = optBoolean(opts, "labelsKMG2");
 
   let label;
   const absx = Math.abs(x);
 
-  if (kmb || kmg2) {
-    let k = 1000;
-    let k_labels: string[] = [];
-    let m_labels: string[] = [];
-    if (kmb) {
-      k = 1000;
-      k_labels = KMB_LABELS_LARGE;
-      m_labels = KMB_LABELS_SMALL;
-    }
-    if (kmg2) {
-      k = 1024;
-      k_labels = KMG2_LABELS_LARGE;
-      m_labels = KMG2_LABELS_SMALL;
-      if (kmb) {
-        k_labels = KMB2_LABELS_LARGE;
-        m_labels = KMB2_LABELS_SMALL;
-      }
-    }
+  if (kmg2) {
+    const k = 1024;
+    const k_labels = KMG2_LABELS_LARGE;
+    const m_labels = KMG2_LABELS_SMALL;
 
     let n = 1;
     let j;
@@ -1645,84 +1614,4 @@ export const dateAxisLabelFormatter = (
  */
 export const dateValueFormatter = (d: number, opts: OptionsGetter) => {
   return dateString_(d, optBoolean(opts, "labelsUTC"));
-};
-
-// stuff for simple onDOMready implementation
-let deferDOM_callbacks: Array<() => void> | null = [];
-let deferDOM_handlerCalled = false;
-
-// onDOMready once DOM is ready
-/**
- * Simple onDOMready implementation
- * @param cb The callback to run once the DOM is ready.
- * @return whether the DOM is currently ready
- */
-const deferDOM_ready = (cb: () => void): boolean => {
-  if (typeof cb === "function") {
-    cb();
-  }
-  return true;
-};
-
-/**
- * Setup a simple onDOMready implementation on the given objct.
- * @param self the object to update .onDOMready on
- * @private
- */
-export const setupDOMready_ = (self: {
-  onDOMready?: (cb: () => void) => boolean;
-}) => {
-  // only attach if there’s a DOM
-  if (typeof document !== "undefined") {
-    // called by browser
-    const handler = () => {
-      /* execute only once */
-      if (deferDOM_handlerCalled) {
-        return;
-      }
-      deferDOM_handlerCalled = true;
-      /* subsequent calls must not enqueue */
-      self.onDOMready = deferDOM_ready;
-      /* clear event handlers */
-      document.removeEventListener("DOMContentLoaded", handler, false);
-      window.removeEventListener("load", handler, false);
-      /* run user callbacks */
-      for (let i = 0; i < deferDOM_callbacks!.length; ++i) {
-        deferDOM_callbacks![i]?.();
-      }
-      deferDOM_callbacks = null; //gc
-    };
-
-    // make callable (mutating, do not copy)
-    self.onDOMready = (cb: () => void) => {
-      /* if possible, skip all that */
-      if (document.readyState === "complete") {
-        self.onDOMready = deferDOM_ready;
-        return deferDOM_ready(cb);
-      }
-      // onDOMready, after setup, before DOM is ready
-      const enqfn = (queuedCb: () => void) => {
-        if (typeof queuedCb === "function") {
-          deferDOM_callbacks!.push(queuedCb);
-        }
-        return false;
-      };
-      /* subsequent calls will enqueue */
-      self.onDOMready = enqfn;
-      /* set up handler */
-      document.addEventListener("DOMContentLoaded", handler, false);
-      /* last resort: always works, but later than possible */
-      window.addEventListener("load", handler, false);
-      /* except if DOM got ready in the meantime */
-      if ((document.readyState as string) === "complete") {
-        /* undo all that attaching */
-        handler();
-        /* goto finish */
-        self.onDOMready = deferDOM_ready;
-        return deferDOM_ready(cb);
-      }
-      /* just enqueue that */
-      return enqfn(cb);
-    };
-  }
 };

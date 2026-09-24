@@ -4,7 +4,6 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import ZpgraphImport from "zpgraph";
 import {
   applyLabelStyle,
   getChartClassNames,
@@ -14,7 +13,6 @@ import type { LabelStyle } from "../types";
 import type ZpgraphClass from "../zpgraph";
 import { div, setStyle } from "./dom-helpers";
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 interface ChartClickEvent {
   zpgraph: ZpgraphInstance;
@@ -226,6 +224,7 @@ class Measure {
     }
     label.dataset.zpDx = dx;
     label.dataset.zpDy = dy;
+    Reflect.set(label, "zpMeasureResult", result);
     setStyle(label, {
       display: "block",
       left: `${midX + 8}px`,
@@ -242,6 +241,5 @@ class Measure {
   }
 }
 
-Object.assign(ZpgraphImport.Plugins, { Measure });
 
 export default Measure;

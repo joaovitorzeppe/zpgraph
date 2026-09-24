@@ -16,7 +16,7 @@ import ZpgraphCanvasRenderer from "./canvas";
 import { xAxisExtremes } from "./coords";
 import { decimatePointsByX } from "./decimate";
 import { log } from "./logger";
-import { createRollInterface, updateAriaLabel } from "./dom";
+import { updateAriaLabel } from "./dom";
 import * as utils from "./utils";
 import type { Point, Ticker } from "./types";
 import type { AxisProperties, UnifiedSeries } from "./internal-types";
@@ -24,10 +24,6 @@ import type Zpgraph from "./zpgraph";
 
 type SeriesExtremes = [number | null, number | null];
 type GatheredExtremes = Record<string, SeriesExtremes>;
-
-const isNullUndefinedOrNaN = (num: unknown) => {
-  return isNaN(parseFloat(String(num)));
-};
 
 /**
  * @private
@@ -55,17 +51,16 @@ export const predraw = (g: Zpgraph) => {
   g.canvas_ctx_.save();
   g.hidden_ctx_.save();
 
-  // Create a new plotter.
-  g.plotter_ = new ZpgraphCanvasRenderer(
-    g,
-    g.hidden_,
-    g.hidden_ctx_,
-    g.layout_,
-  );
-
-  // The roller sits in the bottom left corner of the chart. We don't know where
-  // this will be until the options are available, so it's positioned here.
-  createRollInterface(g);
+  if (g.plotter_) {
+    g.plotter_.bindFrame(g.hidden_, g.hidden_ctx_, g.layout_);
+  } else {
+    g.plotter_ = new ZpgraphCanvasRenderer(
+      g,
+      g.hidden_,
+      g.hidden_ctx_,
+      g.layout_,
+    );
+  }
 
   g.cascadeEvents_("predraw");
 
@@ -321,7 +316,7 @@ export const gatherDatasets = (
         seriesPoints,
         cumulativeYval[axisIdx]!,
         seriesExtremes,
-        g.getBooleanOption("stackedGraphNaNFill"),
+        g.getStringOption("stackedGraphNaNFill"),
       );
     }
 
@@ -425,7 +420,7 @@ export const renderGraph = (g: Zpgraph, is_initial_draw: boolean) => {
   if (underlayCallback) {
     // NOTE: we pass the zpgraph object to this callback twice to avoid breaking
     // users who expect a deprecated form of this callback.
-    underlayCallback.call(g, g.hidden_ctx_, g.layout_.getPlotArea(), g, g);
+    underlayCallback(g.hidden_ctx_, g.layout_.getPlotArea(), g);
   }
 
   const e = {
@@ -444,7 +439,7 @@ export const renderGraph = (g: Zpgraph, is_initial_draw: boolean) => {
 
   const drawCallback = g.getFunctionOption("drawCallback");
   if (drawCallback) {
-    drawCallback.call(g, g, is_initial_draw);
+    drawCallback(g, is_initial_draw);
   }
   if (is_initial_draw) {
     g.readyFired_ = true;
@@ -633,10 +628,10 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
     }
     if (axis.valueRange) {
       // This is a user-set value range for this axis.
-      const y0 = isNullUndefinedOrNaN(axis.valueRange[0])
+      const y0 = utils.isNullUndefinedOrNaN(axis.valueRange[0])
         ? axis.extremeRange[0]
         : axis.valueRange[0];
-      const y1 = isNullUndefinedOrNaN(axis.valueRange[1])
+      const y1 = utils.isNullUndefinedOrNaN(axis.valueRange[1])
         ? axis.extremeRange[1]
         : axis.valueRange[1];
       axis.computedValueRange = [y0!, y1!];

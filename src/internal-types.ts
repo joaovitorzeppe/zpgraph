@@ -139,6 +139,11 @@ export interface LayoutLike {
 export interface PlotterLike {
   area: PlotArea;
   colors: Record<string, string>;
+  bindFrame(
+    element: HTMLCanvasElement,
+    elementContext: CanvasRenderingContext2D,
+    layout: { getPlotArea(): PlotArea },
+  ): void;
   clear(): void;
   render(): void;
   _renderLineChart(

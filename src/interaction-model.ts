@@ -341,7 +341,7 @@ ZpgraphInteraction.movePan = (
     }
   }
 
-  g.drawGraph_(false);
+  g.drawGraph_();
 };
 
 /**
@@ -478,7 +478,7 @@ ZpgraphInteraction.treatMouseOpAsClick = (
       return;
     }
     if (pointClickCallback) {
-      pointClickCallback.call(g, event, selectedPoint);
+      pointClickCallback(event, selectedPoint, g);
     }
   }
 
@@ -491,7 +491,7 @@ ZpgraphInteraction.treatMouseOpAsClick = (
   };
   if (!g.cascadeEvents_("click", e)) {
     if (clickCallback) {
-      clickCallback.call(g, event, g.lastx_, g.selPoints_);
+      clickCallback(event, g.lastx_, g.selPoints_, g);
     }
   }
 };
@@ -618,10 +618,20 @@ ZpgraphInteraction.startTouch = (
   }
 
   // save the full x & y ranges.
+  const yAxes: Array<[number, number] | null> = [];
+  for (let axis = 0; axis < g.axes_.length; axis++) {
+    const range = g.axes_[axis]?.valueRange;
+    const y0 = range?.[0];
+    const y1 = range?.[1];
+    yAxes.push(
+      typeof y0 === "number" && typeof y1 === "number" ? [y0, y1] : null,
+    );
+  }
   context.initialRange = {
     x: g.xAxisRange(),
     y: g.yAxisRange() ?? g.xAxisRange(),
   };
+  context.yAxesInitial = yAxes;
 };
 
 /**
@@ -632,6 +642,9 @@ ZpgraphInteraction.moveTouch = (
   g: ZpgraphInstance,
   context: InteractionContext,
 ) => {
+  if (event.cancelable) {
+    event.preventDefault();
+  }
   // If the tap moves, then it's definitely not part of a double-tap.
   context.startTimeForDoubleTapMs = null;
 
@@ -709,29 +722,47 @@ ZpgraphInteraction.moveTouch = (
   }
 
   if (context.touchDirections!.y) {
-    for (i = 0; i < 1 /*g.axes_.length*/; i++) {
+    const saved = context.yAxesInitial;
+    const axes = Array.isArray(saved) ? saved : [context.initialRange!.y];
+    for (i = 0; i < g.axes_.length; i++) {
       const axis = g.axes_[i]!;
+      const base = axes[i];
+      if (!base || !Array.isArray(base)) {
+        continue;
+      }
+      const y0 = base[0];
+      const y1 = base[1];
+      if (typeof y0 !== "number" || typeof y1 !== "number") {
+        continue;
+      }
       const logscale = g.attributes_.getForAxis("logscale", i);
       if (logscale) {
-        // Log-scale y pinch zoom not implemented yet.
+        if (y0 > 0 && y1 > 0 && c_init.dataY! > 0 && swipe.dataY > 0) {
+          const center = Math.log(c_init.dataY!);
+          axis.valueRange = [
+            Math.exp(center + (Math.log(y0) - center) / yScale),
+            Math.exp(center + (Math.log(y1) - center) / yScale),
+          ];
+          didZoom = true;
+        }
       } else {
         const cFactor = c_init.dataY! - swipe.dataY / yScale;
         axis.valueRange = [
-          cFactor + (context.initialRange!.y[0] - c_init.dataY!) / yScale,
-          cFactor + (context.initialRange!.y[1] - c_init.dataY!) / yScale,
+          cFactor + (y0 - c_init.dataY!) / yScale,
+          cFactor + (y1 - c_init.dataY!) / yScale,
         ];
         didZoom = true;
       }
     }
   }
 
-  g.drawGraph_(false);
+  g.drawGraph_();
 
   // We only call zoomCallback on zooms, not pans, to mirror desktop behavior.
   const zoomCallback = g.getFunctionOption("zoomCallback");
   if (didZoom && touches.length > 1 && zoomCallback) {
     const viewWindow = g.xAxisRange();
-    zoomCallback.call(g, viewWindow[0], viewWindow[1], g.yAxisRanges());
+    zoomCallback(viewWindow[0], viewWindow[1], g.yAxisRanges(), g);
   }
 };
 
@@ -950,5 +981,7 @@ ZpgraphInteraction.dragIsPanInteractionModel = {
     }
   },
 };
+
+export const defaultInteractionModel = ZpgraphInteraction.defaultModel;
 
 export default ZpgraphInteraction;

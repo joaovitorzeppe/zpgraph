@@ -9,8 +9,8 @@
 /**
  * The supported part of `utils`, published as `zpgraph`'s `utils` namespace.
  *
- * `src/utils.ts` also holds internals — `dragGetX_`, `toRGB_`, `setupDOMready_`,
- * event plumbing — that were previously reachable through `export * as utils`.
+ * `src/utils.ts` also holds internals — `dragGetX_`, `toRGB_`, event plumbing —
+ * that were previously reachable through `export * as utils`.
  * Exporting them froze implementation details as public contract, so the
  * namespace is enumerated here instead.
  */

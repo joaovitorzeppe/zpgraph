@@ -62,7 +62,6 @@ import type {
 } from "./types";
 import type {
   AxisProperties,
-  ChartInteractionHandler,
   DataHandlerLike,
   OptionsGetter,
   RawData,
@@ -114,6 +113,7 @@ import { drawGraph, predraw, yAxisExtremes } from "./render";
 import {
   addXTicks_,
   cascadeEvents_ as cascadeEventsFn_,
+  addPlugins as addPlugins_,
   destroy,
   getHandlerClass_,
   init as init_,
@@ -197,6 +197,9 @@ export default class Zpgraph {
   keyboardRow_: number | undefined;
   /** Frame-coalesced handlers, cancelled on destroy. */
   coalesced_: Array<{ flush(): void; cancel(): void }> = [];
+  /** Zoom and selection animations, cancelled on destroy. */
+  animationStops_: Array<() => void> = [];
+  destroyed_ = false;
   mouseOutHandler_?: utils.DomEventHandler;
   resizeHandler_?: utils.Coalesced<[]> | null;
   resizeObserver_?: ResizeObserver | null;
@@ -248,12 +251,6 @@ export default class Zpgraph {
     string,
     new (...args: never[]) => DataHandlerLike
   >;
-  static startPan: ChartInteractionHandler;
-  static startZoom: ChartInteractionHandler;
-  static movePan: ChartInteractionHandler;
-  static moveZoom: ChartInteractionHandler;
-  static endPan: ChartInteractionHandler;
-  static endZoom: ChartInteractionHandler;
   static numericLinearTicks: Ticker;
   static numericTicks: Ticker;
   static integerTicks: Ticker;
@@ -393,7 +390,7 @@ export default class Zpgraph {
    * @param opt_seriesName Series name to get per-series values.
    * @return The value of the option.
    */
-  getOption(name: string, opt_seriesName?: string): unknown {
+  getOption(name: keyof ZpgraphOptions | (string & {}), opt_seriesName?: string): unknown {
     return this.attr_(name, opt_seriesName);
   }
 
@@ -663,6 +660,11 @@ export default class Zpgraph {
    */
   destroy() {
     destroy(this);
+  }
+
+  /** Activate extra plugins after construction. */
+  addPlugins(extra: unknown[]) {
+    addPlugins_(this, extra);
   }
 
   /**

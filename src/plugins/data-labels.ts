@@ -52,6 +52,8 @@ class data_labels {
     };
   }
 
+  destroy() {}
+
   didDrawChart(e: ChartDrawPluginEvent) {
     const g = e.zpgraph;
     const opts = readDataLabelsOptions(g.getOption("dataLabels"));

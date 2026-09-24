@@ -317,7 +317,6 @@ export interface AxisOptions {
   gridLinePattern?: number[] | null;
   gridLineWidth?: number;
   independentTicks?: boolean;
-  labelsKMB?: boolean;
   labelsKMG2?: boolean;
   labelsUTC?: boolean;
   logscale?: boolean;
@@ -525,14 +524,27 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
    * (`style-src 'self'` without `unsafe-inline`) that path needs an exception.
    */
   legendFormatter?: (data: LegendData) => string | DocumentFragment | Node;
+  /**
+   * When true, a string returned by `legendFormatter` is inserted as HTML.
+   * Default false: the string is text.
+   */
+  legendHtml?: boolean;
+  /** Set false to skip automatic CSS injection and load `zpgraph/style.css` yourself. */
+  injectStyles?: boolean;
+  /** Nonce for the fallback `<style>` element under a strict CSP. */
+  styleNonce?: string;
   panEdgeFraction?: number | null;
   rightGap?: number;
   timingName?: string | null;
   xAxisHeight?: number | null;
   xLabelHeight?: number;
   xRangePad?: number;
+  /** Alias of `xRangePad`. */
+  xRangePadding?: number;
   yLabelWidth?: number;
   yRangePad?: number | null;
+  /** Alias of `yRangePad`. */
+  yRangePadding?: number | null;
   titleHeight?: number;
   rangeSelectorAlpha?: number;
   rangeSelectorBackgroundLineWidth?: number;
@@ -543,7 +555,10 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
   rangeSelectorPlotFillGradientColor?: string;
   rangeSelectorPlotLineWidth?: number;
   rangeSelectorPlotStrokeColor?: string;
+  rangeSelectorVeilColor?: string;
+  /** @deprecated Use `rangeSelectorVeilColor`. */
   rangeSelectorVeilColour?: string;
+  showLabelsOnHighlight?: boolean;
   annotationClickHandler?: AnnotationHandler;
   annotationDblClickHandler?: AnnotationHandler;
   annotationMouseOverHandler?: AnnotationHandler;
@@ -555,7 +570,6 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
   ylabel?: string | null;
   y2label?: string | null;
   labelsDiv?: HTMLElement | string | null;
-  showRoller?: boolean;
   rollPeriod?: number;
   dateWindow?: [number, number] | null;
   valueRange?: [number | null, number | null] | null;
@@ -605,14 +619,25 @@ export interface ZpgraphOptions extends PerSeriesOptions, AxisOptions {
     points: Point[],
     row: number,
     seriesName: string,
+    g: ZpgraphInstance,
   ) => void;
-  unhighlightCallback?: (event: MouseEvent) => void;
-  clickCallback?: (event: MouseEvent, x: number, points: Point[]) => void;
-  pointClickCallback?: (event: MouseEvent, point: Point) => void;
+  unhighlightCallback?: (event: MouseEvent, g: ZpgraphInstance) => void;
+  clickCallback?: (
+    event: MouseEvent,
+    x: number,
+    points: Point[],
+    g: ZpgraphInstance,
+  ) => void;
+  pointClickCallback?: (
+    event: MouseEvent,
+    point: Point,
+    g: ZpgraphInstance,
+  ) => void;
   zoomCallback?: (
     minDate: number,
     maxDate: number,
     yRanges: [number, number][],
+    g: ZpgraphInstance,
   ) => void;
   thresholds?: ThresholdBand[];
   toolbar?: boolean | ToolbarOptions;
@@ -648,6 +673,7 @@ export interface LegendData {
     labelHTML: string;
     /** Markup string for formatters that build HTML. Prefer `dashSegments_`. */
     dashHTML: string;
+    dashSegments?: Array<{ offset: number; length: number }>;
     /** Dash geometry for formatters that build DOM nodes. */
     dashSegments_?: Array<{ offset: number; length: number }>;
     color: string;

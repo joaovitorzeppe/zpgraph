@@ -40,7 +40,16 @@ export const applyLabelStyle = (
   );
   if (labelStyle?.style) {
     for (const [name, value] of Object.entries(labelStyle.style)) {
-      el.style.setProperty(name, value);
+      const prop = name.includes("-")
+        ? name
+        : name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+      if (
+        !/^[a-z-]+$/.test(prop) ||
+        /url\s*\(|expression\s*\(|javascript:/i.test(value)
+      ) {
+        continue;
+      }
+      el.style.setProperty(prop, value);
     }
   }
 };

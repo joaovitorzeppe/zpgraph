@@ -11,8 +11,10 @@
  * Chrome colors/layout use CSS variables on `.zpgraph` so apps can theme
  * via `[data-theme="dark"]` on an ancestor or on `.zpgraph` itself, or
  * override individual tokens. See README “DOM chrome tokens”.
+ * Wrapped in @layer zpgraph so application CSS without a layer wins.
  */
 
+@layer zpgraph {
 .zpgraph {
   /* legend (tooltip chrome) */
   --zp-legend-bg: #ffffff;
@@ -327,4 +329,5 @@
   font-family: inherit;
   padding: var(--zp-measure-label-padding);
   border-radius: var(--zp-measure-label-radius);
+}
 }

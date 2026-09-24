@@ -11,6 +11,7 @@ export default defineConfig({
   },
   entry: {
     index: "src/index.ts",
+    "extras/index": "src/extras/index.ts",
     "extras/crosshair": "src/extras/crosshair.ts",
     "extras/hairlines": "src/extras/hairlines.ts",
     "extras/rebase": "src/extras/rebase.ts",

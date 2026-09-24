@@ -4,20 +4,23 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import ZpgraphImport from "zpgraph";
 import type { Plotter, PlotterEvent, Point } from "../types";
-
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  fillBetweenPlotter?: Plotter;
-};
-
-const Zpgraph: ZpgraphExtrasHost = ZpgraphImport;
 
 export type FillBetweenOptions = {
   seriesA: string;
   seriesB: string;
   fillColor?: string;
 };
+
+const isDrawable = (
+  p: Point,
+): p is Point & { canvasx: number; canvasy: number; yval: number } =>
+  typeof p.canvasx === "number" &&
+  typeof p.canvasy === "number" &&
+  typeof p.yval === "number" &&
+  Number.isFinite(p.canvasx) &&
+  Number.isFinite(p.canvasy) &&
+  Number.isFinite(p.yval);
 
 const isPointArray = (v: unknown): v is Point[] =>
   Array.isArray(v) &&
@@ -71,10 +74,11 @@ export const createFillBetweenPlotter = (opts: FillBetweenOptions): Plotter => {
     ctx.beginPath();
 
     let started = false;
-    for (let i = 0; i < a.length; i++) {
-      const p = a[i]!;
-      if (p.canvasx == null || p.canvasy == null || p.yval == null) {
-        continue;
+    let drew = false;
+    const trace = (p: Point) => {
+      if (!isDrawable(p)) {
+        started = false;
+        return;
       }
       if (!started) {
         ctx.moveTo(p.canvasx, p.canvasy);
@@ -82,26 +86,21 @@ export const createFillBetweenPlotter = (opts: FillBetweenOptions): Plotter => {
       } else {
         ctx.lineTo(p.canvasx, p.canvasy);
       }
+      drew = true;
+    };
+
+    for (let i = 0; i < a.length; i++) {
+      trace(a[i]!);
     }
     for (let i = b.length - 1; i >= 0; i--) {
-      const p = b[i]!;
-      if (p.canvasx == null || p.canvasy == null || p.yval == null) {
-        continue;
-      }
-      ctx.lineTo(p.canvasx, p.canvasy);
+      trace(b[i]!);
     }
-    if (started) {
+    if (drew) {
       ctx.closePath();
       ctx.fill();
     }
     ctx.restore();
   };
 };
-
-const fillBetweenPlotter = createFillBetweenPlotter({
-  seriesA: "A",
-  seriesB: "B",
-});
-Zpgraph.fillBetweenPlotter = fillBetweenPlotter;
 
 export default createFillBetweenPlotter;

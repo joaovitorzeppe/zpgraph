@@ -78,6 +78,35 @@ describe("decimatePointsByX", () => {
     expect(decimatePointsByX(points, 0, 9999, 0)).toBe(points);
   });
 
+  it("keeps stacked peaks and bar envelopes in the column", () => {
+    const points: Point[] = [
+      { idx: 0, name: "A", xval: 0, yval: 1, yval_stacked: 1 },
+      { idx: 1, name: "A", xval: 1, yval: 2, yval_stacked: 50 },
+      { idx: 2, name: "A", xval: 2, yval: 4, yval_minus: -20, yval_plus: 6 },
+      { idx: 3, name: "A", xval: 3, yval: 3, yval_stacked: 3 },
+    ];
+    const result = decimatePointsByX(points, 0, 3, 1, 1);
+    const idxs = result.map((p) => p.idx);
+    expect(idxs).toContain(0);
+    expect(idxs).toContain(1);
+    expect(idxs).toContain(2);
+    expect(idxs).toContain(3);
+  });
+
+  it("keeps a NaN gap inside a decimated column", () => {
+    const points: Point[] = [
+      { idx: 0, name: "A", xval: 0, yval: 1 },
+      { idx: 1, name: "A", xval: 1, yval: Number.NaN },
+      { idx: 2, name: "A", xval: 2, yval: 2 },
+    ];
+    const result = decimatePointsByX(points, 0, 2, 1, 1);
+    expect(
+      result.some(
+        (p) => p.idx === 1 && typeof p.yval === "number" && Number.isNaN(p.yval),
+      ),
+    ).toBe(true);
+  });
+
   it("emits points sorted by xval", () => {
     const points = makePoints(5000);
     const result = decimatePointsByX(points, 0, 4999, 50);

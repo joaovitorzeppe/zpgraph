@@ -1,5 +1,15 @@
 # Changes
 
+## 1.4.0
+
+- Bug fixes: stacked NaN fill, idempotent destroy, selection with hidden series, log x coordinates, responsive restore, CSV quotes/BOM, decimation of stacked and error bands, ticker edge cases, extras teardown
+- Security: formula-safe CSV, legend HTML opt-in (`legendHtml`), toolbar icons are nodes, label styles reject `url()`
+- Styles inject automatically inside `@layer zpgraph` (no CSS import). `injectStyles: false` and `styleNonce` opt out
+- Default plugins are Legend, Axes, ChartLabels, Annotations and Grid. Toolbar, RangeSelector, Thresholds, ChartAnnotations, DataLabels and StatusOverlay are opt-in
+- Named import only: `import { Zpgraph } from "zpgraph"`. Extras barrel: `zpgraph/extras`
+- Removed the DOM roller (`showRoller`). `rollPeriod` stays
+- `Zpgraph.VERSION` matches the package version
+
 ## 1.3.1
 
 - Build: `tsdown` only (drop `tsc` emit + `fix-dts-extensions`)

@@ -6,11 +6,9 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZpgraphImport from "zpgraph";
 import type { SelectPluginEvent } from "../internal-types";
 import type ZpgraphClass from "../zpgraph";
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 /**
  * Draws a crosshair through the selected point.
@@ -23,7 +21,7 @@ class Crosshair {
   constructor(opt_options?: { direction?: string; strokeStyle?: string }) {
     this.canvas_ = document.createElement("canvas");
     opt_options = opt_options || {};
-    this.direction_ = opt_options.direction || null;
+    this.direction_ = opt_options.direction || "vertical";
     this.strokeStyle_ = opt_options.strokeStyle || "rgba(0, 0, 0, 0.3)";
   }
 
@@ -110,10 +108,10 @@ class Crosshair {
   }
 
   destroy() {
+    this.canvas_?.remove();
     this.canvas_ = null;
   }
 }
 
-Object.assign(ZpgraphImport.Plugins, { Crosshair });
 
 export default Crosshair;

@@ -4,11 +4,13 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import type { ResponsiveRule } from "./types";
+import type { ResponsiveRule, ZpgraphOptions } from "./types";
 import type Zpgraph from "./zpgraph";
 
 /** Active breakpoint per chart instance (avoids update loops). */
 const breakpointByChart = new WeakMap<object, number>();
+/** Options before the first breakpoint override, restored when none match. */
+const baseByChart = new WeakMap<object, Partial<ZpgraphOptions>>();
 
 const isResponsiveRule = (r: unknown): r is ResponsiveRule => {
   if (typeof r !== "object" || r === null) {
@@ -42,9 +44,26 @@ export const applyResponsiveOptions = (g: Zpgraph): void => {
   if (prev === key) {
     return;
   }
+
+  if (!baseByChart.has(g)) {
+    const snap: Partial<ZpgraphOptions> = {};
+    for (const rule of sorted) {
+      for (const name of Object.keys(rule.options)) {
+        if (name === "responsive" || name in snap) {
+          continue;
+        }
+        Reflect.set(snap, name, g.getOption(name));
+      }
+    }
+    baseByChart.set(g, snap);
+  }
   breakpointByChart.set(g, key);
 
   if (!match) {
+    const snap = baseByChart.get(g);
+    if (snap) {
+      g.updateOptions(snap, false);
+    }
     return;
   }
 

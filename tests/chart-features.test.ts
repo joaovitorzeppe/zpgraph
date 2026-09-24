@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Zpgraph } from "../src/index";
+import ChartAnnotationsPlugin from "../src/plugins/chart-annotations";
+import StatusOverlayPlugin from "../src/plugins/status-overlay";
+import ThresholdsPlugin from "../src/plugins/thresholds";
+import ToolbarPlugin from "../src/plugins/toolbar";
 import { mockCanvas, mountDiv, sampleData } from "./helpers";
 
 describe("thresholds plugin", () => {
@@ -14,6 +18,7 @@ describe("thresholds plugin", () => {
       labels: ["x", "A", "B"],
       width: 480,
       height: 320,
+      plugins: [ThresholdsPlugin],
       thresholds: [
         { y: 10, y2: 20, fillColor: "rgba(0,0,255,0.1)", label: "band" },
         { y: 15, color: "#f00" },
@@ -101,6 +106,7 @@ describe("toolbar + status overlays", () => {
       labels: ["x", "A", "B"],
       width: 480,
       height: 320,
+      plugins: [ToolbarPlugin],
       toolbar: true,
     });
     expect(el.querySelector(".zpgraph-toolbar")).not.toBeNull();
@@ -116,6 +122,7 @@ describe("toolbar + status overlays", () => {
       labels: ["x", "A"],
       width: 480,
       height: 320,
+      plugins: [StatusOverlayPlugin],
       noData: { text: "Vazio" },
     });
     const node = el.querySelector(".zpgraph-no-data");
@@ -130,6 +137,7 @@ describe("toolbar + status overlays", () => {
       labels: ["x", "A", "B"],
       width: 480,
       height: 320,
+      plugins: [StatusOverlayPlugin],
       loading: true,
     });
     expect(el.querySelector(".zpgraph-loading")).not.toBeNull();
@@ -149,6 +157,7 @@ describe("chartAnnotations + eventMarkers", () => {
       labels: ["x", "A", "B"],
       width: 480,
       height: 320,
+      plugins: [ChartAnnotationsPlugin],
       chartAnnotations: {
         xaxis: [{ x: 2, label: "X" }],
         yaxis: [{ y: 10, y2: 20 }],

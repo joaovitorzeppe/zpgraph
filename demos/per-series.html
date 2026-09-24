@@ -18,7 +18,7 @@
   <p class="lede">Stroke width, points, and fill configured independently.</p>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zpgraph from 'zpgraph';
+    import { Zpgraph } from 'zpgraph';
     import { makeSeries } from './helpers.js';
 
     new Zpgraph(document.getElementById('chart'), makeSeries({ points: 70, series: 3, seed: 5 }), {

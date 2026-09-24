@@ -50,7 +50,7 @@
   <div id="chart" class="chart"></div>
   <p class="note" id="log"></p>
   <script type="module">
-    import Zpgraph from 'zpgraph';
+    import { Zpgraph } from 'zpgraph';
     import { makeSeries, utcDay, dayMs } from './helpers.js';
 
     const data = makeSeries({ points: 40, series: 2, seed: 3 });

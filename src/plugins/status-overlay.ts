@@ -27,7 +27,8 @@ class status_overlay {
   }
 
   clearChart(_e: ChartDrawPluginEvent) {
-    this.detach_();
+    // didDrawChart hides or rewrites the same nodes. Detach here rebuilt them
+    // on every frame.
   }
 
   didDrawChart(e: ChartDrawPluginEvent) {

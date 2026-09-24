@@ -89,29 +89,63 @@ export const findClosestRow = (g: Zpgraph, domX: number) => {
  * Returns: {row, seriesName, point}
  * @private
  */
+const nearestXIndex = (points: Point[], domX: number): number => {
+  let lo = 0;
+  let hi = points.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((points[mid]?.canvasx ?? 0) < domX) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  return lo;
+};
+
 export const findClosestPoint = (g: Zpgraph, domX: number, domY = 0) => {
   let minDist = Infinity;
-  let dist: number;
-  let dx: number;
-  let dy: number;
   let closestPoint: Point | undefined;
   let closestSeries: number | undefined;
   let closestRow: number | undefined;
+  const consider = (setIdx: number, point: Point | undefined) => {
+    if (!point || !utils.isValidPoint(point)) {
+      return;
+    }
+    const dx = (point.canvasx ?? 0) - domX;
+    const dy = (point.canvasy ?? 0) - domY;
+    const dist = dx * dx + dy * dy;
+    if (dist < minDist) {
+      minDist = dist;
+      closestPoint = point;
+      closestSeries = setIdx;
+      closestRow = point.idx;
+    }
+  };
   for (let setIdx = g.layout_.points.length - 1; setIdx >= 0; --setIdx) {
     const points = g.layout_.points[setIdx]!;
-    for (let i = 0; i < points.length; ++i) {
-      const point = points[i]!;
-      if (!utils.isValidPoint(point)) {
-        continue;
+    if (!points.length) {
+      continue;
+    }
+    const start = nearestXIndex(points, domX);
+    consider(setIdx, points[start]);
+    for (let step = 1; step < points.length; step++) {
+      const left = start - step;
+      const right = start + step;
+      if (left >= 0) {
+        consider(setIdx, points[left]);
       }
-      dx = point.canvasx! - domX;
-      dy = point.canvasy! - domY;
-      dist = dx * dx + dy * dy;
-      if (dist < minDist) {
-        minDist = dist;
-        closestPoint = point;
-        closestSeries = setIdx;
-        closestRow = point.idx;
+      if (right < points.length) {
+        consider(setIdx, points[right]);
+      }
+      const leftDx =
+        left >= 0 ? ((points[left]?.canvasx ?? 0) - domX) ** 2 : Infinity;
+      const rightDx =
+        right < points.length
+          ? ((points[right]?.canvasx ?? 0) - domX) ** 2
+          : Infinity;
+      if (leftDx >= minDist && rightDx >= minDist) {
+        break;
       }
     }
   }
@@ -237,13 +271,25 @@ export const mouseMove = (g: Zpgraph, event: MouseEvent) => {
  * first defined boundaryIds record (see bug #236).
  * @private
  */
-export const getLeftBoundary = (g: Zpgraph, setIdx: number) => {
-  if (g.boundaryIds_[setIdx]) {
-    return g.boundaryIds_[setIdx][0];
+const seriesColumnForSet = (g: Zpgraph, setIdx: number): number => {
+  const map = g.datasetIndex_;
+  for (let i = 0; i < map.length; i++) {
+    if (map[i] === setIdx) {
+      return i;
+    }
   }
-  for (const ids of g.boundaryIds_) {
-    if (ids !== undefined) {
-      return ids[0];
+  return setIdx + 1;
+};
+
+export const getLeftBoundary = (g: Zpgraph, setIdx: number) => {
+  const seriesIdx = seriesColumnForSet(g, setIdx);
+  const ids = g.boundaryIds_[seriesIdx - 1];
+  if (ids) {
+    return ids[0];
+  }
+  for (const row of g.boundaryIds_) {
+    if (row !== undefined) {
+      return row[0];
     }
   }
   return 0;
@@ -270,7 +316,7 @@ export const animateSelection = (g: Zpgraph, direction: number) => {
   const thisId = ++g.animateId;
   const that = g;
 
-  utils.repeatAndCleanup(
+  const stop = utils.repeatAndCleanup(
     (step: number) => {
       // ignore simultaneous animations
       if (that.animateId !== thisId) {
@@ -288,6 +334,7 @@ export const animateSelection = (g: Zpgraph, direction: number) => {
     millis,
     () => {},
   );
+  that.animationStops_.push(stop);
 };
 
 /**
@@ -492,13 +539,13 @@ export const setSelection = (
       const callback = g.getFunctionOption("highlightCallback");
       if (callback) {
         const event = new MouseEvent("highlight");
-        callback.call(
-          g,
+        callback(
           event,
           g.lastx_,
           g.selPoints_,
           g.lastRow_,
           g.highlightSet_,
+          g,
         );
       }
     }
@@ -514,7 +561,7 @@ export const setSelection = (
 export const mouseOut = (g: Zpgraph, event: MouseEvent) => {
   const unhighlightCallback = g.getFunctionOption("unhighlightCallback");
   if (unhighlightCallback) {
-    unhighlightCallback.call(g, event);
+    unhighlightCallback(event, g);
   }
 
   if (g.getBooleanOption("hideOverlayOnMouseOut") && !g.lockedSet_) {

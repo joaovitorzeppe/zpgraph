@@ -86,11 +86,12 @@
   </section>
 
   <script type="module">
-    import Zpgraph from 'zpgraph';
+    import { Zpgraph, ToolbarPlugin } from 'zpgraph';
     import { makeSeries } from './helpers.js';
 
     const data = makeSeries({ points: 60, series: 1, seed: 4 });
     const base = {
+      plugins: [ToolbarPlugin],
       labels: ['Date', 'Alpha'],
       tooltip: { show: 'onmouseover' },
       colors: ['#1b6b93'],

@@ -222,7 +222,7 @@ export const resetZoom = (g: Zpgraph) => {
 
     g.drawGraph_();
     if (zoomCallback) {
-      zoomCallback.call(g, minDate, maxDate, g.yAxisRanges());
+      zoomCallback(minDate, maxDate, g.yAxisRanges(), g);
     }
     return;
   }
@@ -312,8 +312,11 @@ export const doAnimatedZoom = (
   }
 
   const that = g;
-  utils.repeatAndCleanup(
+  const stop = utils.repeatAndCleanup(
     (frame: number) => {
+      if (that.destroyed_) {
+        return;
+      }
       if (valueRanges.length) {
         for (let i = 0; i < that.axes_.length; i++) {
           const w = valueRanges[frame]?.[i];
@@ -330,6 +333,11 @@ export const doAnimatedZoom = (
     },
     steps,
     ANIMATION_DURATION / steps,
-    callback,
+    () => {
+      if (!that.destroyed_) {
+        callback();
+      }
+    },
   );
+  that.animationStops_.push(stop);
 };

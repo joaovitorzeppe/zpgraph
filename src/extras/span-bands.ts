@@ -4,11 +4,11 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import ZpgraphImport from "zpgraph";
 import {
   applyLabelStyle,
   getChartClassNames,
 } from "../class-names";
+import { pooledLabel } from "../label-pool";
 import type {
   ChartDrawPluginEvent,
   ZpgraphInstance,
@@ -16,7 +16,6 @@ import type {
 import type { LabelStyle } from "../types";
 import type ZpgraphClass from "../zpgraph";
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 export type SpanBand = {
   x0: number | Date;
@@ -173,13 +172,12 @@ class SpanBands {
       ctx.restore();
 
       if (band.label && w > 40) {
-        let el = this.labelEls_[labelIdx];
-        if (!el) {
-          el = document.createElement("div");
-          el.dataset.zpLabel = "span-band";
-          g.graphDiv.appendChild(el);
-          this.labelEls_[labelIdx] = el;
-        }
+        const el = pooledLabel(
+          this.labelEls_,
+          labelIdx,
+          g.graphDiv,
+          "span-band",
+        );
         const merged: LabelStyle = {
           ...this.labelStyle_,
           ...band.labelStyle,
@@ -222,6 +220,5 @@ class SpanBands {
   }
 }
 
-Object.assign(ZpgraphImport.Plugins, { SpanBands });
 
 export default SpanBands;

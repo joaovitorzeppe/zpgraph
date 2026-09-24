@@ -15,6 +15,7 @@ import type {
 } from "../internal-types";
 import BarsHandler from "./bars";
 import { rawX, rawYArray, seriesBoolean, seriesNumber } from "./datahandler";
+import { slideRoll } from "./roll";
 
 class ErrorBarsHandler extends BarsHandler {
   /** @inheritDoc */
@@ -66,39 +67,26 @@ class ErrorBarsHandler extends BarsHandler {
     const rollingData: UnifiedSeries = [];
     const sigma = seriesNumber(options, seriesIndex_, "sigma");
 
-    let i, j, y, v, sum, num_ok, stddev, variance, value;
-
-    // Calculate the rolling average for the first rollPeriod - 1 points
-    // where there is not enough data to roll over the full number of points
-    for (i = 0; i < originalData.length; i++) {
-      sum = 0;
-      variance = 0;
-      num_ok = 0;
-      for (j = Math.max(0, i - rollPeriod + 1); j < i + 1; j++) {
-        y = originalData[j]![1];
-        if (y === null || isNaN(y)) {
-          continue;
+    slideRoll(
+      originalData.length,
+      rollPeriod,
+      (index) => originalData[index]![1],
+      (index) => Math.pow(originalData[index]![2]![2]!, 2),
+      (index, sum, count, variance) => {
+        if (count) {
+          const stddev = Math.sqrt(variance) / count;
+          const value = sum / count;
+          rollingData[index] = [
+            originalData[index]![0],
+            value,
+            [value - sigma * stddev, value + sigma * stddev],
+          ];
+          return;
         }
-        num_ok++;
-        sum += y;
-        variance += Math.pow(originalData[j]![2]![2]!, 2);
-      }
-      if (num_ok) {
-        stddev = Math.sqrt(variance) / num_ok;
-        value = sum / num_ok;
-        rollingData[i] = [
-          originalData[i]![0],
-          value,
-          [value - sigma * stddev, value + sigma * stddev],
-        ];
-      } else {
-        // This explicitly preserves NaNs to aid with "independent
-        // series".
-        // See testRollingAveragePreservesNaNs.
-        v = rollPeriod === 1 ? originalData[i]![1] : null;
-        rollingData[i] = [originalData[i]![0], v, [v, v]];
-      }
-    }
+        const v = rollPeriod === 1 ? originalData[index]![1] : null;
+        rollingData[index] = [originalData[index]![0], v, [v, v]];
+      },
+    );
 
     return rollingData;
   }

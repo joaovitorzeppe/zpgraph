@@ -4,17 +4,10 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import ZpgraphImport from "zpgraph";
 import type { ZpgraphInstance } from "../internal-types";
 import type { Plotter, PlotterEvent } from "../types";
 
 type MovingAveragePlotter = Plotter & { period: number; color?: string };
-
-type ZpgraphExtrasHost = typeof ZpgraphImport & {
-  movingAveragePlotter?: MovingAveragePlotter;
-};
-
-const Zpgraph: ZpgraphExtrasHost = ZpgraphImport;
 
 export type MovingAverageOptions = {
   /** Window size in points. Default 7. */
@@ -127,7 +120,5 @@ const movingAveragePlotter: MovingAveragePlotter = Object.assign(
   createMovingAveragePlotter({ period: 7 }),
   { period: 7 },
 );
-
-Zpgraph.movingAveragePlotter = movingAveragePlotter;
 
 export default movingAveragePlotter;

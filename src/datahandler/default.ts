@@ -14,6 +14,7 @@ import type {
   UnifiedSeries,
 } from "../internal-types";
 import ZpgraphDataHandler, { rawX, rawY, seriesBoolean } from "./datahandler";
+import { slideRoll } from "./roll";
 
 class DefaultHandler extends ZpgraphDataHandler {
   /** @inheritDoc */
@@ -48,33 +49,22 @@ class DefaultHandler extends ZpgraphDataHandler {
     seriesIndex_?: number,
   ): UnifiedSeries {
     rollPeriod = Math.min(rollPeriod, originalData.length);
-    const rollingData: UnifiedSeries = [];
-
-    let i, j, y, sum, num_ok;
-    // Calculate the rolling average for the first rollPeriod - 1 points
-    // where
-    // there is not enough data to roll over the full number of points
     if (rollPeriod === 1) {
       return originalData;
     }
-    for (i = 0; i < originalData.length; i++) {
-      sum = 0;
-      num_ok = 0;
-      for (j = Math.max(0, i - rollPeriod + 1); j < i + 1; j++) {
-        y = originalData[j]![1];
-        if (y === null || isNaN(y)) {
-          continue;
-        }
-        num_ok++;
-        sum += y;
-      }
-      if (num_ok) {
-        rollingData[i] = [originalData[i]![0], sum / num_ok];
-      } else {
-        rollingData[i] = [originalData[i]![0], null];
-      }
-    }
-
+    const rollingData: UnifiedSeries = [];
+    slideRoll(
+      originalData.length,
+      rollPeriod,
+      (index) => originalData[index]![1],
+      null,
+      (index, sum, count) => {
+        rollingData[index] = [
+          originalData[index]![0],
+          count ? sum / count : null,
+        ];
+      },
+    );
     return rollingData;
   }
 

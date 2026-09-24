@@ -12,11 +12,11 @@
  */
 
 // No CSS import here on purpose: a side-effect `import './style.css'` in the
-// package entry makes `import Zpgraph from 'zpgraph'` throw in plain Node and in
-// SSR. Load `zpgraph/style.css` from application code instead.
+// package entry throws in plain Node and in SSR. The chart injects styles at
+// runtime. `zpgraph/style.css` remains for a manual <link>.
 
-export { default } from "./zpgraph";
 export { default as Zpgraph } from "./zpgraph";
+export { defaultInteractionModel } from "./interaction-model";
 
 export type {
   Annotation,

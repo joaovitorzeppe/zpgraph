@@ -6,7 +6,6 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZpgraphImport from "zpgraph";
 import { log } from "../logger";
 import type { OptionsGetter, ZpgraphInstance } from "../internal-types";
 import type { Point } from "../types";
@@ -51,7 +50,6 @@ type ZpgraphChart = ZpgraphInstance & {
   optionsViewForAxis_(axis: string): OptionsGetter;
 };
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 /** @private Detach one annotation's divs and its drag listeners. */
 const teardownAnnotation = (a: InternalAnnotation) => {
@@ -640,6 +638,5 @@ const SuperAnnotations = (() => {
   return annotations;
 })();
 
-Object.assign(ZpgraphImport.Plugins, { SuperAnnotations });
 
 export default SuperAnnotations;

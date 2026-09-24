@@ -6,6 +6,7 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
+import pkg from "../package.json" with { type: "json" };
 import ZpgraphCanvasRenderer from "./canvas";
 import ZpgraphInteraction from "./interaction-model";
 import * as ZpgraphTickers from "./tickers";
@@ -30,12 +31,8 @@ import StatusOverlayPlugin from "./plugins/status-overlay";
 import ThresholdsPlugin from "./plugins/thresholds";
 import ToolbarPlugin from "./plugins/toolbar";
 
-type DomReadyHost = {
-  onDOMready?: (cb: () => void) => boolean;
-};
-
 /** Static bag mutated onto the Zpgraph constructor. */
-type ZpgraphStaticsBag = DomReadyHost & {
+type ZpgraphStaticsBag = {
   NAME?: string;
   VERSION?: string;
   DEFAULT_ROLL_PERIOD?: number;
@@ -72,7 +69,6 @@ type ZpgraphStaticsBag = DomReadyHost & {
   floatFormat?: typeof utils.floatFormat;
 };
 
-/** Every object can hold the optional onDOMready slot used by setupDOMready_. */
 const isStaticsBag = (_v: object): _v is ZpgraphStaticsBag => true;
 
 export const registerZpgraphStatics = (Zpgraph: object): void => {
@@ -82,7 +78,7 @@ export const registerZpgraphStatics = (Zpgraph: object): void => {
   const Z = Zpgraph;
 
   Z.NAME = "Zpgraph";
-  Z.VERSION = "0.1.0";
+  Z.VERSION = pkg.version;
 
   // Various default values
   Z.DEFAULT_ROLL_PERIOD = 1;
@@ -113,14 +109,8 @@ export const registerZpgraphStatics = (Zpgraph: object): void => {
   Z.PLUGINS = [
     LegendPlugin,
     AxesPlugin,
-    RangeSelectorPlugin, // Has to be before ChartLabels so that its callbacks are called after ChartLabels' callbacks.
     ChartLabelsPlugin,
     AnnotationsPlugin,
-    ThresholdsPlugin,
-    ChartAnnotationsPlugin,
-    DataLabelsPlugin,
-    ToolbarPlugin,
-    StatusOverlayPlugin,
     GridPlugin,
   ];
 
@@ -159,13 +149,6 @@ export const registerZpgraphStatics = (Zpgraph: object): void => {
     FractionsBarsHandler,
   };
 
-  Z.startPan = ZpgraphInteraction.startPan;
-  Z.startZoom = ZpgraphInteraction.startZoom;
-  Z.movePan = ZpgraphInteraction.movePan;
-  Z.moveZoom = ZpgraphInteraction.moveZoom;
-  Z.endPan = ZpgraphInteraction.endPan;
-  Z.endZoom = ZpgraphInteraction.endZoom;
-
   Z.numericLinearTicks = ZpgraphTickers.numericLinearTicks;
   Z.numericTicks = ZpgraphTickers.numericTicks;
   Z.integerTicks = ZpgraphTickers.integerTicks;
@@ -174,6 +157,4 @@ export const registerZpgraphStatics = (Zpgraph: object): void => {
   Z.pickDateTickGranularity = ZpgraphTickers.pickDateTickGranularity;
   Z.getDateAxis = ZpgraphTickers.getDateAxis;
   Z.floatFormat = utils.floatFormat;
-
-  utils.setupDOMready_(Z);
 };

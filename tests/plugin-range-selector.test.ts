@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Zpgraph } from "../src/index";
+import RangeSelectorPlugin from "../src/plugins/range-selector";
 import type { ZpgraphOptions } from "../src/types";
 import { mockCanvas, mountDiv, sampleData, stubLayoutMetrics } from "./helpers";
 
@@ -11,7 +12,11 @@ const base: ZpgraphOptions = {
 
 const makeChart = (options: ZpgraphOptions = {}) => {
   const el = mountDiv();
-  const g = new Zpgraph(el, sampleData, { ...base, ...options });
+  const g = new Zpgraph(el, sampleData, {
+    plugins: [RangeSelectorPlugin],
+    ...base,
+    ...options,
+  });
   return { el, g };
 };
 

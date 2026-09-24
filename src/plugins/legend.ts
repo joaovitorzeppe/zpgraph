@@ -38,6 +38,22 @@ interface LegendPluginEvent {
   selectedRow?: number;
 }
 
+const paintLegend = (
+  g: ZpgraphInstance,
+  div: HTMLElement,
+  html: string | Node,
+): void => {
+  if (html instanceof Node) {
+    div.replaceChildren(html);
+    return;
+  }
+  if (g.getBooleanOption("legendHtml")) {
+    div.innerHTML = html;
+    return;
+  }
+  div.textContent = html;
+};
+
 type LegendChart = LegendGraphLike & {
   optionsViewForAxis_(axis: string): OptionsGetter;
 };
@@ -62,6 +78,7 @@ interface LegendSeriesRow {
   labelHTML: string;
   dashHTML: string;
   dashSegments_?: DashSegment[] | null;
+  dashSegments?: DashSegment[] | null;
   color: string;
   isVisible: boolean;
   isHighlighted?: boolean;
@@ -374,12 +391,7 @@ class Legend {
       this.one_em_width_,
       row ?? null,
     );
-    if (html instanceof Node) {
-      div.replaceChildren(html);
-    } else {
-      // Trusted app HTML — see README "Content Security Policy".
-      div.innerHTML = html;
-    }
+    paintLegend(e.zpgraph, div, html);
     // must be done now so offsetWidth isn’t 0…
     div.style.display = "";
 
@@ -412,12 +424,7 @@ class Legend {
       this.one_em_width_,
       null,
     );
-    if (html instanceof Node) {
-      div.replaceChildren(html);
-    } else {
-      // Trusted app HTML — see README "Content Security Policy".
-      div.innerHTML = html;
-    }
+    paintLegend(e.zpgraph, div, html);
   }
 
   didDrawChart(e: LegendPluginEvent) {
@@ -494,6 +501,7 @@ class Legend {
         const seriesData: LegendSeriesRow = {
           dashHTML: dashSegmentsToHTML(dashSegments, color),
           dashSegments_: dashSegments,
+          dashSegments,
           label: label,
           labelHTML: escapeHTML(label),
           isVisible: series.visible,
@@ -606,7 +614,10 @@ class Legend {
         span.style.fontWeight = "bold";
         span.style.color = series.color;
         span.appendChild(
-          dashSegmentsToNodes(series.dashSegments_ ?? null, series.color),
+          dashSegmentsToNodes(
+            series.dashSegments ?? series.dashSegments_ ?? null,
+            series.color,
+          ),
         );
         span.appendChild(document.createTextNode(" " + series.label));
         fragment.appendChild(span);

@@ -48,7 +48,7 @@ npm install zpgraph
 ```
 
 ```ts
-import Zpgraph from "zpgraph";
+import { Zpgraph } from "zpgraph";
 
 const g = new Zpgraph("chart", data, {
   labels: ["Date", "Alpha", "Beta"],
@@ -57,15 +57,11 @@ const g = new Zpgraph("chart", data, {
 });
 ```
 
-Vanilla HTML (no bundler). jsDelivr serves the npm ESM (`+esm`);
+Vanilla HTML (no bundler). jsDelivr serves the npm ESM (`+esm`). CSS is injected; no stylesheet link.
 
 ```html
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/zpgraph@1.2.1/dist/style.css"
-/>
 <script type="module">
-  import Zpgraph from "https://cdn.jsdelivr.net/npm/zpgraph@1.2.1/+esm";
+  import { Zpgraph } from "https://cdn.jsdelivr.net/npm/zpgraph@2.0.0/+esm";
   new Zpgraph("chart", data, { labels: ["Date", "Alpha"] });
 </script>
 ```
@@ -77,7 +73,7 @@ Local `node_modules`
   { "imports": { "zpgraph": "./node_modules/zpgraph/dist/index.js" } }
 </script>
 <script type="module">
-  import Zpgraph from "zpgraph";
+  import { Zpgraph } from "zpgraph";
   new Zpgraph("chart", data, { labels: ["Date", "Alpha"] });
 </script>
 ```

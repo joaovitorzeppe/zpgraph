@@ -26,7 +26,7 @@
   </p>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zpgraph from 'zpgraph';
+    import { Zpgraph, ToolbarPlugin } from 'zpgraph';
     import { applyLocale, packs } from '../dist/extras/locale.js';
     import { makeSeries } from './helpers.js';
 
@@ -34,6 +34,7 @@
       document.getElementById('chart'),
       makeSeries({ points: 120, series: 1, seed: 2 }),
       {
+        plugins: [ToolbarPlugin],
         labels: ['Data', 'Valor'],
         tooltip: { show: 'always' },
         colors: ['#1b6b93'],

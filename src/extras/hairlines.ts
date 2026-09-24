@@ -6,7 +6,6 @@
  * Portions derived from dygraphs — see NOTICE for upstream attribution.
  */
 
-import ZpgraphImport from "zpgraph";
 import { log } from "../logger";
 import type { ZpgraphInstance } from "../internal-types";
 import type { Point } from "../types";
@@ -47,7 +46,6 @@ interface ChartClickEvent {
   canvasx: number;
 }
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 const chartValue = (g: ZpgraphInstance, row: number, col: number): number =>
   Number(g.getValue(row, col));
@@ -400,9 +398,10 @@ const Hairlines = (() => {
             );
             if (content instanceof Node) {
               target.replaceChildren(content);
-            } else {
-              // Trusted app HTML — see README "Content Security Policy".
+            } else if (g.getBooleanOption("legendHtml")) {
               target.innerHTML = content;
+            } else {
+              target.textContent = content;
             }
           }
         }
@@ -481,6 +480,10 @@ const Hairlines = (() => {
     }
 
     destroy() {
+      if (this.addTimer_ !== null) {
+        clearTimeout(this.addTimer_);
+        this.addTimer_ = null;
+      }
       this.detachLabels();
     }
 
@@ -600,6 +603,5 @@ const Hairlines = (() => {
   return hairlines;
 })();
 
-Object.assign(ZpgraphImport.Plugins, { Hairlines });
 
 export default Hairlines;

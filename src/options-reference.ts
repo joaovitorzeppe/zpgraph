@@ -584,6 +584,27 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         description:
           "Whether to hide the legend when the mouse leaves the chart area.",
       },
+      injectStyles: {
+        default: "true",
+        labels: ["CSS"],
+        type: "boolean",
+        description:
+          "When true (default), zpgraph injects its stylesheet into the chart's document or shadow root. Set false and load zpgraph/style.css yourself to opt out.",
+      },
+      styleNonce: {
+        default: "null",
+        labels: ["CSS"],
+        type: "string",
+        description:
+          "Nonce applied to the fallback style element when adopted stylesheets are unavailable.",
+      },
+      legendHtml: {
+        default: "false",
+        labels: ["Legend"],
+        type: "boolean",
+        description:
+          "When true, a string returned by legendFormatter is inserted as HTML. Default false treats that string as text.",
+      },
       legendFormatter: {
         default: "null",
         labels: ["Legend"],
@@ -617,12 +638,6 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         description:
           "Show date/time labels according to UTC (instead of local time).",
       },
-      labelsKMB: {
-        default: "false",
-        labels: ["Value display/formatting"],
-        type: "boolean",
-        description: "Show k/M/B for thousands/millions/billions on y-axis.",
-      },
       rightGap: {
         default: "5",
         labels: ["Overall display"],
@@ -643,6 +658,18 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         type: "float",
         description:
           "Add the specified amount of extra space (in pixels) around the X-axis value range to ensure points at the edges remain visible.",
+      },
+      xRangePadding: {
+        default: "0",
+        labels: ["Axis display"],
+        type: "float",
+        description: "Alias of xRangePad.",
+      },
+      yRangePadding: {
+        default: "null",
+        labels: ["Axis display"],
+        type: "float",
+        description: "Alias of yRangePad.",
       },
       yRangePad: {
         default: "null",
@@ -707,12 +734,6 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
           "[<br>  Date.parse('2006-01-01'),<br>  (new Date()).valueOf()<br>]",
         description:
           "Initially zoom in on a section of the graph. Is of the form [earliest, latest], where earliest/latest are milliseconds since epoch. If the data for the x-axis is numeric, the values in dateWindow must also be numbers.",
-      },
-      showRoller: {
-        default: "false",
-        labels: ["Interactive Elements", "Rolling Averages"],
-        type: "boolean",
-        description: "If the rolling average period text box should be shown.",
       },
       sigma: {
         default: "2.0",
@@ -990,6 +1011,12 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         type: "string",
         description:
           'The fillStyle for the veil of the range selector (e.g. "rgba(240, 240, 240, 0.6)"); if set, the rangeSelectorAlpha option is ignored.',
+      },
+      rangeSelectorVeilColor: {
+        default: "null",
+        labels: ["Range Selector"],
+        type: "string",
+        description: "Alias of rangeSelectorVeilColour.",
       },
       showInRangeSelector: {
         default: "null",

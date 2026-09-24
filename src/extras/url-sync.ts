@@ -4,11 +4,10 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import ZpgraphImport from "zpgraph";
 import type { ZpgraphInstance } from "../internal-types";
+import type { ZpgraphOptions } from "../types";
 import type ZpgraphClass from "../zpgraph";
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 export type UrlSyncOptions = {
   /** Query/hash param for range start. Default "from". */
@@ -33,6 +32,42 @@ const readParams = (useHash: boolean): URLSearchParams => {
     return new URLSearchParams(q);
   }
   return new URLSearchParams(location.search);
+};
+
+const EXTREME_MARGIN_FRACTION = 0.01;
+
+const clampDateToExtremes = (
+  g: ZpgraphInstance,
+  lo: number,
+  hi: number,
+): [number, number] | null => {
+  const extremes = g.xAxisExtremes();
+  const x0 = Math.min(extremes[0], extremes[1]);
+  const x1 = Math.max(extremes[0], extremes[1]);
+  const span = x1 - x0;
+  const margin = Number.isFinite(span)
+    ? Math.abs(span) * EXTREME_MARGIN_FRACTION
+    : 0;
+  const min = x0 - margin;
+  const max = x1 + margin;
+  let a = Math.min(lo, hi);
+  let b = Math.max(lo, hi);
+  if (a < min) {
+    a = min;
+  }
+  if (a > max) {
+    a = max;
+  }
+  if (b > max) {
+    b = max;
+  }
+  if (b < min) {
+    b = min;
+  }
+  if (!(a < b) || !Number.isFinite(a) || !Number.isFinite(b)) {
+    return null;
+  }
+  return [a, b];
 };
 
 const writeParams = (useHash: boolean, params: URLSearchParams): void => {
@@ -88,7 +123,6 @@ class UrlSync {
 
   activate(g: ZpgraphClass) {
     this.g_ = g;
-    this.applyFromUrl_();
 
     this.prevZoomCallback_ = g.getFunctionOption("zoomCallback");
 
@@ -101,6 +135,11 @@ class UrlSync {
       },
       true,
     );
+
+    // Extremes need the plot area, which does not exist until the first draw.
+    g.ready(() => {
+      this.applyFromUrl_();
+    });
 
     return {};
   }
@@ -121,8 +160,12 @@ class UrlSync {
     if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo === hi) {
       return;
     }
+    const dateWindow = clampDateToExtremes(g, lo, hi);
+    if (!dateWindow) {
+      return;
+    }
     const attrs: Record<string, unknown> = {
-      dateWindow: [Math.min(lo, hi), Math.max(lo, hi)],
+      dateWindow,
     };
     if (this.opts_.syncY) {
       const ymin = params.get(this.opts_.paramYMin);
@@ -157,22 +200,13 @@ class UrlSync {
   destroy() {
     const g = this.g_;
     if (g) {
-      if (this.prevZoomCallback_) {
-        const prev = this.prevZoomCallback_;
-        g.updateOptions(
-          {
-            zoomCallback: (minX, maxX, yRanges) => {
-              prev(minX, maxX, yRanges);
-            },
-          },
-          true,
-        );
-      }
+      const restore: Partial<ZpgraphOptions> = {};
+      Reflect.set(restore, "zoomCallback", this.prevZoomCallback_ ?? null);
+      g.updateOptions(restore, true);
     }
     this.g_ = null;
   }
 }
 
-Object.assign(ZpgraphImport.Plugins, { UrlSync });
 
 export default UrlSync;

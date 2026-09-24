@@ -4,12 +4,10 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import ZpgraphImport from "zpgraph";
 import type { ZpgraphInstance } from "../internal-types";
 import type ZpgraphClass from "../zpgraph";
 import { panBy, zoomBy } from "./zoom-limits";
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 export type KeyboardOptions = {
   /** Plain arrows pan without Shift. Default true. */
@@ -22,7 +20,7 @@ export type KeyboardOptions = {
 
 /**
  * Extra keyboard shortcuts on top of core Shift+arrows a11y:
- * - Arrow keys: pan (when arrowsPan; claims capture so core selection skips)
+ * - Arrow keys: pan (when arrowsPan). The event is claimed only when the view changes.
  * - `+` / `=`: zoom in; `-`: zoom out
  * - Escape: reset zoom
  *
@@ -54,7 +52,7 @@ class Keyboard {
   activate(g: ZpgraphClass) {
     this.g_ = g;
     this.handler_ = (e: KeyboardEvent) => this.onKey_(e);
-    // Capture so we win over core keyDown (point selection on plain arrows).
+    // Capture so a real pan or zoom runs before core keyDown. No-op keys fall through.
     g.graphDiv.addEventListener("keydown", this.handler_, true);
     return {};
   }
@@ -70,28 +68,25 @@ class Keyboard {
     }
 
     const key = e.key;
-    let claim = false;
+    let changed = false;
 
     if (this.opts_.arrowsPan && (key === "ArrowLeft" || key === "ArrowRight")) {
-      if (key === "ArrowLeft") {
-        panBy(g, -this.opts_.panFraction);
-      } else {
-        panBy(g, this.opts_.panFraction);
-      }
-      // Always claim: avoid core selection walk when pan is a no-op (full zoom).
-      claim = true;
+      const fraction =
+        key === "ArrowLeft" ? -this.opts_.panFraction : this.opts_.panFraction;
+      changed = panBy(g, fraction);
     } else if (key === "+" || key === "=") {
-      zoomBy(g, this.opts_.zoomFactor);
-      claim = true;
+      changed = zoomBy(g, this.opts_.zoomFactor);
     } else if (key === "-" || key === "_") {
-      zoomBy(g, 1 / this.opts_.zoomFactor);
-      claim = true;
-    } else if (key === "Escape") {
+      changed = zoomBy(g, 1 / this.opts_.zoomFactor);
+    } else if (key === "Escape" && g.isZoomed()) {
+      const before = g.xAxisRange();
       g.resetZoom();
-      claim = true;
+      const after = g.xAxisRange();
+      changed =
+        !g.isZoomed() || before[0] !== after[0] || before[1] !== after[1];
     }
 
-    if (claim) {
+    if (changed) {
       e.preventDefault();
       e.stopPropagation();
     }
@@ -106,6 +101,5 @@ class Keyboard {
   }
 }
 
-Object.assign(ZpgraphImport.Plugins, { Keyboard });
 
 export default Keyboard;

@@ -28,6 +28,16 @@ const isDefaultAxisKey = (
   key === "x" || key === "y" || key === "y2";
 const OPTIONS_REFERENCE: Record<string, unknown> | null = OPTIONS_REFERENCE_;
 
+/** Old name <-> new name. Either key in user options satisfies a read of the other. */
+const OPTION_ALIASES: Record<string, string> = {
+  xRangePad: "xRangePadding",
+  xRangePadding: "xRangePad",
+  yRangePad: "yRangePadding",
+  yRangePadding: "yRangePad",
+  rangeSelectorVeilColour: "rangeSelectorVeilColor",
+  rangeSelectorVeilColor: "rangeSelectorVeilColour",
+};
+
 let WARNINGS: Record<string, boolean> = {}; // Only show any particular warning once.
 
 interface AxisBucket {
@@ -238,6 +248,10 @@ class OptionsManager {
     if (Object.hasOwn(this.user_, name)) {
       return Reflect.get(this.user_, name);
     }
+    const alias = OPTION_ALIASES[name];
+    if (alias && Object.hasOwn(this.user_, alias)) {
+      return Reflect.get(this.user_, alias);
+    }
     return null;
   }
 
@@ -291,6 +305,10 @@ class OptionsManager {
       const axisOptions = userAxis.options;
       if (Object.hasOwn(axisOptions, name)) {
         return axisOptions[name];
+      }
+      const axisAlias = OPTION_ALIASES[name];
+      if (axisAlias && Object.hasOwn(axisOptions, axisAlias)) {
+        return axisOptions[axisAlias];
       }
     }
 

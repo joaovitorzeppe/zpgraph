@@ -110,6 +110,10 @@ class axes {
     labels.length = count;
   }
 
+  destroy() {
+    this.detachLabels();
+  }
+
   clearChart(_e: ChartDrawPluginEvent) {
     // The labels stay: willDrawChart, which runs next, needs the same handful of
     // nodes again with different text, and recreating them every frame is the

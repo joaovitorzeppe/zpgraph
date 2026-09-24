@@ -76,10 +76,6 @@ interface FastCanvasProxy {
 
 type FillContext = CanvasRenderingContext2D | FastCanvasProxy;
 
-const isNullUndefinedOrNaN = (x: unknown) => {
-  return x === null || x === undefined || (typeof x === "number" && isNaN(x));
-};
-
 const toPlotter = (v: unknown): Plotter | undefined => {
   if (typeof v !== "function") {
     return undefined;
@@ -182,12 +178,12 @@ const toFillGradient = (v: unknown): FillGradient | null | undefined => {
  */
 export default class ZpgraphCanvasRenderer {
   zpgraph_: ZpgraphInstance;
-  layout: LayoutLike;
-  element: HTMLCanvasElement;
-  elementContext: CanvasRenderingContext2D;
-  height: number;
-  width: number;
-  area: PlotArea;
+  layout!: LayoutLike;
+  element!: HTMLCanvasElement;
+  elementContext!: CanvasRenderingContext2D;
+  height!: number;
+  width!: number;
+  area!: PlotArea;
   colors!: Record<string, string>;
 
   constructor(
@@ -197,19 +193,22 @@ export default class ZpgraphCanvasRenderer {
     layout: LayoutLike,
   ) {
     this.zpgraph_ = zpgraph;
+    this.bindFrame(element, elementContext, layout);
+  }
 
+  /** Refresh size, plot area and clip. Used so predraw can keep one renderer. */
+  bindFrame(
+    element: HTMLCanvasElement,
+    elementContext: CanvasRenderingContext2D,
+    layout: LayoutLike,
+  ) {
     this.layout = layout;
     this.element = element;
     this.elementContext = elementContext;
-
-    this.height = zpgraph.height_;
-    this.width = zpgraph.width_;
-
-    // internal state
+    this.height = this.zpgraph_.height_;
+    this.width = this.zpgraph_.width_;
     this.area = layout.getPlotArea();
 
-    // Set up a clipping area for the canvas (and the interaction canvas).
-    // This ensures that we don't overdraw.
     let ctx = this.zpgraph_.canvas_ctx_;
     ctx.beginPath();
     ctx.rect(this.area.x, this.area.y, this.area.w, this.area.h);
@@ -867,8 +866,8 @@ export default class ZpgraphCanvasRenderer {
         continue;
       }
       if (
-        (!stepPlot && isNullUndefinedOrNaN(point.y)) ||
-        (stepPlot && !isNaN(prevY) && isNullUndefinedOrNaN(prevY))
+        (!stepPlot && utils.isNullUndefinedOrNaN(point.y)) ||
+        (stepPlot && !isNaN(prevY) && utils.isNullUndefinedOrNaN(prevY))
       ) {
         prevX = NaN;
         continue;

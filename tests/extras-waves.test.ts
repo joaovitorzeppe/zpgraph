@@ -127,15 +127,17 @@ describe("keyboard extra", () => {
     g.destroy();
   });
 
-  it("claims arrows at full zoom without walking selection", () => {
+  it("lets core handle arrows when pan is a no-op", () => {
     const kb = new Keyboard();
     const g = makeChart({ plugins: [kb] });
-    expect(Reflect.get(g, "keyboardRow_")).toBeUndefined();
     g.graphDiv.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+      new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        bubbles: true,
+        cancelable: true,
+      }),
     );
-    expect(Reflect.get(g, "keyboardRow_")).toBeUndefined();
-    expect(g.getSelection()).toBeLessThan(0);
+    expect(g.getSelection()).toBe(0);
     g.destroy();
   });
 });
@@ -232,7 +234,11 @@ describe("locale packs", () => {
   });
 
   it("applies pt pack and toolbar labels", () => {
-    const g = makeChart({ toolbar: true });
+    const toolbar = Zpgraph.Plugins.Toolbar;
+    if (!toolbar) {
+      throw new Error("Toolbar plugin missing");
+    }
+    const g = makeChart({ plugins: [toolbar], toolbar: true });
     applyLocale(g, packs.pt);
     const locale = Reflect.get(g, "locale_");
     expect(

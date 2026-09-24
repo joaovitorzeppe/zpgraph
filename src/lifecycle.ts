@@ -15,7 +15,7 @@ import FractionsBarsHandler from "./datahandler/bars-fractions";
 import DEFAULT_ATTRS from "./default-attrs";
 import OptionsManager from "./options";
 import { createDragInterface, createInterface } from "./dom";
-import { parseArray, parseCSV, parseDataTable, isGvizDataTable } from "./parser";
+import { parseArray, parseCSV } from "./parser";
 import { predraw, renderGraph } from "./render";
 import { applyTheme } from "./themes";
 import { applyRootClassNames } from "./class-names";
@@ -99,13 +99,23 @@ const nullOut = (obj: object) => {
  * usage. See, e.g., the tests/perf.html example.
  */
 export const destroy = (g: Zpgraph): void => {
+  if (g.destroyed_) {
+    return;
+  }
+  g.destroyed_ = true;
+  g.animateId = (g.animateId ?? 0) + 1;
+  for (const stop of g.animationStops_) {
+    stop();
+  }
+  g.animationStops_ = [];
+
   if (g.fileLoadAbort_) {
     g.fileLoadAbort_.abort();
     g.fileLoadAbort_ = null;
   }
 
-  g.canvas_ctx_.restore();
-  g.hidden_ctx_.restore();
+  g.canvas_ctx_?.restore();
+  g.hidden_ctx_?.restore();
 
   // Destroy any plugins, in the reverse order that they were registered.
   for (let i = g.plugins_.length - 1; i >= 0; i--) {
@@ -425,38 +435,29 @@ export const init = (
   const userPlugins = g.user_attrs_.plugins ?? g.attrs_.plugins ?? [];
   const plugins = Zpgraph.PLUGINS.concat(userPlugins);
   for (let i = 0; i < plugins.length; i++) {
-    // the plugins option may contain either plugin classes or instances.
-    // Plugin instances contain an activate method.
-    const PluginOrCtor = plugins[i]!;
-    let pluginInstance: Plugin;
-    if (typeof PluginOrCtor === "function") {
-      pluginInstance = new PluginOrCtor();
-    } else {
-      pluginInstance = PluginOrCtor;
+    activatePlugin(g, plugins[i]!);
+  }
+
+  const pluginNames = new Set(
+    g.plugins_.map((entry) => entry.plugin.constructor.name),
+  );
+  const optIn: Array<[keyof ZpgraphOptions, string]> = [
+    ["toolbar", "toolbar"],
+    ["showRangeSelector", "rangeSelector"],
+    ["thresholds", "thresholds"],
+    ["chartAnnotations", "chart_annotations"],
+    ["dataLabels", "data_labels"],
+    ["noData", "status_overlay"],
+    ["loading", "status_overlay"],
+  ];
+  for (const [opt, pluginName] of optIn) {
+    const value = g.user_attrs_[opt];
+    if (value == null || value === false || pluginNames.has(pluginName)) {
+      continue;
     }
-
-    const pluginDict: PluginRegistration = {
-      plugin: pluginInstance,
-      events: {},
-      options: {},
-      pluginOptions: {},
-    };
-
-    const handlers = pluginInstance.activate(g) ?? {};
-    for (const eventName of Object.keys(handlers)) {
-      const handler: unknown = Reflect.get(handlers, eventName);
-      if (typeof handler === "function") {
-        // cascadeEvents_ uses callback.call(plugin, e) — preserve `this`.
-        pluginDict.events[eventName] = function (
-          this: unknown,
-          ...args: unknown[]
-        ) {
-          return Reflect.apply(handler, this, args);
-        };
-      }
-    }
-
-    g.plugins_.push(pluginDict);
+    log.warn(
+      `Option "${opt}" does nothing until its plugin is listed in plugins.`,
+    );
   }
 
   // At this point, plugins can no longer register event handlers.
@@ -539,11 +540,6 @@ export const start = (g: Zpgraph): void => {
     g.rawData_ = parsed ?? [];
     g.cascadeDataDidUpdateEvent_();
     predraw(g);
-  } else if (isGvizDataTable(data)) {
-    // must be a DataTable from gviz.
-    parseDataTable(g, data);
-    g.cascadeDataDidUpdateEvent_();
-    predraw(g);
   } else if (typeof data === "string") {
     // Heuristic: a newline means it's CSV data. Otherwise it's an URL.
     const text = data;
@@ -579,7 +575,7 @@ export const start = (g: Zpgraph): void => {
           }
           const onError = g.getFunctionOption("dataLoadErrorCallback");
           if (onError) {
-            onError.call(g, err, data, g);
+            onError(err, data, g);
           } else {
             log.error("Failed to load chart data from " + data, err);
           }
@@ -591,7 +587,7 @@ export const start = (g: Zpgraph): void => {
       "Zpgraph: unsupported data (" +
         datatype +
         "). Pass an array of rows, a CSV " +
-        "string, a URL, a gviz DataTable or a function returning one of those.",
+        "string, a URL or a function returning one of those.",
     );
   }
 };
@@ -646,6 +642,9 @@ export const updateOptions = (
   if ("dateWindow" in attrs) {
     g.dateWindow_ = attrs.dateWindow;
   }
+  if ("fractions" in attrs) {
+    g.fractions_ = attrs.fractions ?? false;
+  }
 
   // Supported:
   // strokeWidth
@@ -691,6 +690,12 @@ export const updateOptions = (
   if (prevNumAxes < g.attributes_.numAxes()) {
     g.plotter_.clear();
   }
+  if (file || requiresNewPoints) {
+    g.lastRow_ = -1;
+    g.selPoints_ = [];
+    g.keyboardRow_ = undefined;
+  }
+
   if (file) {
     // This event indicates that the data is about to change, but hasn't yet.
     cascadeEvents_(g, "dataWillUpdate", {});
@@ -706,6 +711,77 @@ export const updateOptions = (
       } else {
         renderGraph(g, false);
       }
+    }
+  }
+};
+
+const isPlugin = (value: object): value is Plugin =>
+  "activate" in value && typeof value.activate === "function";
+
+const activatePlugin = (g: Zpgraph, PluginOrCtor: unknown): void => {
+  let pluginInstance: Plugin;
+  if (typeof PluginOrCtor === "function") {
+    const created: unknown = Reflect.construct(PluginOrCtor, []);
+    if (typeof created !== "object" || created === null || !isPlugin(created)) {
+      return;
+    }
+    pluginInstance = created;
+  } else if (
+    typeof PluginOrCtor === "object" &&
+    PluginOrCtor !== null &&
+    isPlugin(PluginOrCtor)
+  ) {
+    pluginInstance = PluginOrCtor;
+  } else {
+    return;
+  }
+
+  const pluginDict: PluginRegistration = {
+    plugin: pluginInstance,
+    events: {},
+    options: {},
+    pluginOptions: {},
+  };
+  const handlers = pluginInstance.activate(g) ?? {};
+  for (const eventName of Object.keys(handlers)) {
+    const handler: unknown = Reflect.get(handlers, eventName);
+    if (typeof handler === "function") {
+      pluginDict.events[eventName] = function (
+        this: unknown,
+        ...args: unknown[]
+      ) {
+        return Reflect.apply(handler, this, args);
+      };
+    }
+  }
+  g.plugins_.push(pluginDict);
+};
+
+const listen = (g: Zpgraph, pluginDict: PluginRegistration): void => {
+  for (const eventName of Object.keys(pluginDict.events)) {
+    const callback = pluginDict.events[eventName];
+    if (!callback) {
+      continue;
+    }
+    const list = g.eventListeners_[eventName] ?? [];
+    list.push([pluginDict.plugin, callback]);
+    g.eventListeners_[eventName] = list;
+  }
+};
+
+/** Attach plugins after construction. Used by react-zpgraph to toggle extras. */
+export const addPlugins = (g: Zpgraph, extra: unknown[]): void => {
+  if (g.destroyed_) {
+    return;
+  }
+  const before = g.plugins_.length;
+  for (const plugin of extra) {
+    activatePlugin(g, plugin);
+  }
+  for (let i = before; i < g.plugins_.length; i++) {
+    const dict = g.plugins_[i];
+    if (dict) {
+      listen(g, dict);
     }
   }
 };

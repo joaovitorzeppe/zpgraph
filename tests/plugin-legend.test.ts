@@ -86,6 +86,7 @@ describe("Legend plugin", () => {
     let seen: LegendData | null = null;
     const { g, legend } = makeChart({
       tooltip: { show: "always" },
+      legendHtml: true,
       legendFormatter: (data) => {
         seen = data;
         return `<b>${data.series.map((s) => s.label).join("|")}</b>`;

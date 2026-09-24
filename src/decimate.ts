@@ -38,6 +38,8 @@ export const decimatePointsByX = (
   let lowest: Point | null = null;
   let highest: Point | null = null;
   let gap: Point | null = null;
+  let lowScore = Infinity;
+  let highScore = -Infinity;
 
   const flush = () => {
     if (first === null && gap === null) {
@@ -59,6 +61,8 @@ export const decimatePointsByX = (
       out.push(p);
     }
     first = last = lowest = highest = gap = null;
+    lowScore = Infinity;
+    highScore = -Infinity;
   };
 
   for (let i = 0; i < points.length; i++) {
@@ -88,15 +92,31 @@ export const decimatePointsByX = (
       continue;
     }
 
+    const stacked = point.yval_stacked;
+    const base =
+      typeof stacked === "number" && stacked === stacked ? stacked : y;
+    let low = base;
+    let high = base;
+    const minus = point.yval_minus;
+    const plus = point.yval_plus;
+    if (typeof minus === "number" && minus === minus) {
+      low = Math.min(low, minus);
+    }
+    if (typeof plus === "number" && plus === plus) {
+      high = Math.max(high, plus);
+    }
+
     if (first === null) {
       first = point;
     }
     last = point;
-    if (lowest === null || y < lowest.yval!) {
+    if (lowest === null || low < lowScore) {
       lowest = point;
+      lowScore = low;
     }
-    if (highest === null || y > highest.yval!) {
+    if (highest === null || high > highScore) {
       highest = point;
+      highScore = high;
     }
   }
   flush();

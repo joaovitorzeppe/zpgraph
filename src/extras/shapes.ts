@@ -13,7 +13,7 @@
  * See tests/custom-circles.html for usage.
  */
 
-import ZpgraphImport from "zpgraph";
+import { Zpgraph as ZpgraphImport } from "zpgraph";
 import type { DrawPointCallback } from "../types";
 
 /**
@@ -122,6 +122,5 @@ const customCircles: Record<string, DrawPointCallback> = {
   },
 };
 
-Object.assign(ZpgraphImport.Circles, customCircles);
 
-export default ZpgraphImport.Circles;
+export default Object.assign({}, ZpgraphImport.Circles, customCircles);

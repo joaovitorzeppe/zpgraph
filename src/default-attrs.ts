@@ -22,7 +22,6 @@ const DEFAULT_ATTRS = {
 
   labelsSeparateLines: false,
   labelsShowZeroValues: true,
-  labelsKMB: false,
   labelsKMG2: false,
   showLabelsOnHighlight: true,
 
@@ -38,7 +37,6 @@ const DEFAULT_ATTRS = {
   axisLabelFontSize: 14,
   rightGap: 5,
 
-  showRoller: false,
   xValueParser: undefined,
 
   delimiter: ",",

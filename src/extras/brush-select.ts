@@ -4,13 +4,11 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import ZpgraphImport from "zpgraph";
 import type { ZpgraphInstance } from "../internal-types";
 import type { InteractionContext, InteractionModel } from "../types";
 import type ZpgraphClass from "../zpgraph";
 import * as utils from "../utils";
 
-ZpgraphImport.Plugins = ZpgraphImport.Plugins || {};
 
 export type BrushSelectResult = {
   xRange: [number, number];
@@ -185,6 +183,5 @@ class BrushSelect {
   }
 }
 
-Object.assign(ZpgraphImport.Plugins, { BrushSelect });
 
 export default BrushSelect;

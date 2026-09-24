@@ -21,7 +21,7 @@
   </p>
   <div id="chart" class="chart"></div>
   <script type="module">
-    import Zpgraph from 'zpgraph';
+    import { Zpgraph, ThresholdsPlugin } from 'zpgraph';
     import SpanBands from '../dist/extras/span-bands.js';
     import { makeSeries, utcDay, dayMs } from './helpers.js';
 
@@ -29,6 +29,7 @@
     const t0 = utcDay(2024, 0, 1);
 
     new Zpgraph(document.getElementById('chart'), data, {
+      plugins: [ThresholdsPlugin],
       labels: ['Date', 'Temp'],
       tooltip: { show: 'always' },
       ylabel: '°C',
