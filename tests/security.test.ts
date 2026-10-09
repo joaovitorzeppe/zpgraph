@@ -318,7 +318,7 @@ describe("errors thrown by the public API are Error instances", () => {
       width: 480,
       height: 320,
     });
-    expect(() => g.getOptionForAxis("drawAxis", "y9")).toThrow(Error);
+    expect(() => g.getOptionForAxis("drawAxis", "z")).toThrow(Error);
     g.destroy();
   });
 });

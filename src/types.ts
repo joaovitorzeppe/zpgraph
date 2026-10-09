@@ -49,12 +49,21 @@ export type LabelStyle = {
   style?: Record<string, string>;
 };
 
+/** Y-axis id used in options / series (`"y"`, `"y2"`, `"y3"`, …). */
+export type YAxisName = "y" | `y${number}`;
+
+/** Which plot gutter hosts the Y-axis tick labels. */
+export type AxisSide = "left" | "right";
+
+/** Series / threshold / annotation axis picker (`"y1"` aliases `"y"`). */
+export type SeriesAxisId = YAxisName | "y1" | number;
+
 /** Horizontal or filled threshold band drawn behind series. */
 export type ThresholdBand = {
   y?: number;
   y2?: number;
   yRange?: [number, number];
-  axis?: "y1" | "y2";
+  axis?: SeriesAxisId;
   color?: string;
   fillColor?: string;
   strokeWidth?: number;
@@ -170,7 +179,7 @@ export type AxisAnnotation = {
   x2?: number | string | Date;
   y?: number;
   y2?: number;
-  axis?: "y1" | "y2";
+  axis?: SeriesAxisId;
   borderColor?: string;
   fillColor?: string;
   opacity?: number;
@@ -280,7 +289,7 @@ export type Ticker = (
   vals?: number[],
 ) => Array<{ v: number; label: string; label_v?: number }>;
 
-export type AxisName = "x" | "y" | "y2";
+export type AxisName = "x" | YAxisName;
 
 export type AxisLabelFormatter = (
   value: number | Date,
@@ -299,7 +308,7 @@ export type ValueFormatter = (
 ) => string;
 
 /**
- * Options that can be set per axis, inside `axes: { x: …, y: …, y2: … }`.
+ * Options that can be set per axis, inside `axes: { x: …, y: …, y2: …, y3: … }`.
  * Every one of them is also accepted at the top level of `ZpgraphOptions`,
  * where it applies to all axes.
  */
@@ -326,6 +335,10 @@ export interface AxisOptions {
   ticker?: Ticker;
   valueFormatter?: ValueFormatter;
   valueRange?: [number | null, number | null] | null;
+  /** Gutter side for tick labels. Default: y left, y2 right, y3+ left. */
+  side?: AxisSide;
+  /** Rotated axis title (y3+; `ylabel` / `y2label` still cover the first two). */
+  label?: string | null;
 }
 
 export type DrawPointCallback = (
@@ -340,7 +353,7 @@ export type DrawPointCallback = (
 ) => void;
 
 export interface PerSeriesOptions {
-  axis?: "y1" | "y2" | "" | null;
+  axis?: SeriesAxisId | "" | null;
   color?: string | null;
   drawHighlightPointCallback?: DrawPointCallback | null;
   drawPointCallback?: DrawPointCallback | null;

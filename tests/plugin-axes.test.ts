@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Zpgraph } from "../src/index";
-import type { ZpgraphOptions } from "../src/types";
+import type { Data, ZpgraphOptions } from "../src/types";
 import { mockCanvas, mountDiv, sampleData } from "./helpers";
 
 const base: ZpgraphOptions = {
@@ -204,5 +204,81 @@ describe("Axes plugin", () => {
 
     expect(withAxes.x).toBeGreaterThan(withoutAxes.x);
     expect(withAxes.h).toBeLessThan(withoutAxes.h);
+  });
+
+  it("supports three overlay y-axes with side left/right/left", () => {
+    const threeSeries: Data = [
+      [1, 10, 100, 1],
+      [2, 15, 120, 2],
+      [3, 12, 90, 3],
+      [4, 18, 140, 2],
+    ];
+    const el = mountDiv();
+    const g = new Zpgraph(el, threeSeries, {
+      labels: ["x", "A", "B", "C"],
+      width: 560,
+      height: 320,
+      series: {
+        B: { axis: "y2" },
+        C: { axis: "y3" },
+      },
+      axes: {
+        x: { axisLabelFormatter: (v) => String(v) },
+        y: { side: "left", independentTicks: true },
+        y2: { side: "right", independentTicks: true },
+        y3: { side: "left", independentTicks: true, valueRange: [0, 5] },
+      },
+    });
+
+    expect(g.numAxes()).toBe(3);
+    expect(
+      el.querySelectorAll(".zpgraph-axis-label-y1").length,
+    ).toBeGreaterThan(0);
+    expect(
+      el.querySelectorAll(".zpgraph-axis-label-y2").length,
+    ).toBeGreaterThan(0);
+    expect(
+      el.querySelectorAll(".zpgraph-axis-label-y3").length,
+    ).toBeGreaterThan(0);
+
+    const area = g.getArea();
+    const y1 = el.querySelector(".zpgraph-axis-label-y1")!.parentElement!;
+    const y2 = el.querySelector(".zpgraph-axis-label-y2")!.parentElement!;
+    const y3 = el.querySelector(".zpgraph-axis-label-y3")!.parentElement!;
+    expect(parseFloat(y1.style.left)).toBeLessThan(area.x);
+    expect(parseFloat(y3.style.left)).toBeLessThan(area.x);
+    // y3 is outward of y1 on the left (smaller left = further left).
+    expect(parseFloat(y3.style.left)).toBeLessThan(parseFloat(y1.style.left));
+    expect(parseFloat(y2.style.left)).toBeGreaterThanOrEqual(area.x + area.w);
+
+    g.destroy();
+  });
+
+  it("accepts numeric series.axis index for y3", () => {
+    const threeSeries: Data = [
+      [1, 10, 100, 1],
+      [2, 15, 120, 2],
+      [3, 12, 90, 3],
+    ];
+    const el = mountDiv();
+    const g = new Zpgraph(el, threeSeries, {
+      labels: ["x", "A", "B", "C"],
+      width: 480,
+      height: 320,
+      series: {
+        B: { axis: 1 },
+        C: { axis: 2 },
+      },
+      axes: {
+        x: { axisLabelFormatter: (v) => String(v) },
+        y3: { independentTicks: true },
+      },
+    });
+
+    expect(g.numAxes()).toBe(3);
+    expect(
+      el.querySelectorAll(".zpgraph-axis-label-y3").length,
+    ).toBeGreaterThan(0);
+    g.destroy();
   });
 });

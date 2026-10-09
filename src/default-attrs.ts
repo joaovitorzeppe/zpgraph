@@ -120,18 +120,33 @@ const DEFAULT_ATTRS = {
       drawAxis: true,
       independentTicks: true,
       ticker: ZpgraphTickers.numericTicks,
+      side: "left",
     },
     y2: {
       axisLabelWidth: 50,
       pixelsPerLabel: 30,
       valueFormatter: utils.numberValueFormatter,
       axisLabelFormatter: utils.numberAxisLabelFormatter,
-      drawAxis: true, // only applies when there are two axes of data.
+      drawAxis: true,
       drawGrid: false,
       independentTicks: false,
       ticker: ZpgraphTickers.numericTicks,
+      side: "right",
     },
   },
+};
+
+/** Defaults for y3+ (same profile as y2, side left). */
+export const DEFAULT_EXTRA_Y_AXIS = {
+  axisLabelWidth: 50,
+  pixelsPerLabel: 30,
+  valueFormatter: utils.numberValueFormatter,
+  axisLabelFormatter: utils.numberAxisLabelFormatter,
+  drawAxis: true,
+  drawGrid: false,
+  independentTicks: false,
+  ticker: ZpgraphTickers.numericTicks,
+  side: "left" as const,
 };
 
 export default DEFAULT_ATTRS;

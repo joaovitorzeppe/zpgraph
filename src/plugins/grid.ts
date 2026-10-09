@@ -11,6 +11,7 @@
 /*global Zpgraph:false */
 
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
+import { axisNameFromIndex } from "../axis-ids";
 import { halfDown, halfUp } from "../utils";
 
 const toNumberArrayOrNull = (v: unknown): number[] | null => {
@@ -61,62 +62,63 @@ class grid {
     let i: number;
     const yticks = layout.yticks ?? [];
     const xticks = layout.xticks ?? [];
-    // Either y axis can carry a grid on its own: the per-axis drawGrid below
-    // decides which ones are drawn.
-    if (
-      g.getOptionForAxis("drawGrid", "y") ||
-      g.getOptionForAxis("drawGrid", "y2")
-    ) {
-      const axes = ["y", "y2"];
+    // Any Y axis can carry a grid: the per-axis drawGrid below decides which.
+    {
+      const numY = g.numAxes();
       const strokeStyles: string[] = [],
         lineWidths: number[] = [],
         drawGrid: boolean[] = [],
         stroking: boolean[] = [],
         strokePattern: Array<number[] | null> = [];
-      for (i = 0; i < axes.length; i++) {
-        drawGrid[i] = !!g.getOptionForAxis("drawGrid", axes[i]!);
+      let anyGrid = false;
+      for (i = 0; i < numY; i++) {
+        const axisName = axisNameFromIndex(i);
+        drawGrid[i] = !!g.getOptionForAxis("drawGrid", axisName);
         if (drawGrid[i]) {
+          anyGrid = true;
           strokeStyles[i] = String(
-            g.getOptionForAxis("gridLineColor", axes[i]!),
+            g.getOptionForAxis("gridLineColor", axisName),
           );
-          lineWidths[i] = Number(g.getOptionForAxis("gridLineWidth", axes[i]!));
+          lineWidths[i] = Number(g.getOptionForAxis("gridLineWidth", axisName));
           strokePattern[i] = toNumberArrayOrNull(
-            g.getOptionForAxis("gridLinePattern", axes[i]!),
+            g.getOptionForAxis("gridLinePattern", axisName),
           );
           stroking[i] = !!(strokePattern[i] && strokePattern[i]!.length >= 2);
         }
       }
-      ctx.save();
-      // One path per axis rather than one per tick: every line on an axis shares
-      // a style, so they can all be stroked together.
-      for (i = 0; i < axes.length; i++) {
-        if (!drawGrid[i]) {
-          continue;
-        }
+      if (anyGrid) {
         ctx.save();
-        if (stroking[i]) {
-          if (ctx.setLineDash && strokePattern[i]) {
-            ctx.setLineDash(strokePattern[i]!);
-          }
-        }
-        ctx.strokeStyle = strokeStyles[i]!;
-        ctx.lineWidth = lineWidths[i]!;
-
-        ctx.beginPath();
-        x = halfUp(area.x);
-        for (const tick of yticks) {
-          if (!tick.has_tick || tick.axis !== i) {
+        // One path per axis rather than one per tick: every line on an axis shares
+        // a style, so they can all be stroked together.
+        for (i = 0; i < numY; i++) {
+          if (!drawGrid[i]) {
             continue;
           }
-          y = halfDown(area.y + tick.pos * area.h);
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + area.w, y);
-        }
-        ctx.stroke();
+          ctx.save();
+          if (stroking[i]) {
+            if (ctx.setLineDash && strokePattern[i]) {
+              ctx.setLineDash(strokePattern[i]!);
+            }
+          }
+          ctx.strokeStyle = strokeStyles[i]!;
+          ctx.lineWidth = lineWidths[i]!;
 
+          ctx.beginPath();
+          x = halfUp(area.x);
+          for (const tick of yticks) {
+            if (!tick.has_tick || tick.axis !== i) {
+              continue;
+            }
+            y = halfDown(area.y + tick.pos * area.h);
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + area.w, y);
+          }
+          ctx.stroke();
+
+          ctx.restore();
+        }
         ctx.restore();
       }
-      ctx.restore();
     }
 
     // draw grid for x axis

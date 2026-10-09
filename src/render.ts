@@ -18,6 +18,7 @@ import { decimatePointsByX } from "./decimate";
 import { log } from "./logger";
 import { updateAriaLabel } from "./dom";
 import * as utils from "./utils";
+import { axisNameFromIndex } from "./axis-ids";
 import type { Point, Ticker } from "./types";
 import type { AxisProperties, UnifiedSeries } from "./internal-types";
 import type Zpgraph from "./zpgraph";
@@ -293,8 +294,7 @@ export const gatherDatasets = (
     }
 
     const seriesNameRaw = g.getLabels()?.[seriesIdx];
-    const seriesName =
-      typeof seriesNameRaw === "string" ? seriesNameRaw : "";
+    const seriesName = typeof seriesNameRaw === "string" ? seriesNameRaw : "";
     const seriesExtremes = g.dataHandler_.getExtremeYValues(
       series,
       dateWindow,
@@ -477,28 +477,15 @@ export const computeYAxes = (g: Zpgraph) => {
   }
 
   for (axis = 0; axis < g.axes_.length; axis++) {
-    if (axis === 0) {
-      const axisOpts = g.optionsViewForAxis_("y" + (axis ? "2" : ""));
-      v = axisOpts("valueRange");
-      if (isValueRange(v)) {
-        g.axes_[axis]!.valueRange = v;
-      }
-    } else {
-      // To keep old behavior
-      const axes = g.user_attrs_.axes;
-      if (axes?.y2) {
-        v = axes.y2.valueRange;
-        if (isValueRange(v)) {
-          g.axes_[axis]!.valueRange = v;
-        }
-      }
+    const axisOpts = g.optionsViewForAxis_(axisNameFromIndex(axis));
+    v = axisOpts("valueRange");
+    if (isValueRange(v)) {
+      g.axes_[axis]!.valueRange = v;
     }
   }
 };
 
-const isValueRange = (
-  v: unknown,
-): v is [number | null, number | null] =>
+const isValueRange = (v: unknown): v is [number | null, number | null] =>
   Array.isArray(v) &&
   v.length === 2 &&
   (typeof v[0] === "number" || v[0] === null) &&
@@ -670,7 +657,7 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
 
     if (independentTicks) {
       axis.independentTicks = !!independentTicks;
-      const axisOpts = g.optionsViewForAxis_("y" + (i ? "2" : ""));
+      const axisOpts = g.optionsViewForAxis_(axisNameFromIndex(i));
       const tickerOpt = axisOpts("ticker");
       if (!isTicker(tickerOpt)) {
         throw new Error("y-axis ticker option must be a function");
@@ -700,7 +687,7 @@ export const computeYAxisRanges = (g: Zpgraph, extremes: GatheredExtremes) => {
     const axis = g.axes_[i]!;
 
     if (!axis.independentTicks) {
-      const axisOpts = g.optionsViewForAxis_("y" + (i ? "2" : ""));
+      const axisOpts = g.optionsViewForAxis_(axisNameFromIndex(i));
       const tickerOpt = axisOpts("ticker");
       if (!isTicker(tickerOpt)) {
         throw new Error("y-axis ticker option must be a function");

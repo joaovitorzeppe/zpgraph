@@ -46,16 +46,7 @@ describe("shapes extra", () => {
       fillStyle: "",
     };
 
-    invoke(shapes.CIRCLE, [
-      null,
-      "A",
-      ctx,
-      50,
-      60,
-      "#f00",
-      4,
-      0,
-    ]);
+    invoke(shapes.CIRCLE, [null, "A", ctx, 50, 60, "#f00", 4, 0]);
 
     expect(ctx.beginPath).toHaveBeenCalled();
     expect(ctx.arc).toHaveBeenCalledWith(50, 60, 4, 0, 2 * Math.PI, false);
@@ -76,16 +67,7 @@ describe("shapes extra", () => {
       fillStyle: "",
     };
 
-    invoke(shapes.SQUARE, [
-      null,
-      "B",
-      ctx,
-      30,
-      40,
-      "#0f0",
-      6,
-      0,
-    ]);
+    invoke(shapes.SQUARE, [null, "B", ctx, 30, 40, "#0f0", 6, 0]);
 
     expect(ctx.beginPath).toHaveBeenCalled();
     expect(ctx.moveTo).toHaveBeenCalled();
@@ -195,6 +177,29 @@ describe("synchronizer extra", () => {
 
     g1.destroy();
     g2.destroy();
+  });
+
+  it("syncs zoom and selection across three charts", () => {
+    const g1 = makeChart();
+    const g2 = makeChart();
+    const g3 = makeChart();
+    const sync = synchronize([g1, g2, g3], {
+      selection: true,
+      zoom: true,
+    });
+
+    g1.updateOptions({ dateWindow: [2, 3] });
+    expect(g2.getOption("dateWindow")).toEqual([2, 3]);
+    expect(g3.getOption("dateWindow")).toEqual([2, 3]);
+
+    g2.setSelection(1, undefined, undefined, true);
+    expect(g1.getSelection()).toBe(1);
+    expect(g3.getSelection()).toBe(1);
+
+    sync.detach();
+    g1.destroy();
+    g2.destroy();
+    g3.destroy();
   });
 });
 

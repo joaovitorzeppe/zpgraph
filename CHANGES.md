@@ -1,5 +1,9 @@
 # Changes
 
+## 1.4.1
+
+- Added multi-y-axes graph support
+
 ## 1.4.0
 
 - Bug fixes: stacked NaN fill, idempotent destroy, selection with hidden series, log x coordinates, responsive restore, CSV quotes/BOM, decimation of stacked and error bands, ticker edge cases, extras teardown

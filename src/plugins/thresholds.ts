@@ -4,10 +4,8 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
-import {
-  applyLabelStyle,
-  getChartClassNames,
-} from "../class-names";
+import { applyLabelStyle, getChartClassNames } from "../class-names";
+import { axisIndexFromName } from "../axis-ids";
 import { pooledLabel } from "../label-pool";
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 import type { ThresholdBand } from "../types";
@@ -57,7 +55,7 @@ class thresholds {
     let labelIdx = 0;
 
     for (const band of list) {
-      const axisIdx = band.axis === "y2" ? 1 : 0;
+      const axisIdx = band.axis != null ? axisIndexFromName(band.axis) : 0;
       const yLo =
         band.yRange?.[0] ??
         (band.y2 != null && band.y != null
@@ -124,9 +122,7 @@ class thresholds {
           el.textContent = band.label;
         }
         const left =
-          band.labelPosition === "right"
-            ? area.x + area.w - 4
-            : area.x + 4;
+          band.labelPosition === "right" ? area.x + area.w - 4 : area.x + 4;
         el.style.position = "absolute";
         el.style.top = `${yLabel - 2}px`;
         el.style.zIndex = "11";

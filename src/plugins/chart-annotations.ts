@@ -4,6 +4,7 @@
  * MIT-licensed: https://opensource.org/license/MIT
  */
 
+import { axisIndexFromName } from "../axis-ids";
 import type { ChartDrawPluginEvent, ZpgraphInstance } from "../internal-types";
 import type {
   AxisAnnotation,
@@ -34,7 +35,9 @@ const isPointAnnotation = (x: unknown): x is PointAnnotation =>
   typeof x === "object" && x !== null;
 
 const isTextAnnotation = (x: unknown): x is TextAnnotation =>
-  typeof x === "object" && x !== null && typeof Reflect.get(x, "text") === "string";
+  typeof x === "object" &&
+  x !== null &&
+  typeof Reflect.get(x, "text") === "string";
 
 const isEventMarker = (x: unknown): x is EventMarker =>
   typeof x === "object" && x !== null && Reflect.get(x, "x") != null;
@@ -187,7 +190,7 @@ const drawYAxis = (
   if (a.y == null) {
     return;
   }
-  const axisIdx = a.axis === "y2" ? 1 : 0;
+  const axisIdx = a.axis != null ? axisIndexFromName(a.axis) : 0;
   const y1 = g.toDomYCoord(a.y, axisIdx);
   if (y1 == null) {
     return;

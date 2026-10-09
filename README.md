@@ -37,7 +37,7 @@ zpgraph keeps that interaction model and rebuilds the stack for today:
   chart-level `classNames.*`, and CSS vars (`--zp-*`). React can
   override with `render*Label` ReactNodes.
 - **Familiar if you know dygraphs** — `updateOptions`, `xAxisRange`,
-  `resetZoom`, annotations, dual axes… renamed, not reinvented.
+  `resetZoom`, annotations, N y-axes with `side`… renamed, not reinvented.
 
 ---
 
@@ -119,6 +119,7 @@ Screenshots from the live demos. Open [`demos/`](https://github.com/joaovitorzep
 The [`demos/`](https://github.com/joaovitorzeppe/zpgraph/tree/main/demos) folder also includes:
 
 - Live **dynamic update** (append a point every second)
+- **Multi y-axes** — N overlay scales with `axes.yN.side` (`left` / `right`)
 - **Error bars** (`[value, stddev]`)
 - **Per-series** stroke / points / fill
 - And more!
@@ -149,10 +150,10 @@ new Zpgraph(el, data, opts);
 ## Features at a glance
 
 | Area          | What you get                                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | Data          | Arrays, CSV strings, async `file` via `fetch`, custom data handlers                                                 |
 | Series        | Multi-series, stacked, fill, error/custom bars, per-series styles                                                   |
-| Axes          | Dual y-axes, log scales, tickers, formatters                                                                        |
+| Axes          | N overlay y-axes (`side: left                                                                                       | right`), log scales, tickers, formatters |
 | Interaction   | Zoom, pan, range selector, touch, keyboard, synchronized charts                                                     |
 | Overlay       | Annotations, underlay/draw callbacks, hairlines / super-annotations                                                 |
 | Accessibility | `role="img"`, live legend, focusable chart, Shift+arrows pan/zoom; optional `keyboard` extra for plain arrows / +/- |

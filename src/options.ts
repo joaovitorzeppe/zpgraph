@@ -15,18 +15,33 @@
 
 import * as utils from "./utils";
 import { log } from "./logger";
-import DEFAULT_ATTRS_ from "./default-attrs";
+import DEFAULT_ATTRS_, { DEFAULT_EXTRA_Y_AXIS } from "./default-attrs";
 import OPTIONS_REFERENCE_ from "./options-reference";
+import { axisIndexFromName, axisNameFromIndex } from "./axis-ids";
 import type Zpgraph from "./zpgraph";
-import type { ZpgraphOptions } from "./types";
+import type { AxisOptions, ZpgraphOptions } from "./types";
 
 const DEFAULT_ATTRS: typeof DEFAULT_ATTRS_ = DEFAULT_ATTRS_;
 
-const isDefaultAxisKey = (
-  key: string,
-): key is keyof typeof DEFAULT_ATTRS.axes =>
-  key === "x" || key === "y" || key === "y2";
 const OPTIONS_REFERENCE: Record<string, unknown> | null = OPTIONS_REFERENCE_;
+
+const defaultYAxisOptions = (axisString: string): Record<string, unknown> => {
+  if (axisString === "y" || axisString === "y2") {
+    return DEFAULT_ATTRS.axes[axisString];
+  }
+  return DEFAULT_EXTRA_Y_AXIS;
+};
+
+const isAxisOptionsBag = (v: unknown): v is Partial<AxisOptions> =>
+  typeof v === "object" && v !== null;
+
+const readUserAxisBucket = (
+  axis_opts: NonNullable<ZpgraphOptions["axes"]>,
+  name: string,
+): Partial<AxisOptions> => {
+  const bucket: unknown = Reflect.get(axis_opts, name);
+  return isAxisOptionsBag(bucket) ? bucket : {};
+};
 
 /** Old name <-> new name. Either key in user options satisfies a read of the other. */
 const OPTION_ALIASES: Record<string, string> = {
@@ -79,46 +94,11 @@ class OptionsManager {
   highlightSeries_: Record<string, unknown>;
 
   /**
-   * Not optimal, but does the trick when you're only using two axes.
-   * If we move to more axes, this can just become a function.
-   *
-
-   * @private
-   */
-  static AXIS_STRING_MAPPINGS_: Record<string, number> = {
-    y: 0,
-    Y: 0,
-    y1: 0,
-    Y1: 0,
-    y2: 1,
-    Y2: 1,
-  };
-
-  /**
    * @param axis
    * @private
    */
   static axisToIndex_(axis: unknown): number {
-    if (typeof axis == "string") {
-      if (Object.hasOwn(OptionsManager.AXIS_STRING_MAPPINGS_, axis)) {
-        const mapped = OptionsManager.AXIS_STRING_MAPPINGS_[axis];
-        if (mapped !== undefined) {
-          return mapped;
-        }
-      }
-      throw new Error("Unknown axis : " + axis);
-    }
-    if (typeof axis == "number") {
-      if (axis === 0 || axis === 1) {
-        return axis;
-      }
-      throw new Error("Zpgraph only supports two y-axes, indexed from 0-1.");
-    }
-    if (axis) {
-      throw new Error("Unknown axis");
-    }
-    // No axis specification means axis 0.
-    return 0;
+    return axisIndexFromName(axis);
   }
 
   // Reset list of previously-shown warnings. Used for testing.
@@ -222,9 +202,22 @@ class OptionsManager {
     }
 
     const axis_opts = this.user_.axes ?? {};
-    utils.update(this.yAxes_[0]!.options, axis_opts["y"] || {});
-    if (this.yAxes_.length > 1) {
-      utils.update(this.yAxes_[1]!.options, axis_opts["y2"] || {});
+    // Densify 0..maxIndex so holes from y3-without-y2 still have buckets.
+    let maxIdx = 0;
+    for (let i = 0; i < this.yAxes_.length; i++) {
+      if (this.yAxes_[i]) {
+        maxIdx = i;
+      }
+    }
+    for (let i = 0; i <= maxIdx; i++) {
+      if (!this.yAxes_[i]) {
+        this.yAxes_[i] = { series: [], options: {} };
+      }
+      const name = axisNameFromIndex(i);
+      utils.update(
+        this.yAxes_[i]!.options,
+        readUserAxisBucket(axis_opts, name),
+      );
     }
     utils.update(this.xAxis_.options, axis_opts["x"] || {});
 
@@ -271,37 +264,27 @@ class OptionsManager {
    *
    * @param name the name of the option.
    * @param axis the axis to search. Can be the string representation
-   * ("y", "y2") or the axis number (0, 1).
+   * ("y", "y2", "y3", …) or the axis number (0, 1, 2, …), or `"x"`.
    */
   getForAxis(name: string, axis: string | number): unknown {
     let axisIdx: number;
     let axisString: string;
 
-    // Since axis can be a number or a string, straighten everything out here.
     if (typeof axis == "number") {
       axisIdx = axis;
-      axisString = axisIdx === 0 ? "y" : "y2";
+      axisString = axisNameFromIndex(axisIdx);
+    } else if (axis === "x") {
+      axisIdx = -1;
+      axisString = "x";
     } else {
-      if (axis === "y1") {
-        axis = "y";
-      } // Standardize on 'y'. Is this bad? I think so.
-      if (axis === "y") {
-        axisIdx = 0;
-      } else if (axis === "y2") {
-        axisIdx = 1;
-      } else if (axis === "x") {
-        axisIdx = -1; // simply a placeholder for below.
-      } else {
-        throw new Error("Unknown axis " + axis);
-      }
-      axisString = axis;
+      axisIdx = axisIndexFromName(axis);
+      axisString = axisNameFromIndex(axisIdx);
     }
 
     const userAxis = axisIdx === -1 ? this.xAxis_ : this.yAxes_[axisIdx];
 
     // Search the user-specified axis option first.
     if (userAxis) {
-      // This condition could be removed if we always set up this.yAxes_ for y2.
       const axisOptions = userAxis.options;
       if (Object.hasOwn(axisOptions, name)) {
         return axisOptions[name];
@@ -314,15 +297,20 @@ class OptionsManager {
 
     // User-specified global options second.
     // But, hack, ignore globally-specified 'logscale' for 'x' axis declaration.
-    if (!(axis === "x" && name === "logscale")) {
+    if (!(axisString === "x" && name === "logscale")) {
       const result = this.getGlobalUser_(name);
       if (result !== null) {
         return result;
       }
     }
     // Default axis options third.
-    if (isDefaultAxisKey(axisString)) {
-      const defaultAxisOptions = DEFAULT_ATTRS.axes[axisString];
+    if (axisString === "x") {
+      const defaultAxisOptions = DEFAULT_ATTRS.axes.x;
+      if (Object.hasOwn(defaultAxisOptions, name)) {
+        return Reflect.get(defaultAxisOptions, name);
+      }
+    } else {
+      const defaultAxisOptions = defaultYAxisOptions(axisString);
       if (Object.hasOwn(defaultAxisOptions, name)) {
         return Reflect.get(defaultAxisOptions, name);
       }
@@ -412,10 +400,11 @@ class OptionsManager {
       }
     };
 
-    const optionsDicts = [
+    const optionsDicts: Array<
+      Record<string, unknown> | ZpgraphOptions | undefined
+    > = [
       this.xAxis_.options,
-      this.yAxes_[0]!.options,
-      this.yAxes_[1]?.options,
+      ...this.yAxes_.map((a) => a?.options),
       this.global_,
       this.user_,
       this.highlightSeries_,

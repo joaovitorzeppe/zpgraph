@@ -71,6 +71,66 @@ describe("ChartLabels plugin", () => {
     second.g.destroy();
   });
 
+  it("places two left-side titles in separate columns (no overlap)", () => {
+    const three = [
+      [1, 10, 100, 1],
+      [2, 15, 120, 2],
+      [3, 12, 90, 3],
+    ];
+    const el = mountDiv();
+    const g = new Zpgraph(el, three, {
+      labels: ["x", "A", "B", "C"],
+      width: 560,
+      height: 320,
+      ylabel: "Price",
+      series: { B: { axis: "y2" }, C: { axis: "y3" } },
+      axes: {
+        y: { side: "left", independentTicks: true },
+        y2: { side: "right", independentTicks: true },
+        y3: {
+          side: "left",
+          independentTicks: true,
+          label: "Humidity",
+        },
+      },
+    });
+
+    const price = el.querySelector(".zpgraph-ylabel")!.parentElement!
+      .parentElement!;
+    const humidity = el.querySelector(".zpgraph-y3label")!.parentElement!
+      .parentElement!;
+    expect(price.textContent).toContain("Price");
+    expect(humidity.textContent).toContain("Humidity");
+    const priceLeft = parseFloat(price.style.left);
+    const humidityLeft = parseFloat(humidity.style.left);
+    const priceW = parseFloat(price.style.width);
+    // Outer title (y3) further left; boxes must not overlap.
+    expect(humidityLeft).toBeLessThan(priceLeft);
+    expect(humidityLeft + parseFloat(humidity.style.width)).toBeLessThanOrEqual(
+      priceLeft + 0.5,
+    );
+    expect(priceW).toBeGreaterThan(0);
+
+    g.destroy();
+  });
+
+  it("keeps the right-side y2label inside the chart width", () => {
+    const { el, g } = makeChart({
+      width: 480,
+      y2label: "Temp",
+      series: { B: { axis: "y2" } },
+    });
+
+    const box = el.querySelector(".zpgraph-y2label")!.parentElement!
+      .parentElement!;
+    const left = parseFloat(box.style.left);
+    const width = parseFloat(box.style.width);
+    expect(left).toBeGreaterThanOrEqual(0);
+    expect(left + width).toBeLessThanOrEqual(480 + 0.5);
+
+    g.destroy();
+  });
+
   it("creates all four labels at once without interfering", () => {
     const { el, g } = makeChart({
       title: "T",

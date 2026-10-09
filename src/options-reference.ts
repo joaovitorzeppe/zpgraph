@@ -453,9 +453,23 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
       axis: {
         default: "(none)",
         labels: ["Axis display"],
+        type: "string or integer",
+        description:
+          "Assign a series to a y-axis: 'y'/'y1' (0), 'y2' (1), 'y3' (2), … or a 0-based index. Must be set per-series.",
+      },
+      side: {
+        default: "left for y and y3+, right for y2",
+        labels: ["Axis display"],
+        type: '"left" or "right"',
+        description:
+          "Which plot gutter hosts this y-axis's tick labels. Multiple axes on the same side stack outward from the plot. Per-axis only.",
+      },
+      label: {
+        default: "(none)",
+        labels: ["Chart labels"],
         type: "string",
         description:
-          "Set to either 'y1' or 'y2' to assign a series to a y-axis (primary or secondary). Must be set per-series.",
+          "Rotated title for a y-axis (useful for y3+). ylabel / y2label still cover the first two axes. Per-axis only.",
       },
       pixelsPerLabel: {
         default: "70 (x-axis) or 30 (y-axes)",
@@ -1045,7 +1059,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
         labels: ["Configuration"],
         type: "Object",
         description:
-          "Defines per-axis options. Valid keys are 'x', 'y' and 'y2'. Only some options may be set on a per-axis basis. If an option may be set in this way, it will be noted on this page. See also documentation on <a href='per-axis.html'>per-series and per-axis options</a>.",
+          "Defines per-axis options. Valid keys are 'x', 'y', 'y2', 'y3', … . Use <code>side: 'left'|'right'</code> to place gutters. Only some options may be set on a per-axis basis. If an option may be set in this way, it will be noted on this page. See also documentation on <a href='per-axis.html'>per-series and per-axis options</a>.",
       },
       series: {
         default: "null",

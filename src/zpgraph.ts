@@ -71,7 +71,7 @@ import ZpgraphCanvasRenderer from "./canvas";
 import OptionsManager from "./options";
 import * as utils from "./utils";
 import OPTIONS_REFERENCE_ from "./options-reference";
-import DEFAULT_ATTRS from "./default-attrs";
+import DEFAULT_ATTRS, { DEFAULT_EXTRA_Y_AXIS } from "./default-attrs";
 import * as ZpgraphTickers from "./tickers";
 import {
   eventToDomCoords,
@@ -126,11 +126,9 @@ import {
   visibility,
 } from "./lifecycle";
 import { registerZpgraphStatics } from "./register";
+import { axisIndexFromName, normalizeAxisName } from "./axis-ids";
 
 const OPTIONS_REFERENCE: Record<string, unknown> | null = OPTIONS_REFERENCE_;
-
-const isAxisName = (a: string): a is AxisName =>
-  a === "x" || a === "y" || a === "y2";
 
 interface PluginDict {
   plugin: Plugin;
@@ -336,7 +334,9 @@ export default class Zpgraph {
       return isZoomedY;
     }
 
-    throw new Error(`axis parameter is [${String(axis)}] must be null, 'x' or 'y'.`);
+    throw new Error(
+      `axis parameter is [${String(axis)}] must be null, 'x' or 'y'.`,
+    );
   }
 
   /**
@@ -390,7 +390,10 @@ export default class Zpgraph {
    * @param opt_seriesName Series name to get per-series values.
    * @return The value of the option.
    */
-  getOption(name: keyof ZpgraphOptions | (string & {}), opt_seriesName?: string): unknown {
+  getOption(
+    name: keyof ZpgraphOptions | (string & {}),
+    opt_seriesName?: string,
+  ): unknown {
     return this.attr_(name, opt_seriesName);
   }
 
@@ -420,7 +423,11 @@ export default class Zpgraph {
     if (typeof v === "string") {
       return v;
     }
-    if (typeof v === "number" || typeof v === "boolean" || typeof v === "bigint") {
+    if (
+      typeof v === "number" ||
+      typeof v === "boolean" ||
+      typeof v === "bigint"
+    ) {
       return String(v);
     }
     return "";
@@ -464,22 +471,17 @@ export default class Zpgraph {
 
   /**
    * @private
-   * @param axis The name of the axis (i.e. 'x', 'y' or 'y2')
+   * @param axis The name of the axis (i.e. 'x', 'y', 'y2', 'y3', …)
    * @return A function mapping string -> option value
    */
   optionsViewForAxis_(axis: string): OptionsGetter {
-    const normalized =
-      axis === "y1" || axis === "Y1" || axis === "Y" || axis === "y"
-        ? "y"
-        : axis === "Y2" || axis === "y2"
-          ? "y2"
-          : axis === "x" || axis === "X"
-            ? "x"
-            : axis;
-    if (!isAxisName(normalized)) {
+    let axisName: AxisName;
+    try {
+      axisName = normalizeAxisName(axis);
+    } catch {
       throw new Error("Unknown axis: " + axis);
     }
-    const axisName = normalized;
+    const yIndex = axisName === "x" ? -1 : axisIndexFromName(axisName);
     const readAxisOpt = (
       axes: ZpgraphOptions["axes"],
       opt: string,
@@ -522,18 +524,28 @@ export default class Zpgraph {
         return attrsAxisOpt;
       }
 
-      // check old-style axis options
-      if (axisName === "y") {
-        const y0 = this.axes_?.[0];
-        if (y0 && Object.hasOwn(y0, opt)) {
-          return Reflect.get(y0, opt);
-        }
-      } else if (axisName === "y2") {
-        const y1 = this.axes_?.[1];
-        if (y1 && Object.hasOwn(y1, opt)) {
-          return Reflect.get(y1, opt);
+      // check old-style axis options on computed axis buckets
+      if (yIndex >= 0) {
+        const yAxis = this.axes_?.[yIndex];
+        if (yAxis && Object.hasOwn(yAxis, opt)) {
+          return Reflect.get(yAxis, opt);
         }
       }
+
+      // Built-in per-axis defaults (y3+ use the extra-Y template).
+      if (axisName === "x") {
+        if (Object.hasOwn(DEFAULT_ATTRS.axes.x, opt)) {
+          return Reflect.get(DEFAULT_ATTRS.axes.x, opt);
+        }
+      } else if (axisName === "y" || axisName === "y2") {
+        const bucket = DEFAULT_ATTRS.axes[axisName];
+        if (Object.hasOwn(bucket, opt)) {
+          return Reflect.get(bucket, opt);
+        }
+      } else if (yIndex >= 0 && Object.hasOwn(DEFAULT_EXTRA_Y_AXIS, opt)) {
+        return Reflect.get(DEFAULT_EXTRA_Y_AXIS, opt);
+      }
+
       return this.attr_(opt);
     };
   }
@@ -569,7 +581,11 @@ export default class Zpgraph {
     return yAxisRanges(this);
   }
 
-  toDomCoords(x: number, y: number, axis?: number): [number | null, number | null] {
+  toDomCoords(
+    x: number,
+    y: number,
+    axis?: number,
+  ): [number | null, number | null] {
     return toDomCoords(this, x, y, axis);
   }
 
@@ -581,7 +597,11 @@ export default class Zpgraph {
     return toDomYCoord(this, y ?? null, axis);
   }
 
-  toDataCoords(x: number, y: number, axis?: number): [number | null, number | null] {
+  toDataCoords(
+    x: number,
+    y: number,
+    axis?: number,
+  ): [number | null, number | null] {
     return toDataCoords(this, x, y, axis);
   }
 

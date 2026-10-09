@@ -21,17 +21,33 @@ Options left to make axis-friendly.
   ('xAxisHeight')
 */
 
-import { log } from "../logger";
 import { halfDown, halfUp } from "../utils";
 import { getChartClassNames, withClassNames } from "../class-names";
+import { axisNameFromIndex } from "../axis-ids";
+import {
+  buildAxisColumns,
+  resolveAxisSide,
+  type AxisColumn,
+} from "../axis-chrome";
+import type { YAxisName } from "../types";
 import type {
   ChartDrawPluginEvent,
   LayoutPluginEvent,
   ZpgraphInstance,
 } from "../internal-types";
 
-const axisNum = (g: ZpgraphInstance, axis: "x" | "y" | "y2", opt: string) =>
+const axisNum = (g: ZpgraphInstance, axis: string, opt: string) =>
   Number(g.getOptionForAxis(opt, axis));
+
+const columnByIndex = (
+  cols: AxisColumn[],
+): Map<number, AxisColumn> => {
+  const m = new Map<number, AxisColumn>();
+  for (const c of cols) {
+    m.set(c.index, c);
+  }
+  return m;
+};
 
 /**
  * Draws the axes. This includes the labels on the x- and y-axes, as well
@@ -58,17 +74,10 @@ class axes {
   layout(e: LayoutPluginEvent) {
     const g = e.zpgraph;
 
-    if (g.getOptionForAxis("drawAxis", "y")) {
-      const w =
-        axisNum(g, "y", "axisLabelWidth") + 2 * axisNum(g, "y", "axisTickSize");
-      e.reserveSpaceLeft(w);
-    }
-
+    // Y gutters (ticks + titles) are reserved by ChartLabels, which runs
+    // earlier in the reverse plugin cascade. Only the x-axis strip lives here.
     if (g.getOptionForAxis("drawAxis", "x")) {
       let h;
-      // NOTE: I think this is probably broken now, since g.getOption() now
-      // hits the dictionary. (That is, g.getOption('xAxisHeight') now always
-      // has a value.)
       if (g.getOption("xAxisHeight")) {
         h = g.getNumericOption("xAxisHeight");
       } else {
@@ -77,22 +86,6 @@ class axes {
           2 * axisNum(g, "x", "axisTickSize");
       }
       e.reserveSpaceBottom(h);
-    }
-
-    if (g.numAxes() === 2) {
-      if (g.getOptionForAxis("drawAxis", "y2")) {
-        const w =
-          axisNum(g, "y2", "axisLabelWidth") +
-          2 * axisNum(g, "y2", "axisTickSize");
-        e.reserveSpaceRight(w);
-      }
-    } else if (g.numAxes() > 2) {
-      log.error(
-        "Only two y-axes are supported at this time. (Trying " +
-          "to use " +
-          g.numAxes() +
-          ")",
-      );
     }
   }
 
@@ -123,12 +116,19 @@ class axes {
 
   willDrawChart(e: ChartDrawPluginEvent) {
     const g = e.zpgraph;
+    const numAxes = g.numAxes();
 
-    if (
-      !g.getOptionForAxis("drawAxis", "x") &&
-      !g.getOptionForAxis("drawAxis", "y") &&
-      !g.getOptionForAxis("drawAxis", "y2")
-    ) {
+    let anyY = false;
+    for (let i = 0; i < numAxes; i++) {
+      if (
+        g.attributes_.seriesForAxis(i).length > 0 &&
+        g.getOptionForAxis("drawAxis", axisNameFromIndex(i))
+      ) {
+        anyY = true;
+        break;
+      }
+    }
+    if (!g.getOptionForAxis("drawAxis", "x") && !anyY) {
       this.detachLabels();
       return;
     }
@@ -144,26 +144,30 @@ class axes {
 
     let label, x, y;
 
-    const makeLabelStyle = (axis: "x" | "y" | "y2") => {
-      return {
+    const labelStyleCache: Record<
+      string,
+      {
+        position: string;
+        fontSize: string;
+        width: string;
+      }
+    > = {
+      x: {
         position: "absolute",
-        fontSize: axisNum(g, axis, "axisLabelFontSize") + "px",
-        width: axisNum(g, axis, "axisLabelWidth") + "px",
+        fontSize: axisNum(g, "x", "axisLabelFontSize") + "px",
+        width: axisNum(g, "x", "axisLabelWidth") + "px",
+      },
+    };
+    for (let i = 0; i < numAxes; i++) {
+      const name = axisNameFromIndex(i);
+      labelStyleCache[name] = {
+        position: "absolute",
+        fontSize: axisNum(g, name, "axisLabelFontSize") + "px",
+        width: axisNum(g, name, "axisLabelWidth") + "px",
       };
-    };
-
-    const labelStyles = {
-      x: makeLabelStyle("x"),
-      y: makeLabelStyle("y"),
-      y2: makeLabelStyle("y2"),
-    };
+    }
 
     /*
-     * This seems to be called with the following three sets of axis/prec_axis:
-     * x: undefined
-     * y: y1
-     * y: y2
-     *
      * `labels[idx]` is the node this slot used on the previous draw, if there
      * was one. Reusing it costs a style reset; recreating it costs two elements
      * and two tree mutations, once per tick per frame.
@@ -195,14 +199,9 @@ class axes {
         labels[idx] = div;
         containerDiv.appendChild(div);
       }
-      const labelStyle =
-        prec_axis === "y2"
-          ? labelStyles.y2
-          : axis === "y"
-            ? labelStyles.y
-            : axis === "y2"
-              ? labelStyles.y2
-              : labelStyles.x;
+      const styleKey =
+        prec_axis && labelStyleCache[prec_axis] ? prec_axis : axis;
+      const labelStyle = labelStyleCache[styleKey] ?? labelStyleCache.x!;
       div.style.position = labelStyle.position;
       div.style.fontSize = labelStyle.fontSize;
       div.style.width = labelStyle.width;
@@ -225,9 +224,12 @@ class axes {
     const layout = g.layout_;
     const area = e.zpgraph.plotter_.area;
 
-    // Helper for repeated axis-option accesses.
-    const makeOptionGetter = (axis: "x" | "y" | "y2") => (option: string) =>
+    const makeOptionGetter = (axis: string) => (option: string) =>
       axisNum(g, axis, option);
+
+    // Columns: [ticks][title?] from plot outward (see axis-chrome.ts).
+    const leftCols = columnByIndex(buildAxisColumns(g, "left"));
+    const rightCols = columnByIndex(buildAxisColumns(g, "right"));
 
     // Counted across the whole draw so that labels left over from a previous one
     // — a tick that disappeared, or an axis that was turned off — are removed
@@ -235,46 +237,38 @@ class axes {
     let yCount = 0,
       xCount = 0;
 
-    if (
-      g.getOptionForAxis("drawAxis", "y") ||
-      (g.numAxes() === 2 && g.getOptionForAxis("drawAxis", "y2"))
-    ) {
+    if (anyY) {
       if (layout.yticks && layout.yticks.length > 0) {
-        const num_axes = g.numAxes();
-        const getOptions = [makeOptionGetter("y"), makeOptionGetter("y2")];
         layout.yticks.forEach((tick) => {
           if (tick.label === undefined) {
             return;
-          } // this tick only has a grid line.
-          x = area.x;
-          let prec_axis = "y1";
-          let getAxisOption = getOptions[0]!;
-          if (tick.axis === 1) {
-            // right-side y-axis
-            x = area.x + area.w;
-            prec_axis = "y2";
-            getAxisOption = getOptions[1]!;
           }
+          const axisIdx = tick.axis;
+          if (axisIdx < 0 || axisIdx >= numAxes) {
+            return;
+          }
+          if (g.attributes_.seriesForAxis(axisIdx).length === 0) {
+            return;
+          }
+          const axisName = axisNameFromIndex(axisIdx);
+          const getAxisOption = makeOptionGetter(axisName);
           if (!getAxisOption("drawAxis")) {
             return;
           }
+          const side = resolveAxisSide(g, axisIdx);
           const fontSize = getAxisOption("axisLabelFontSize");
           y = area.y + tick.pos * area.h;
 
-          /* Tick marks are currently clipped, so don't bother drawing them.
-          context.beginPath();
-          context.moveTo(halfUp(x), halfDown(y));
-          context.lineTo(halfUp(x - sgn * that.attr_('axisTickSize')), halfDown(y));
-          context.closePath();
-          context.stroke();
-          */
+          // Legacy class: axis 0 → y1, axis 1 → y2, axis n → y(n+1)
+          const prec_axis: YAxisName | "y1" =
+            axisIdx === 0 ? "y1" : axisNameFromIndex(axisIdx);
 
           label = makeDiv(
             this.ylabels_,
             yCount++,
             tick.label,
             "y",
-            num_axes === 2 ? prec_axis : null,
+            numAxes > 1 ? prec_axis : null,
           );
           let top = y - fontSize / 2;
           if (top < 0) {
@@ -289,47 +283,59 @@ class axes {
             // compensate if necessary.
             label.style.top = Math.min(top, canvasHeight - 2 * fontSize) + "px";
           }
-          if (tick.axis === 0) {
-            label.style.left =
-              area.x -
-              getAxisOption("axisLabelWidth") -
-              getAxisOption("axisTickSize") +
-              "px";
+
+          const labelW = getAxisOption("axisLabelWidth");
+          const tickSize = getAxisOption("axisTickSize");
+          if (side === "left") {
+            const col = leftCols.get(axisIdx);
+            const offset = col?.offset ?? 0;
+            label.style.left = area.x - offset - labelW - tickSize + "px";
             label.style.textAlign = "right";
-          } else if (tick.axis === 1) {
-            label.style.left =
-              area.x + area.w + getAxisOption("axisTickSize") + "px";
+          } else {
+            const col = rightCols.get(axisIdx);
+            const offset = col?.offset ?? 0;
+            label.style.left = area.x + area.w + offset + tickSize + "px";
             label.style.textAlign = "left";
           }
-          label.style.width = getAxisOption("axisLabelWidth") + "px";
+          label.style.width = labelW + "px";
         });
       }
 
-      // draw a vertical line on the left to separate the chart from the labels.
-      let axisX;
-      if (g.getOption("drawAxesAtZero")) {
-        let r = g.toPercentXCoord(0) ?? 0;
-        if (r > 1 || r < 0 || isNaN(r)) {
-          r = 0;
+      // One spine per used side at the plot edge.
+      const leftList = buildAxisColumns(g, "left");
+      const rightList = buildAxisColumns(g, "right");
+      const hasLeft = leftList.length > 0;
+      const hasRight = rightList.length > 0;
+      const leftSpineAxis = leftList[0]?.name ?? "y";
+      const rightSpineAxis = rightList[0]?.name ?? "y2";
+
+      if (hasLeft) {
+        let axisX;
+        if (g.getOption("drawAxesAtZero")) {
+          let r = g.toPercentXCoord(0) ?? 0;
+          if (r > 1 || r < 0 || isNaN(r)) {
+            r = 0;
+          }
+          axisX = halfUp(area.x + r * area.w);
+        } else {
+          axisX = halfUp(area.x);
         }
-        axisX = halfUp(area.x + r * area.w);
-      } else {
-        axisX = halfUp(area.x);
+        context.strokeStyle = String(
+          g.getOptionForAxis("axisLineColor", leftSpineAxis),
+        );
+        context.lineWidth = axisNum(g, leftSpineAxis, "axisLineWidth");
+        context.beginPath();
+        context.moveTo(axisX, halfDown(area.y));
+        context.lineTo(axisX, halfDown(area.y + area.h));
+        context.closePath();
+        context.stroke();
       }
 
-      context.strokeStyle = String(g.getOptionForAxis("axisLineColor", "y"));
-      context.lineWidth = axisNum(g, "y", "axisLineWidth");
-
-      context.beginPath();
-      context.moveTo(axisX, halfDown(area.y));
-      context.lineTo(axisX, halfDown(area.y + area.h));
-      context.closePath();
-      context.stroke();
-
-      // if there's a secondary y-axis, draw a vertical line for that, too.
-      if (g.numAxes() === 2 && g.getOptionForAxis("drawAxis", "y2")) {
-        context.strokeStyle = String(g.getOptionForAxis("axisLineColor", "y2"));
-        context.lineWidth = axisNum(g, "y2", "axisLineWidth");
+      if (hasRight) {
+        context.strokeStyle = String(
+          g.getOptionForAxis("axisLineColor", rightSpineAxis),
+        );
+        context.lineWidth = axisNum(g, rightSpineAxis, "axisLineWidth");
         context.beginPath();
         context.moveTo(halfDown(area.x + area.w), halfDown(area.y));
         context.lineTo(halfDown(area.x + area.w), halfDown(area.y + area.h));
@@ -344,17 +350,9 @@ class axes {
         layout.xticks.forEach((tick) => {
           if (tick.label === undefined) {
             return;
-          } // this tick only has a grid line.
+          }
           x = area.x + tick.pos * area.w;
           y = area.y + area.h;
-
-          /* Tick marks are currently clipped, so don't bother drawing them.
-          context.beginPath();
-          context.moveTo(halfUp(x), halfDown(y));
-          context.lineTo(halfUp(x), halfDown(y + that.attr_('axisTickSize')));
-          context.closePath();
-          context.stroke();
-          */
 
           label = makeDiv(this.xlabels_, xCount++, tick.label, "x");
           label.style.textAlign = "center";
@@ -400,10 +398,5 @@ class axes {
     context.restore();
   }
 }
-
-/**
- * Drop the labels past `count`, which the draw that just ran did not need.
- * @private
- */
 
 export default axes;

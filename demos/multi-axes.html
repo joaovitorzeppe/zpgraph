@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multi y-axes · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Multi y-axes</h1>
+  <p class="lede">
+    Three overlay scales on one plot. Price + humidity on the left, temperature
+    on the right (<code>axes.yN.side</code>).
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import { Zpgraph } from 'zpgraph';
+    import { dayMs, utcDay } from './helpers.js';
+
+    const start = utcDay(2024, 0, 1);
+    const data = [];
+    for (let i = 0; i < 90; i++) {
+      data.push([
+        new Date(start + i * dayMs),
+        100 + Math.sin(i / 8) * 12 + (i % 5),
+        40 + Math.cos(i / 11) * 8,
+        55 + Math.sin(i / 6) * 15,
+      ]);
+    }
+
+    new Zpgraph(document.getElementById('chart'), data, {
+      labels: ['Date', 'Price', 'Temp', 'Humidity'],
+      tooltip: { show: 'always' },
+      ylabel: 'Price',
+      y2label: 'Temp °C',
+      colors: ['#1b6b93', '#c45c26', '#2a9d8f'],
+      series: {
+        Temp: { axis: 'y2' },
+        Humidity: { axis: 'y3' },
+      },
+      axes: {
+        y: { side: 'left', independentTicks: true },
+        y2: { side: 'right', independentTicks: true },
+        y3: {
+          side: 'left',
+          independentTicks: true,
+          label: 'Humidity %',
+          valueRange: [0, 100],
+        },
+      },
+      animatedZooms: true,
+    });
+  </script>
+</body>
+
+</html>
