@@ -830,7 +830,6 @@ export default class ZpgraphCanvasRenderer {
         pointSize = markers.size;
       }
     }
-    // Points LOD: skip markers when denser than ~1 per 2px (uPlot-style).
     if (drawPoints && e.points.length > (e.plotArea?.w ?? 0) / 2) {
       drawPoints = false;
     }

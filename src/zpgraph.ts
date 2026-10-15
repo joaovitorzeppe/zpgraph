@@ -1003,7 +1003,6 @@ export default class Zpgraph {
   }
 
   /**
-   * Run several mutations and redraw once (uPlot-style commit).
    * Nested calls share the outermost commit.
    */
   batch(fn: (chart: this) => void): void {
