@@ -1111,6 +1111,43 @@ export const repeatAndCleanup = (
 };
 
 // A whitelist of options that do not change pixel positions.
+/**
+ * Options that only change the viewport (X/Y window), not rolled series.
+ * These must call drawGraph, not predraw — rebuilding rolledSeries on every
+ * pan frame is the dominant cost for large datasets.
+ */
+export const isViewportOnlyOptionList = (attrs: object): boolean => {
+  const keys = Object.keys(attrs);
+  if (!keys.length) {
+    return false;
+  }
+  for (const key of keys) {
+    if (key === "dateWindow" || key === "valueRange") {
+      continue;
+    }
+    if (key === "axes") {
+      const axes = Reflect.get(attrs, "axes");
+      if (typeof axes !== "object" || axes === null) {
+        return false;
+      }
+      for (const axisName of Object.keys(axes as object)) {
+        const axisOpts = Reflect.get(axes as object, axisName);
+        if (typeof axisOpts !== "object" || axisOpts === null) {
+          return false;
+        }
+        for (const opt of Object.keys(axisOpts as object)) {
+          if (opt !== "valueRange") {
+            return false;
+          }
+        }
+      }
+      continue;
+    }
+    return false;
+  }
+  return true;
+};
+
 const pixelSafeOptions: Record<string, boolean> = {
   annotationClickHandler: true,
   annotationDblClickHandler: true,

@@ -13,6 +13,7 @@ import type {
   UnifiedSeries,
   ZpgraphInstance,
 } from "../internal-types";
+import * as utils from "../utils";
 import type ZpgraphClass from "../zpgraph";
 import type { AxisLabelFormatter, Point, ValueFormatter } from "../types";
 
@@ -55,21 +56,35 @@ class RebaseHandler extends DefaultHandler {
 
   override getExtremeYValues(
     series: UnifiedSeries,
-    _dateWindow?: [number, number] | null,
+    dateWindow?: [number, number] | null,
     _stepPlot?: boolean,
   ): [number | null, number | null] {
     let minY = null,
       maxY = null,
       y;
-    const firstIdx = 0,
-      lastIdx = series.length - 1;
-    const initial = series[firstIdx]![1];
+    let firstIdx = 0;
+    let lastIdx = series.length - 1;
+    if (dateWindow && series.length) {
+      firstIdx = utils.lowerBoundX(series, dateWindow[0]);
+      lastIdx = utils.upperBoundX(series, dateWindow[1]);
+      if (firstIdx >= series.length) {
+        firstIdx = series.length - 1;
+      }
+      if (lastIdx < 0) {
+        lastIdx = 0;
+      }
+      if (lastIdx < firstIdx) {
+        lastIdx = firstIdx;
+      }
+    }
+    // Rebase always uses the first sample of the full series as the base.
+    const initial = series[0]![1];
     if (!usableInitial(initial)) {
       return [null, null];
     }
 
     for (let j = firstIdx; j <= lastIdx; j++) {
-      if (j === firstIdx) {
+      if (j === 0) {
         y = this.baseOpt === "percent" ? 0 : this.baseOpt;
       } else {
         y = RebaseHandler.rebase(series[j]![1], initial, this.baseOpt);
@@ -91,36 +106,44 @@ class RebaseHandler extends DefaultHandler {
     series: UnifiedSeries,
     setName: string,
     boundaryIdStart: number,
+    fromIdx = 0,
+    toIdxInclusive = series.length - 1,
   ): Point[] {
     const points: Point[] = [];
-    const firstIdx = 0;
-    const lastIdx = series.length - 1;
-    const initial = series[firstIdx]![1];
+    const start = Math.max(0, fromIdx);
+    const end = Math.min(series.length - 1, toIdxInclusive);
+    const initial = series[0]?.[1] ?? null;
     const initialOk = usableInitial(initial);
-    for (let i = 0; i <= lastIdx; ++i) {
-      const item = series[i]!;
+    for (let i = 0; start + i <= end; ++i) {
+      const src = start + i;
+      const item = series[src]!;
       const yraw = item[1];
       let yval = yraw;
       if (!initialOk) {
         yval = null;
       } else if (yval !== null) {
-        if (i === firstIdx) {
+        if (src === 0) {
           yval = this.baseOpt === "percent" ? 0 : this.baseOpt;
         } else {
           yval = RebaseHandler.rebase(yval, initial, this.baseOpt);
         }
       }
-      const point = {
+      points.push({
         x: NaN,
         y: NaN,
         xval: item[0],
         yval: yval,
         name: setName,
         idx: i + boundaryIdStart,
-      };
-      points.push(point);
+        canvasx: NaN,
+        canvasy: NaN,
+      });
     }
-    this.onPointsCreated_(series, points);
+    const windowed =
+      start === 0 && end === series.length - 1
+        ? series
+        : series.slice(start, end + 1);
+    this.onPointsCreated_(windowed, points);
     return points;
   }
 }

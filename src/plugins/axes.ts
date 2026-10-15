@@ -214,7 +214,11 @@ class axes {
       );
       // textContent, not innerHTML: tick labels come out of axisLabelFormatter,
       // which callers override with formatters that interpolate their own data.
-      inner_div.textContent = txt;
+      // Skip write when unchanged — avoids layout/style churn on pan frames
+      // where Y ticks are stable.
+      if (inner_div.textContent !== txt) {
+        inner_div.textContent = txt;
+      }
       return div;
     };
 

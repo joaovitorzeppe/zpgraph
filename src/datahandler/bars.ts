@@ -11,6 +11,7 @@
 import type { AxisProperties, UnifiedSeries } from "../internal-types";
 import type { Point } from "../types";
 import ZpgraphLayout from "../layout";
+import * as utils from "../utils";
 import ZpgraphDataHandler from "./datahandler";
 
 /**
@@ -38,14 +39,27 @@ abstract class BarsHandler extends ZpgraphDataHandler {
   override getExtremeYValues(
     series: UnifiedSeries,
     dateWindow?: [number, number] | null,
-    stepPlot?: boolean,
+    _stepPlot?: boolean,
   ): [number | null, number | null] {
     let minY: number | null = null,
       maxY: number | null = null,
       y;
 
-    const firstIdx = 0;
-    const lastIdx = series.length - 1;
+    let firstIdx = 0;
+    let lastIdx = series.length - 1;
+    if (dateWindow && series.length) {
+      firstIdx = utils.lowerBoundX(series, dateWindow[0]);
+      lastIdx = utils.upperBoundX(series, dateWindow[1]);
+      if (firstIdx >= series.length) {
+        firstIdx = series.length - 1;
+      }
+      if (lastIdx < 0) {
+        lastIdx = 0;
+      }
+      if (lastIdx < firstIdx) {
+        lastIdx = firstIdx;
+      }
+    }
 
     for (let j = firstIdx; j <= lastIdx; j++) {
       const row = series[j]!;

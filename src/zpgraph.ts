@@ -123,6 +123,7 @@ import {
   setVisibility,
   start as start_,
   updateOptions as updateOptionsFn_,
+  batch as batchFn_,
   visibility,
 } from "./lifecycle";
 import { registerZpgraphStatics } from "./register";
@@ -216,6 +217,15 @@ export default class Zpgraph {
   animateId!: number;
   roller_: HTMLInputElement | null | undefined;
   rolledSeries_!: Array<UnifiedSeries | null>;
+  /** Nested depth for batch(); 0 = commit immediately. */
+  _batchDepth_ = 0;
+  _batchNeedsPredraw_ = false;
+  _batchNeedsDraw_ = false;
+  _batchNeedsRender_ = false;
+  /** Skip recomputing Y ticks when auto-range extremes unchanged. */
+  _lastYExtremesSig_: string | null = null;
+  /** Decimated Point[] buffers reused across pan frames, keyed by series name. */
+  _decimatePool_: Record<string, Point[]> = {};
   drawingTimeMs_!: number;
   readyFired_!: boolean;
   resize_lock!: boolean;
@@ -990,6 +1000,14 @@ export default class Zpgraph {
    */
   updateOptions(input_attrs: Partial<ZpgraphOptions>, block_redraw?: boolean) {
     updateOptionsFn_(this, input_attrs, block_redraw);
+  }
+
+  /**
+   * Run several mutations and redraw once (uPlot-style commit).
+   * Nested calls share the outermost commit.
+   */
+  batch(fn: (chart: this) => void): void {
+    batchFn_(this, fn as (chart: Zpgraph) => void);
   }
 
   /**

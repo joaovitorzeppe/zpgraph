@@ -185,6 +185,8 @@ export default class ZpgraphCanvasRenderer {
   width!: number;
   area!: PlotArea;
   colors!: Record<string, string>;
+  /** Path2D per series for the current viewport — reused by highlight overlay. */
+  pathCache_: Map<string, Path2D> = new Map();
 
   constructor(
     zpgraph: ZpgraphInstance,
@@ -194,6 +196,29 @@ export default class ZpgraphCanvasRenderer {
   ) {
     this.zpgraph_ = zpgraph;
     this.bindFrame(element, elementContext, layout);
+  }
+
+  clearPathCache() {
+    this.pathCache_.clear();
+  }
+
+  /** Stroke a cached series path onto ctx (highlight overlay). */
+  strokeCachedPath(
+    setName: string,
+    ctx: CanvasRenderingContext2D,
+    color: string,
+    strokeWidth: number,
+  ): boolean {
+    const path = this.pathCache_.get(setName);
+    if (!path) {
+      return false;
+    }
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+    ctx.stroke(path);
+    ctx.restore();
+    return true;
   }
 
   /** Refresh size, plot area and clip. Used so predraw can keep one renderer. */
@@ -470,9 +495,26 @@ export default class ZpgraphCanvasRenderer {
     let first = true; // the first cycle through the while loop
 
     const ctx = e.drawingContext;
+    // Build Path2D once per series/viewport; stroke once; cache for overlay.
+    const path = typeof Path2D !== "undefined" ? new Path2D() : null;
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = strokeWidth;
+
+    const moveTo = (x: number, y: number) => {
+      if (path) {
+        path.moveTo(x, y);
+      } else {
+        ctx.moveTo(x, y);
+      }
+    };
+    const lineTo = (x: number, y: number) => {
+      if (path) {
+        path.lineTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    };
 
     // NOTE: we break the iterator's encapsulation here for about a 25% speedup.
     const arr = iter.array_;
@@ -496,8 +538,8 @@ export default class ZpgraphCanvasRenderer {
       if (point.canvasy === null || point.canvasy !== point.canvasy) {
         if (stepPlot && prevCanvasX !== null && prevCanvasY !== null) {
           // Draw a horizontal line to the start of the missing data
-          ctx.moveTo(prevCanvasX, prevCanvasY);
-          ctx.lineTo(point.canvasx!, prevCanvasY);
+          moveTo(prevCanvasX, prevCanvasY);
+          lineTo(point.canvasx!, prevCanvasY);
         }
         prevCanvasX = prevCanvasY = null;
       } else {
@@ -525,14 +567,14 @@ export default class ZpgraphCanvasRenderer {
         if (prevCanvasX !== null && prevCanvasY !== null) {
           if (strokeWidth) {
             if (stepPlot) {
-              ctx.moveTo(prevCanvasX, prevCanvasY);
-              ctx.lineTo(point.canvasx!, prevCanvasY);
+              moveTo(prevCanvasX, prevCanvasY);
+              lineTo(point.canvasx!, prevCanvasY);
             }
 
-            ctx.lineTo(point.canvasx!, point.canvasy!);
+            lineTo(point.canvasx!, point.canvasy!);
           }
         } else {
-          ctx.moveTo(point.canvasx!, point.canvasy!);
+          moveTo(point.canvasx!, point.canvasy!);
         }
         if (drawPoints || isIsolated) {
           pointsOnLine.push([point.canvasx!, point.canvasy!, point.idx]);
@@ -542,7 +584,22 @@ export default class ZpgraphCanvasRenderer {
       }
       first = false;
     }
-    ctx.stroke();
+    if (path) {
+      ctx.stroke(path);
+      const plotter = e.zpgraph.plotter_;
+      if (
+        plotter &&
+        "pathCache_" in plotter &&
+        e.setName &&
+        !e.singleSeriesName
+      ) {
+        (
+          plotter as ZpgraphCanvasRenderer
+        ).pathCache_.set(e.setName, path);
+      }
+    } else {
+      ctx.stroke();
+    }
     return pointsOnLine;
   }
 
@@ -694,6 +751,16 @@ export default class ZpgraphCanvasRenderer {
           setName,
         );
 
+        // Highlight overlay: reuse Path2D from the last full draw when possible.
+        if (
+          opt_seriesName != null &&
+          opt_ctx &&
+          p === ZpgraphCanvasRenderer._Plotters.linePlotter &&
+          this.strokeCachedPath(setName, ctx, color, strokeWidth)
+        ) {
+          continue;
+        }
+
         ctx.save();
         ctx.strokeStyle = color;
         ctx.lineWidth = strokeWidth;
@@ -762,6 +829,10 @@ export default class ZpgraphCanvasRenderer {
       if (markers.size != null) {
         pointSize = markers.size;
       }
+    }
+    // Points LOD: skip markers when denser than ~1 per 2px (uPlot-style).
+    if (drawPoints && e.points.length > (e.plotArea?.w ?? 0) / 2) {
+      drawPoints = false;
     }
 
     const forecast = toForecastOptions(g.getOption("forecast"));

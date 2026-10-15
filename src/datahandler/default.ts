@@ -13,6 +13,7 @@ import type {
   RawData,
   UnifiedSeries,
 } from "../internal-types";
+import * as utils from "../utils";
 import ZpgraphDataHandler, { rawX, rawY, seriesBoolean } from "./datahandler";
 import { slideRoll } from "./roll";
 
@@ -72,13 +73,26 @@ class DefaultHandler extends ZpgraphDataHandler {
   override getExtremeYValues(
     series: UnifiedSeries,
     dateWindow?: [number, number] | null,
-    stepPlot?: boolean,
+    _stepPlot?: boolean,
   ): [number | null, number | null] {
     let minY = null,
       maxY = null,
       y;
-    const firstIdx = 0,
-      lastIdx = series.length - 1;
+    let firstIdx = 0;
+    let lastIdx = series.length - 1;
+    if (dateWindow && series.length) {
+      firstIdx = utils.lowerBoundX(series, dateWindow[0]);
+      lastIdx = utils.upperBoundX(series, dateWindow[1]);
+      if (firstIdx >= series.length) {
+        firstIdx = series.length - 1;
+      }
+      if (lastIdx < 0) {
+        lastIdx = 0;
+      }
+      if (lastIdx < firstIdx) {
+        lastIdx = firstIdx;
+      }
+    }
 
     for (let j = firstIdx; j <= lastIdx; j++) {
       y = series[j]![1];

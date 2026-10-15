@@ -26,6 +26,16 @@ import type Zpgraph from "./zpgraph";
 type SeriesExtremes = [number | null, number | null];
 type GatheredExtremes = Record<string, SeriesExtremes>;
 
+const extremesSignature = (extremes: GatheredExtremes): string => {
+  const keys = Object.keys(extremes).sort();
+  let sig = "";
+  for (const k of keys) {
+    const e = extremes[k]!;
+    sig += k + ":" + e[0] + "," + e[1] + ";";
+  }
+  return sig;
+};
+
 /**
  * @private
  * This function is called once when the chart's data is changed or the options
@@ -81,6 +91,9 @@ export const predraw = (g: Zpgraph) => {
 
     g.rolledSeries_.push(series);
   }
+
+  g._lastYExtremesSig_ = null;
+  g._decimatePool_ = {};
 
   // If the data or options have changed, then we'd better redraw.
   drawGraph(g);
@@ -285,12 +298,13 @@ export const gatherDatasets = (
       }
 
       boundaryIds[seriesIdx - 1] = [firstIdx, lastIdx];
-
-      // .slice's end is exclusive, we want to include lastIdx.
-      series = series.slice(firstIdx, lastIdx + 1);
+      // Keep the full rolled series — seriesToPoints windows by index.
+      // Avoiding .slice per pan frame saves one array alloc × series count.
     } else {
       series = rolledSeries[seriesIdx]!;
-      boundaryIds[seriesIdx - 1] = [0, series.length - 1];
+      firstIdx = 0;
+      lastIdx = series.length - 1;
+      boundaryIds[seriesIdx - 1] = [0, lastIdx];
     }
 
     const seriesNameRaw = g.getLabels()?.[seriesIdx];
@@ -305,6 +319,8 @@ export const gatherDatasets = (
       series,
       seriesName,
       boundaryIds[seriesIdx - 1]![0],
+      firstIdx!,
+      lastIdx!,
     );
 
     if (g.getBooleanOption("stackedGraph")) {
@@ -359,18 +375,31 @@ export const drawGraph = (g: Zpgraph) => {
 
   const pixelWidth = g.plotter_?.area?.w || g.width_;
   const [xMin, xMax] = g.dateWindow_ ?? xAxisExtremes(g);
+  const labels = g.getLabels() ?? [];
   for (let i = 1; i < points.length; i++) {
     if (!g.visibility()[i - 1]) {
       continue;
     }
     const seriesPoints = points[i];
     if (seriesPoints?.length) {
-      points[i] = decimatePointsByX(seriesPoints, xMin, xMax, pixelWidth);
+      const name = labels[i];
+      const poolKey = typeof name === "string" ? name : String(i);
+      let pool = g._decimatePool_[poolKey];
+      if (!pool) {
+        pool = g._decimatePool_[poolKey] = [];
+      }
+      points[i] = decimatePointsByX(
+        seriesPoints,
+        xMin,
+        xMax,
+        pixelWidth,
+        undefined,
+        pool,
+      );
     }
   }
 
   g.setIndexByName_ = {};
-  const labels = g.getLabels() ?? [];
   let dataIdx = 0;
   for (let i = 1; i < points.length; i++) {
     if (!g.visibility()[i - 1]) {
@@ -386,13 +415,27 @@ export const drawGraph = (g: Zpgraph) => {
   }
   g.setIndexByName_ = Object.fromEntries(labels.map((label, i) => [label, i]));
 
-  computeYAxisRanges(g, extremes);
+  // Skip regenerating Y tick *values* when auto-extremes and user valueRange
+  // are unchanged — still refresh axis objects via compute when ranges move.
+  const extremesSig = extremesSignature(extremes);
+  const valueRangeSig = (g.axes_ ?? [])
+    .map((a) =>
+      a.valueRange ? `${a.valueRange[0]},${a.valueRange[1]}` : "",
+    )
+    .join("|");
+  const ySig = extremesSig + "#" + valueRangeSig;
+  if (is_initial_draw || ySig !== g._lastYExtremesSig_) {
+    computeYAxisRanges(g, extremes);
+    g._lastYExtremesSig_ = ySig;
+  }
   g.layout_.setYAxes(g.axes_);
 
   g.addXTicks_();
 
   // Hand the new data to the layout and render it
   g.layout_.evaluate();
+  const plotter = g.plotter_ as ZpgraphCanvasRenderer | undefined;
+  plotter?.clearPathCache?.();
   renderGraph(g, is_initial_draw);
 
   if (g.getStringOption("timingName")) {

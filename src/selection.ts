@@ -234,6 +234,9 @@ export const mouseMove = (g: Zpgraph, event: MouseEvent) => {
     return;
   }
 
+  // Hover never calls drawGraph_: selection paints on the overlay canvas
+  // (and Path2D cache when highlightSeriesOpts is set). Legend updates via
+  // the select cascade only.
   const canvasCoords = g.eventToDomCoords(event);
   const canvasx = canvasCoords[0];
   const canvasy = canvasCoords[1];

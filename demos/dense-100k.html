@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dense 100k · Zpgraph</title>
+  <link rel="stylesheet" href="../dist/style.css" />
+  <link rel="stylesheet" href="common.css" />
+  <script type="importmap">
+      { "imports": { "zpgraph": "../dist/index.js" } }
+    </script>
+</head>
+
+<body>
+  <nav class="crumb"><a href="index.html">← Demos</a></nav>
+  <h1>Dense 100k</h1>
+  <p class="lede">
+    <strong>100 000 x 3</strong> series (1 minute samples).
+  </p>
+  <div id="chart" class="chart"></div>
+  <script type="module">
+    import { Zpgraph } from 'zpgraph';
+    import { makeSeries, utcDay } from './helpers.js';
+
+    const chartEl = document.getElementById('chart');
+    const data = makeSeries({
+      points: 100_000,
+      series: 3,
+      seed: 7,
+      start: utcDay(2024, 0, 1),
+      step: 60_000,
+    });
+
+    new Zpgraph(chartEl, data, {
+      labels: ['Date', 'A', 'B', 'C'],
+      width: chartEl.clientWidth || 960,
+      height: chartEl.clientHeight || 400,
+      animatedZooms: false,
+      tooltip: { show: 'onmouseover' },
+      title: '100.000 x 3',
+      ylabel: 'Value',
+      colors: ['#1b6b93', '#c45c26', '#2a9d8f'],
+      strokeWidth: 1,
+    });
+  </script>
+</body>
+
+</html>

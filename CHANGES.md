@@ -1,5 +1,9 @@
 # Changes
 
+## 1.4.2
+
+- Reworked base engine to increase performance
+
 ## 1.4.1
 
 - Added multi-y-axes graph support

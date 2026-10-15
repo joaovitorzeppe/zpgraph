@@ -17,6 +17,8 @@ export const decimatePointsByX = (
   xMax: number,
   pixelWidth: number,
   threshold = DECIMATION_THRESHOLD,
+  /** Reused buffer (truncated in place) to avoid alloc per pan frame. */
+  pool?: Point[],
 ): Point[] => {
   const span = xMax - xMin;
   if (
@@ -31,7 +33,8 @@ export const decimatePointsByX = (
     return points;
   }
 
-  const out: Point[] = [];
+  const out: Point[] = pool ?? [];
+  out.length = 0;
   let column = NaN;
   let first: Point | null = null;
   let last: Point | null = null;

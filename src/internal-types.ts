@@ -169,6 +169,8 @@ export interface DataHandlerLike {
     series: UnifiedSeries,
     setName: string,
     boundaryIdStart: number,
+    fromIdx?: number,
+    toIdxInclusive?: number,
   ): Point[];
   getExtremeYValues(
     series: UnifiedSeries,

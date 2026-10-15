@@ -16,7 +16,7 @@ import DEFAULT_ATTRS from "./default-attrs";
 import OptionsManager from "./options";
 import { createDragInterface, createInterface } from "./dom";
 import { parseArray, parseCSV } from "./parser";
-import { predraw, renderGraph } from "./render";
+import { computeYAxes, drawGraph, predraw, renderGraph } from "./render";
 import { applyTheme } from "./themes";
 import { applyRootClassNames } from "./class-names";
 import * as utils from "./utils";
@@ -702,13 +702,61 @@ export const updateOptions = (
 
     g.file_ = file;
     if (!block_redraw) {
-      start(g);
-    }
-  } else {
-    if (!block_redraw) {
-      if (requiresNewPoints) {
-        predraw(g);
+      if (g._batchDepth_ > 0) {
+        g._batchNeedsPredraw_ = true;
       } else {
+        start(g);
+      }
+    }
+  } else if (!block_redraw) {
+    // dateWindow / valueRange alone must not rebuild rolledSeries_ (predraw).
+    const viewportOnly = utils.isViewportOnlyOptionList(attrs);
+    if (g._batchDepth_ > 0) {
+      if (requiresNewPoints && !viewportOnly) {
+        g._batchNeedsPredraw_ = true;
+      } else if (viewportOnly || requiresNewPoints) {
+        g._batchNeedsDraw_ = true;
+      } else {
+        g._batchNeedsRender_ = true;
+      }
+    } else if (viewportOnly) {
+      // valueRange / axes.valueRange need axes_ synced; dateWindow alone must
+      // not rebuild axes_ (that drops computedValueRange until Y recompute).
+      if ("valueRange" in attrs || "axes" in attrs) {
+        computeYAxes(g);
+        g._lastYExtremesSig_ = null;
+      }
+      drawGraph(g);
+    } else if (requiresNewPoints) {
+      predraw(g);
+    } else {
+      renderGraph(g, false);
+    }
+  }
+};
+
+/**
+ * Coalesce multiple updateOptions / setData mutations into one redraw.
+ * Nested batch() calls share a single commit at the outermost exit.
+ */
+export const batch = (g: Zpgraph, fn: (chart: Zpgraph) => void): void => {
+  g._batchDepth_ = (g._batchDepth_ ?? 0) + 1;
+  try {
+    fn(g);
+  } finally {
+    g._batchDepth_ -= 1;
+    if (g._batchDepth_ === 0) {
+      if (g._batchNeedsPredraw_) {
+        g._batchNeedsPredraw_ = false;
+        g._batchNeedsDraw_ = false;
+        g._batchNeedsRender_ = false;
+        predraw(g);
+      } else if (g._batchNeedsDraw_) {
+        g._batchNeedsDraw_ = false;
+        g._batchNeedsRender_ = false;
+        drawGraph(g);
+      } else if (g._batchNeedsRender_) {
+        g._batchNeedsRender_ = false;
         renderGraph(g, false);
       }
     }

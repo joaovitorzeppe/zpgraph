@@ -139,6 +139,8 @@ abstract class ZpgraphDataHandler {
     series: UnifiedSeries,
     setName: string,
     boundaryIdStart: number,
+    fromIdx = 0,
+    toIdxInclusive = series.length - 1,
   ): Point[] {
     // The points of the previous draw of this series die the moment this one
     // starts, so they are refilled instead of reallocated. Otherwise a drag over
@@ -146,10 +148,13 @@ abstract class ZpgraphDataHandler {
     // garbage collector arrives in the middle of the gesture.
     const points: Point[] =
       this.pointPool_[setName] || (this.pointPool_[setName] = []);
-    const length = series.length;
+    const start = Math.max(0, fromIdx);
+    const end = Math.min(series.length - 1, toIdxInclusive);
+    const length = end >= start ? end - start + 1 : 0;
 
     for (let i = 0; i < length; ++i) {
-      const item = series[i]!;
+      const src = start + i;
+      const item = series[src]!;
       const yraw = item[1];
       let point = points[i];
       if (point === undefined) {
@@ -174,11 +179,17 @@ abstract class ZpgraphDataHandler {
       }
       point.xval = ZpgraphDataHandler.parseFloat(item[0]);
       point.yval = yraw === null ? null : ZpgraphDataHandler.parseFloat(yraw);
+      // idx = offset within the window + skipped rows left of the window.
       point.idx = i + boundaryIdStart;
     }
     points.length = length;
 
-    this.onPointsCreated_(series, points);
+    // onPointsCreated_ expects series aligned with points — pass the window.
+    const windowed =
+      start === 0 && end === series.length - 1
+        ? series
+        : series.slice(start, end + 1);
+    this.onPointsCreated_(windowed, points);
     return points;
   }
 
